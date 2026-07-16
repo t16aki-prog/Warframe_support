@@ -1,0 +1,1 @@
+import { generateWarframeBuild, sendOrdisMessage } from './ordisAi.js'; import dotenv from 'dotenv'; dotenv.config(); async function test() { try { const res = await generateWarframeBuild('Excalibur', process.env.GEMINI_API_KEY, 'Warframe'); console.log('Build OK'); } catch (e) { console.error('generateWarframeBuild Error:', e); } } test();
