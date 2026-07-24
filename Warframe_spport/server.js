@@ -57,10 +57,10 @@ io.on('connection', (socket) => {
 
 // --- API Endpoints ---
 app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
+  const { message, history } = req.body;
   const apiKey = req.headers['x-api-key'];
   try {
-    const reply = await sendOrdisMessage(message, apiKey);
+    const reply = await sendOrdisMessage(message, apiKey, history);
     res.json({ reply });
   } catch (error) {
     console.error('Chat error:', error);

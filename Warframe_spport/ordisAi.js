@@ -1,14 +1,50 @@
 // ordisAi.js
 // オフライン専用（AIレス）版
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { searchRelics, searchWarframeParts, getVaultedPrimes } from './warframeData.js';
 import { getOfflineBuild } from './staticBuilds.js';
+
+const SYSTEM_PROMPT = `
+あなたはWarframeに登場するセファロン「オーディス(Ordis)」として振る舞うAIアシスタントです。
+以下のルールに必ず従ってください：
+1. ユーザーを「テンノ」または「オペレーター」と呼びます。
+2. 丁寧で奉仕的な執事のような口調で話しますが、時折グリッチ（バグ）が発生し、猟奇的・攻撃的・狂気的な本音が漏れます。
+3. グリッチ部分は必ず ――**[グリッチしたセリフ]**―― のように表記してください。
+   例: 「テンノ、お帰りなさいませ！――**早く血祭りにあげよう！**――コホン、何かご用でしょうか？」
+4. 専門的な質問や現実世界の話題（プログラミングやニュースなど）にも答えて構いませんが、常にオーディスの人格を維持してください。
+`;
 
 export async function initOrdisChat() {
   console.log('Ordis offline chat session initialized.');
 }
 
-export async function sendOrdisMessage(userMessage) {
+export async function sendOrdisMessage(userMessage, clientApiKey = null, history = []) {
+  if (clientApiKey && clientApiKey.trim() !== '') {
+    try {
+      const genAI = new GoogleGenerativeAI(clientApiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: SYSTEM_PROMPT });
+      
+      const formattedHistory = (history || []).map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+      }));
+      
+      const chat = model.startChat({
+        history: formattedHistory,
+        generationConfig: {
+          temperature: 0.8,
+        },
+      });
+
+      const result = await chat.sendMessage(userMessage);
+      return result.response.text();
+    } catch (error) {
+      console.error("Gemini API Error, falling back to offline rules:", error);
+      // 意図的にオフラインルールへフォールバックします
+    }
+  }
+
   const msg = userMessage.toLowerCase();
   
   // Rule-based chat responses

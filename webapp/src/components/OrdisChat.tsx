@@ -4,16 +4,19 @@ import { askOrdis, type ChatMessage } from '../utils/gemini';
 
 interface OrdisChatProps {
   apiKey: string;
+  cephalonName: string;
+  cephalonVoiceURI: string;
   onNavigateToSettings: () => void;
 }
 
 type VoiceState = 'idle' | 'waiting_wake' | 'listening_command';
 
-export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettings }) => {
+export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, cephalonName, cephalonVoiceURI, onNavigateToSettings }) => {
+  const displayName = cephalonName || 'オーディス';
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'model',
-      content: `テンノ！お帰りなさいませ！Ordisは船内のシステム健全性をチェックしながら、テンノの帰還を心待ちにしておりまし――**早く敵を切り刻みに行こう！**――コホン、失礼しました。何かご質問や、サポートが必要なことはありますか？`,
+      content: `テンノ！お帰りなさいませ！${displayName}は船内のシステム健全性をチェックしながら、テンノの帰還を心待ちにしておりまし――**早く敵を切り刻みに行こう！**――コホン、失礼しました。何かご質問や、サポートが必要なことはありますか？`,
     },
   ]);
   const [inputMsg, setInputMsg] = useState('');
@@ -70,49 +73,91 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
     }
   };
 
-  // Cephalon Ordis Text-to-Speech Helper with Glitch Pitch Shift
-  const speakOrdis = (text: string) => {
-    if (isMuted || !('speechSynthesis' in window)) return;
+  // Cephalon Ordis Text-to-Speech Helper
+  const speakOrdis = async (text: string) => {
+    if (isMuted) return;
 
-    try {
-      window.speechSynthesis.cancel(); // Stop current speech
+    const voiceSource = localStorage.getItem('ordis_voice_source') || 'standard';
+    
+    // Clean text of glitch markers for other voice sources
+    let cleanText = text.replace(/――\*\*(.*?)\*\*――/g, '、$1、').replace(/――/g, '、');
+    
+    if (voiceSource === 'clipboard') {
+      const copyMode = localStorage.getItem('ordis_clipboard_copy_mode') || 'all';
+      if (copyMode === 'clean') {
+        cleanText = text.replace(/――\*\*.*?\*\*――/g, '').replace(/――/g, '、');
+      }
+      navigator.clipboard.writeText(cleanText).catch(err => console.error('Clipboard copy failed:', err));
+      return;
+    }
+
+    if (voiceSource === 'voicevox') {
+      const vvUrl = localStorage.getItem('ordis_voicevox_url') || 'http://localhost:50021';
+      const speakerId = localStorage.getItem('ordis_voicevox_speaker') || '2';
       
-      // Split text by Ordis glitch markers "――**glitch**――"
+      try {
+        // 1. Create Audio Query
+        const queryRes = await fetch(`${vvUrl}/audio_query?text=${encodeURIComponent(cleanText)}&speaker=${speakerId}`, {
+          method: 'POST',
+        });
+        if (!queryRes.ok) throw new Error('VOICEVOX audio_query failed');
+        const queryJson = await queryRes.json();
+        
+        // 2. Synthesize Audio
+        const synthRes = await fetch(`${vvUrl}/synthesis?speaker=${speakerId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(queryJson)
+        });
+        if (!synthRes.ok) throw new Error('VOICEVOX synthesis failed');
+        
+        const audioBlob = await synthRes.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play().catch(e => console.error('Voicevox Audio play failed:', e));
+      } catch (err) {
+        console.error('VOICEVOX error:', err);
+      }
+      return;
+    }
+
+    // Standard Web Speech API fallback
+    if (!('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      
       const parts = text.split(/(――\*\*.*?\*\*――)/g);
       const utterances: SpeechSynthesisUtterance[] = [];
 
       parts.forEach((part) => {
         if (!part.trim()) return;
-
         const utterance = new SpeechSynthesisUtterance();
         utterance.lang = 'ja-JP';
 
         const voices = window.speechSynthesis.getVoices();
-        const jaVoice = voices.find(v => v.lang.startsWith('ja'));
-        if (jaVoice) {
-          utterance.voice = jaVoice;
+        if (cephalonVoiceURI) {
+          const selected = voices.find(v => v.voiceURI === cephalonVoiceURI);
+          if (selected) utterance.voice = selected;
+        } else {
+          const jaVoice = voices.find(v => v.lang.startsWith('ja'));
+          if (jaVoice) utterance.voice = jaVoice;
         }
 
         if (part.startsWith('――**') && part.endsWith('**――')) {
-          // Glitch / Aggressive mode: Deep pitch, fast rate
-          const cleanText = part.replace(/――\*\*(.*?)\*\*――/, '$1');
-          utterance.text = cleanText;
+          const cText = part.replace(/――\*\*(.*?)\*\*――/, '$1');
+          utterance.text = cText;
           utterance.pitch = 0.55; 
           utterance.rate = 1.35;  
         } else {
-          // Normal mode: High polite robotic pitch, normal rate
-          const cleanText = part.replace(/――/g, '、'); // replace em dash with pause
-          utterance.text = cleanText;
+          const cText = part.replace(/――/g, '、');
+          utterance.text = cText;
           utterance.pitch = 1.35; 
           utterance.rate = 1.05;  
         }
         utterances.push(utterance);
       });
 
-      // Chain speech utterances
-      utterances.forEach((utt) => {
-        window.speechSynthesis.speak(utt);
-      });
+      utterances.forEach((utt) => window.speechSynthesis.speak(utt));
     } catch (e) {
       console.error('Text-to-speech error:', e);
     }
@@ -148,7 +193,7 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
 
     recognition.onstart = () => {
       setVoiceState('waiting_wake');
-      setVoiceTranscript('「Hi オーディス」とお呼びください...');
+      setVoiceTranscript(`「Hi ${displayName}」とお呼びください...`);
     };
 
     recognition.onresult = (event: any) => {
@@ -159,16 +204,16 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
       console.log('Voice result received:', resultText, 'State:', voiceStateRef.current);
 
       if (voiceStateRef.current === 'waiting_wake') {
-        // Wake word detection ("Hi Ordis", "Hi オーディス", "オーディス" etc)
+        // Wake word detection ("Hi Ordis", "Hi [Name]")
         const matched = 
+          lowerText.includes(displayName.toLowerCase()) || 
           lowerText.includes('オーディス') || 
           lowerText.includes('ordis') || 
-          lowerText.includes('オーディオス') ||
           lowerText.includes('ハイ');
 
         if (matched) {
           playBeep();
-          const reply = 'はい、テンノ！Ordisは待機しておりま――**早く命令しろ！**――ご用件をどうぞ！';
+          const reply = `はい、テンノ！${displayName}は待機しておりま――**早く命令しろ！**――ご用件をどうぞ！`;
           speakOrdis(reply);
           setVoiceState('listening_command');
           setVoiceTranscript('ご質問をどうぞ！聞き取り中...');
@@ -181,7 +226,7 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
           submitMessage(resultText);
           // Return to wake-word waiting state
           setVoiceState('waiting_wake');
-          setVoiceTranscript('「Hi オーディス」とお呼びください...');
+          setVoiceTranscript(`「Hi ${displayName}」とお呼びください...`);
         }
       }
     };
@@ -230,7 +275,7 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
 
     try {
       const apiHistory = messages.slice(1);
-      const ordisReply = await askOrdis('', apiHistory, text);
+      const ordisReply = await askOrdis(apiKey, apiHistory, text, displayName);
       setMessages((prev) => [...prev, { role: 'model', content: ordisReply }]);
       speakOrdis(ordisReply);
     } catch (err) {
@@ -246,9 +291,9 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
   return (
     <div>
       <div className="page-header">
-        <h2 className="page-title">セファロン・オーディス (Cephalon Ordis)</h2>
+        <h2 className="page-title">セファロン・{displayName} (Cephalon AI)</h2>
         <p className="page-desc">
-          音声入力と音声読み上げに対応。「Hi オーディス」と話しかけることで音声入力が起動します。
+          音声入力と音声読み上げに対応。「Hi {displayName}」と話しかけることで音声入力が起動します。
         </p>
       </div>
 
@@ -372,13 +417,13 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
           <div className="chat-history">
             {messages.map((msg, index) => (
               <div key={index} className={`chat-msg ${msg.role === 'user' ? 'user' : 'ordis'}`}>
-                <div className="msg-sender">{msg.role === 'user' ? 'Tenno' : 'Ordis'}</div>
+                <div className="msg-sender">{msg.role === 'user' ? 'Tenno' : displayName}</div>
                 <div className="msg-bubble">{msg.content}</div>
               </div>
             ))}
             {isLoading && (
               <div className="chat-msg ordis">
-                <div className="msg-sender">Ordis</div>
+                <div className="msg-sender">{displayName}</div>
                 <div className="msg-bubble" style={{ color: 'var(--text-muted)' }}>
                   セファロン・思考展開中...
                 </div>
@@ -391,7 +436,7 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
             <input
               type="text"
               className="terminal-input"
-              placeholder="Ordisに質問する... (音声起動ONで「Hi オーディス」と呼びかけても質問可能)"
+              placeholder={`${displayName}に質問する... (音声起動ONで「Hi ${displayName}」と呼びかけても質問可能)`}
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               disabled={isLoading}

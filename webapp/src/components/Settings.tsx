@@ -16,6 +16,10 @@ interface SettingsProps {
   setShowSteelPath?: (show: boolean) => void;
   enabledExtensions?: Record<string, boolean>;
   setEnabledExtensions?: (ext: Record<string, boolean>) => void;
+  cephalonName?: string;
+  setCephalonName?: (name: string) => void;
+  cephalonVoiceURI?: string;
+  setCephalonVoiceURI?: (uri: string) => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
@@ -32,10 +36,30 @@ export const Settings: React.FC<SettingsProps> = ({
   showSteelPath,
   setShowSteelPath,
   enabledExtensions,
-  setEnabledExtensions
+  setEnabledExtensions,
+  cephalonName,
+  setCephalonName,
+  cephalonVoiceURI,
+  setCephalonVoiceURI
 }) => {
   const [inputKey, setInputKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  
+  const [localCephalonName, setLocalCephalonName] = useState(cephalonName || 'オーディス');
+  const [localCephalonVoiceURI, setLocalCephalonVoiceURI] = useState(cephalonVoiceURI || '');
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      if ('speechSynthesis' in window) {
+        setAvailableVoices(window.speechSynthesis.getVoices());
+      }
+    };
+    loadVoices();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
   
   // Local voice settings for form
   const [localVoiceSource, setLocalVoiceSource] = useState(voiceSource);
@@ -94,6 +118,16 @@ export const Settings: React.FC<SettingsProps> = ({
       localStorage.setItem('enabledExtensions', JSON.stringify(localExtensions));
     }
 
+    if (setCephalonName) {
+      localStorage.setItem('cephalonName', localCephalonName);
+      setCephalonName(localCephalonName);
+    }
+    
+    if (setCephalonVoiceURI) {
+      localStorage.setItem('cephalonVoiceURI', localCephalonVoiceURI);
+      setCephalonVoiceURI(localCephalonVoiceURI);
+    }
+
     // Save Language and Region Settings
     localStorage.setItem('ordis_locale', locale);
     localStorage.setItem('ordis_timezone', timeZone);
@@ -130,13 +164,39 @@ export const Settings: React.FC<SettingsProps> = ({
             </h3>
             
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <div className="input-text" style={{backgroundColor: 'rgba(76, 175, 80, 0.1)', color: '#4CAF50', border: '1px solid rgba(76, 175, 80, 0.3)', fontWeight: 'bold'}}>
-                ✅ 完全オフラインモード稼働中
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Key size={16} />
+                  Gemini API キー (AIチャット用)
+                </label>
+                {apiKey && (
+                  <button type="button" onClick={handleDeleteKey} className="btn-copy" style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+                    <Trash2 size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                    キーを削除
+                  </button>
+                )}
               </div>
-              <p className="cycle-sub" style={{ marginTop: '12px', lineHeight: '1.6' }}>
-                現在は外部AI（Gemini API）を使用せず、アプリ内の固定データベースを使用する「完全オフラインモード」で動作しています。<br/>
-                ・APIの利用制限（Quota Exceeded）の心配がありません。<br/>
-                ・AIチャット機能はオフラインの自動応答システムに切り替わっています。
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  className="input-text"
+                  placeholder="AIzer..."
+                  value={inputKey}
+                  onChange={(e) => setInputKey(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="btn-copy"
+                  onClick={() => setShowKey(!showKey)}
+                  style={{ padding: '0 12px' }}
+                >
+                  {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <p className="cycle-sub" style={{ marginTop: '8px' }}>
+                ※ Google AI Studioで取得したGemini APIキーを入力してください。<br/>
+                ※ キーを入力するとAIが世界ニュースや雑談にも対応できるオンラインモードになり、未入力の場合は定型文のみの完全オフラインモードとして動作します。
               </p>
             </div>
 
@@ -153,6 +213,68 @@ export const Settings: React.FC<SettingsProps> = ({
               <p className="cycle-sub" style={{ marginTop: '8px', marginLeft: '24px' }}>
                 オフにすると、亀裂や依頼リストからレベル100以上の「鋼の道のり (Steel Path)」ミッションを非表示にします。
               </p>
+            </div>
+          </div>
+
+          {/* Card 1.5: Cephalon Settings */}
+          <div className="glass-card neon-gold">
+            <h3 className="card-title" style={{ color: 'var(--color-gold)' }}>
+              <Volume2 size={20} className="card-title-icon" style={{ color: 'var(--color-gold)' }} />
+              セファロンAI カスタマイズ
+            </h3>
+            
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label">セファロンの名前</label>
+              <input
+                type="text"
+                className="input-text"
+                value={localCephalonName}
+                onChange={(e) => setLocalCephalonName(e.target.value)}
+                placeholder="例: オーディス"
+              />
+              <p className="cycle-sub" style={{ marginTop: '4px' }}>
+                ※ 音声認識の起動（ウェイクワード）も「Hi {localCephalonName || 'オーディス'}」に変わります。
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">セファロンの音声 (ブラウザ標準TTS用)</label>
+              <select
+                className="input-text"
+                value={localCephalonVoiceURI}
+                onChange={(e) => setLocalCephalonVoiceURI(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">(自動選択 - デフォルト)</option>
+                {availableVoices.map((voice, idx) => (
+                  <option key={idx} value={voice.voiceURI}>
+                    {voice.name} ({voice.lang})
+                  </option>
+                ))}
+              </select>
+              <p className="cycle-sub" style={{ marginTop: '4px' }}>
+                ※ OSやブラウザにインストールされている合成音声から好みのものを選択できます。
+              </p>
+              <button 
+                type="button" 
+                className="btn-copy" 
+                style={{ marginTop: '8px' }}
+                onClick={() => {
+                  if (!('speechSynthesis' in window)) return;
+                  window.speechSynthesis.cancel();
+                  const utt = new SpeechSynthesisUtterance(`こんにちは、テンノ。私の名前は${localCephalonName || 'オーディス'}です。`);
+                  if (localCephalonVoiceURI) {
+                    const selectedVoice = availableVoices.find(v => v.voiceURI === localCephalonVoiceURI);
+                    if (selectedVoice) utt.voice = selectedVoice;
+                  } else {
+                    const jaVoice = availableVoices.find(v => v.lang.startsWith('ja'));
+                    if (jaVoice) utt.voice = jaVoice;
+                  }
+                  window.speechSynthesis.speak(utt);
+                }}
+              >
+                音声をテスト再生する
+              </button>
             </div>
           </div>
 
@@ -232,15 +354,33 @@ export const Settings: React.FC<SettingsProps> = ({
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '13px' }}>話者 ID (Speaker ID)</label>
-                    <input
-                      type="number"
+                    <label className="form-label" style={{ fontSize: '13px' }}>話者 (Speaker)</label>
+                    <select
                       className="input-text"
                       value={localVoicevoxSpeaker}
                       onChange={(e) => setLocalVoicevoxSpeaker(Number(e.target.value))}
-                      placeholder="2"
-                    />
-                    <span className="cycle-sub">※ デフォルト: 2 (四国めたん・ノーマル), 3 (ずんだもん・ノーマル) など</span>
+                      style={{ width: '100%', marginBottom: '4px' }}
+                    >
+                      <option value="3">ずんだもん (ノーマル) [ID:3]</option>
+                      <option value="1">ずんだもん (あまあま) [ID:1]</option>
+                      <option value="2">四国めたん (ノーマル) [ID:2]</option>
+                      <option value="8">春日部つむぎ (ノーマル) [ID:8]</option>
+                      <option value="10">雨晴はう (ノーマル) [ID:10]</option>
+                      <option value="13">冥鳴ひまり (ノーマル) [ID:13]</option>
+                      <option value="14">九州そら (ノーマル) [ID:14]</option>
+                      <option value="20">もち子さん (ノーマル) [ID:20]</option>
+                      <option value="46">小夜/SAYO (ノーマル) [ID:46]</option>
+                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="cycle-sub">カスタムID指定:</span>
+                      <input
+                        type="number"
+                        className="input-text"
+                        style={{ width: '80px', padding: '4px 8px', minHeight: '28px' }}
+                        value={localVoicevoxSpeaker}
+                        onChange={(e) => setLocalVoicevoxSpeaker(Number(e.target.value))}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -367,7 +507,8 @@ export const Settings: React.FC<SettingsProps> = ({
                 { id: 'relicgenerator', label: 'レリック表生成' },
                 { id: 'tradehelper', label: 'トレードコピペ' },
                 { id: 'rulesguide', label: '安全規約＆マナー' },
-                { id: 'localchat', label: 'ローカルチャット' }
+                { id: 'localchat', label: 'ローカルチャット' },
+                { id: 'cephalonai', label: 'セファロンAI' }
               ].map(ext => (
                 <label key={ext.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                   <input 

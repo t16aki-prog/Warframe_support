@@ -123,21 +123,61 @@ export const Settings: React.FC<SettingsProps> = ({
         <form onSubmit={handleSave} className="settings-form" style={{ display: 'contents' }}>
           
           {/* Card 1: System Mode */}
-          <div className="glass-card neon-purple">
-            <h3 className="card-title" style={{ color: 'var(--color-purple)' }}>
-              <ShieldAlert size={20} className="card-title-icon" style={{ color: 'var(--color-purple)' }} />
+          <div className={`glass-card ${inputKey ? 'neon-teal' : 'neon-purple'}`}>
+            <h3 className="card-title" style={{ color: inputKey ? 'var(--color-teal)' : 'var(--color-purple)' }}>
+              <ShieldAlert size={20} className="card-title-icon" style={{ color: inputKey ? 'var(--color-teal)' : 'var(--color-purple)' }} />
               現在のシステムモード
             </h3>
             
             <div className="form-group" style={{ marginBottom: '16px' }}>
-              <div className="input-text" style={{backgroundColor: 'rgba(76, 175, 80, 0.1)', color: '#4CAF50', border: '1px solid rgba(76, 175, 80, 0.3)', fontWeight: 'bold'}}>
-                ✅ 完全オフラインモード稼働中
+              {inputKey ? (
+                <>
+                  <div className="input-text" style={{backgroundColor: 'rgba(0, 240, 255, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(0, 240, 255, 0.3)', fontWeight: 'bold'}}>
+                    🌐 オンラインモード稼働中 (Gemini AI 接続)
+                  </div>
+                  <p className="cycle-sub" style={{ marginTop: '12px', lineHeight: '1.6' }}>
+                    現在は外部AI（Gemini API）を使用し、雑談や専門的な質問に対応可能な「オンラインモード」で動作しています。
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="input-text" style={{backgroundColor: 'rgba(76, 175, 80, 0.1)', color: '#4CAF50', border: '1px solid rgba(76, 175, 80, 0.3)', fontWeight: 'bold'}}>
+                    ✅ 完全オフラインモード稼働中
+                  </div>
+                  <p className="cycle-sub" style={{ marginTop: '12px', lineHeight: '1.6' }}>
+                    現在は外部AIを使用せず、アプリ内の固定データベースのみを使用する「完全オフラインモード」で動作しています。
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="form-group" style={{ marginTop: '24px' }}>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                Gemini API キー (AIチャット用)
+                {apiKey && (
+                  <button type="button" onClick={handleDeleteKey} style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                    <Trash2 size={12} /> キーを削除してオフラインに戻す
+                  </button>
+                )}
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Key size={18} style={{ position: 'absolute', left: '12px', color: 'var(--text-muted)' }} />
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  className="input-text"
+                  value={inputKey}
+                  onChange={(e) => setInputKey(e.target.value)}
+                  placeholder="AIチャットを使用する場合はAI StudioのAPIキーを入力..."
+                  style={{ width: '100%', paddingLeft: '40px', paddingRight: '40px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-              <p className="cycle-sub" style={{ marginTop: '12px', lineHeight: '1.6' }}>
-                現在は外部AI（Gemini API）を使用せず、アプリ内の固定データベースを使用する「完全オフラインモード」で動作しています。<br/>
-                ・APIの利用制限（Quota Exceeded）の心配がありません。<br/>
-                ・AIチャット機能はオフラインの自動応答システムに切り替わっています。
-              </p>
             </div>
 
             <h4 style={{ color: 'var(--text-color)', marginTop: '24px', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '4px' }}>表示設定</h4>
@@ -367,7 +407,8 @@ export const Settings: React.FC<SettingsProps> = ({
                 { id: 'relicgenerator', label: 'レリック表生成' },
                 { id: 'tradehelper', label: 'トレードコピペ' },
                 { id: 'rulesguide', label: '安全規約＆マナー' },
-                { id: 'localchat', label: 'ローカルチャット' }
+                { id: 'localchat', label: 'ローカルチャット' },
+                { id: 'cephalonai', label: 'セファロンAI' }
               ].map(ext => (
                 <label key={ext.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                   <input 

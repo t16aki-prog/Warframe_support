@@ -93,8 +93,10 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  max-height: 100vh;
   z-index: 100;
   backdrop-filter: blur(10px);
+  align-self: flex-start;
 }
 
 @media (max-width: 768px) {
@@ -135,7 +137,26 @@ body {
   flex-direction: column;
   gap: 8px;
   list-style: none;
-  flex-grow: 1;
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+/* Sidebar Specific Thin Scrollbar (Sleek Design) */
+.nav-links::-webkit-scrollbar {
+  width: 4px;
+}
+.nav-links::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nav-links::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.nav-links::-webkit-scrollbar-thumb:hover {
+  background: var(--color-teal);
 }
 
 @media (max-width: 768px) {

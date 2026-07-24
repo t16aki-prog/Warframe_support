@@ -11,15 +11,21 @@ import { LocalChat } from './components/LocalChat';
 import { DataExplorer } from './components/DataExplorer';
 import { RelicGenerator } from './components/RelicGenerator';
 import { Weekly } from './components/Weekly';
+import { OrdisChat } from './components/OrdisChat';
 import './App.css';
 
-type Tab = 'dashboard' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'settings';
+type Tab = 'dashboard' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [apiKey, setApiKey] = useState<string>('');
   const [showSteelPath, setShowSteelPath] = useState<boolean>(true);
   const [navState, setNavState] = useState<any>(null);
+
+  const [voiceSource, setVoiceSource] = useState<string>('standard');
+  const [voicevoxUrl, setVoicevoxUrl] = useState<string>('http://localhost:50021');
+  const [voicevoxSpeaker, setVoicevoxSpeaker] = useState<number>(2);
+  const [clipboardCopyMode, setClipboardCopyMode] = useState<string>('all');
 
   const defaultExtensions = {
     weekly: true,
@@ -30,12 +36,18 @@ function App() {
     relicgenerator: true,
     tradehelper: true,
     rulesguide: true,
-    localchat: true
+    localchat: true,
+    cephalonai: true
   };
 
   const [enabledExtensions, setEnabledExtensions] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('enabledExtensions');
-    return saved ? JSON.parse(saved) : defaultExtensions;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge saved with defaults so new features aren't hidden for existing users
+      return { ...defaultExtensions, ...parsed };
+    }
+    return defaultExtensions;
   });
 
   // Load API Key and Settings from localStorage on mount
@@ -46,6 +58,18 @@ function App() {
     if (savedSteelPath !== null) {
       setShowSteelPath(savedSteelPath === 'true');
     }
+
+    const savedVoiceSource = localStorage.getItem('ordis_voice_source');
+    if (savedVoiceSource) setVoiceSource(savedVoiceSource);
+
+    const savedVoicevoxUrl = localStorage.getItem('ordis_voicevox_url');
+    if (savedVoicevoxUrl) setVoicevoxUrl(savedVoicevoxUrl);
+
+    const savedVoicevoxSpeaker = localStorage.getItem('ordis_voicevox_speaker');
+    if (savedVoicevoxSpeaker) setVoicevoxSpeaker(Number(savedVoicevoxSpeaker));
+
+    const savedClipboardMode = localStorage.getItem('ordis_clipboard_copy_mode');
+    if (savedClipboardMode) setClipboardCopyMode(savedClipboardMode);
 
     const handleNavigate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -81,8 +105,14 @@ function App() {
         return <RulesGuide />;
       case 'localchat':
         return <LocalChat />;
+      case 'cephalonai':
+        return <OrdisChat 
+          apiKey={apiKey} 
+          cephalonName={'オーディス'} // Hardcoded since we don't have this state in this app yet
+          cephalonVoiceURI={''} 
+          onNavigateToSettings={() => setActiveTab('settings')} 
+        />;
       case 'settings':
-        // @ts-expect-error Settings has missing props from older implementation
         return <Settings 
           apiKey={apiKey} 
           setApiKey={setApiKey} 
@@ -90,6 +120,14 @@ function App() {
           setShowSteelPath={setShowSteelPath} 
           enabledExtensions={enabledExtensions}
           setEnabledExtensions={setEnabledExtensions}
+          voiceSource={voiceSource}
+          setVoiceSource={setVoiceSource}
+          voicevoxUrl={voicevoxUrl}
+          setVoicevoxUrl={setVoicevoxUrl}
+          voicevoxSpeaker={voicevoxSpeaker}
+          setVoicevoxSpeaker={setVoicevoxSpeaker}
+          clipboardCopyMode={clipboardCopyMode}
+          setClipboardCopyMode={setClipboardCopyMode}
         />;
       default:
         return <Dashboard showSteelPath={showSteelPath} />;
@@ -203,6 +241,17 @@ function App() {
               ローカルチャット
             </button>
           )}
+
+          {enabledExtensions.cephalonai && (
+            <button
+              onClick={() => setActiveTab('cephalonai')}
+              className={`nav-item ${activeTab === 'cephalonai' ? 'active' : ''}`}
+            >
+              <MessageSquare size={18} />
+              セファロンAI
+            </button>
+          )}
+
           <button
             onClick={() => setActiveTab('settings')}
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}

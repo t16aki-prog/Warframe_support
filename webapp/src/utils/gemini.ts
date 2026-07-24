@@ -7,9 +7,10 @@ export interface ChatMessage {
 }
 
 export async function askOrdis(
-  _apiKey: string, // Kept for backwards compatibility but not used
+  _apiKey: string, // Kept for backwards compatibility but not used directly here anymore (stored in localStorage)
   history: ChatMessage[],
-  newMessage: string
+  newMessage: string,
+  cephalonName: string = 'オーディス'
 ): Promise<string> {
   try {
     const apiKey = localStorage.getItem('gemini_api_key') || '';
@@ -19,7 +20,7 @@ export async function askOrdis(
         'Content-Type': 'application/json',
         'x-api-key': apiKey
       },
-      body: JSON.stringify({ message: newMessage, history })
+      body: JSON.stringify({ message: newMessage, history, cephalonName })
     });
     
     if (!response.ok) {
