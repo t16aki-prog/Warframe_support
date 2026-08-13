@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { initDataCache, searchRelics, searchWarframeParts, getVaultedPrimes, findRelicsForItem, findLocationsForItem, isCacheReady } from './warframeData.js';
+import { initDataCache, searchRelics, searchWarframeParts, getVaultedPrimes, findRelicsForItem, findLocationsForItem, isCacheReady, getLatestPrimes } from './warframeData.js';
 import { sendOrdisMessage, generateWarframeBuild } from './ordisAi.js';
 import { resolveAlias, getSuggestions } from './aliases.js';
 import { staticBuilds } from './staticBuilds.js';
@@ -83,6 +83,11 @@ app.get('/api/warframes/:name', (req, res) => {
 app.get('/api/vaulted', (req, res) => {
   if (!isCacheReady) return res.status(503).json({ error: "データベースを構築中です。数秒お待ちください..." });
   res.json(getVaultedPrimes());
+});
+
+app.get('/api/latest-primes', (req, res) => {
+  if (!isCacheReady) return res.status(503).json({ error: "データベースを構築中です。数秒お待ちください..." });
+  res.json({ primes: getLatestPrimes(3) });
 });
 
 app.get('/api/item-relics/:item', (req, res) => {

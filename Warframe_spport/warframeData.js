@@ -113,9 +113,12 @@ export function searchWarframeParts(frameName) {
   const query = frameName.toLowerCase().replace(' prime', '').trim();
   
   // Find frame and its parts in items
+  const allowedCategories = ['Warframes', 'Primary', 'Secondary', 'Melee', 'Archwing', 'Sentinels'];
   const parts = itemsCache.filter(item => 
-    (item.category === 'Warframes' || item.type === 'Warframe Blueprint') && 
-    item.name.toLowerCase().includes(query)
+    (allowedCategories.includes(item.category) || item.name.toLowerCase().includes('blueprint')) && 
+    item.name.toLowerCase().includes(query) &&
+    !item.name.toLowerCase().includes('skin') &&
+    !item.name.toLowerCase().includes('helmet')
   );
 
   // Find drop locations for these parts
@@ -241,3 +244,30 @@ export function findLocationsForItem(itemName) {
 
 export function getItemsCache() { return itemsCache; }
 export function getDropsCache() { return dropsCache; }
+
+// 4. Get Latest Primes
+export function getLatestPrimes() {
+  const framePrimes = itemsCache.filter(i => 
+    i.name.endsWith('Prime') && 
+    i.category === 'Warframes' && 
+    !i.name.includes('Sentinel')
+  );
+  
+  framePrimes.sort((a, b) => new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime());
+  
+  if (framePrimes.length === 0) return [];
+
+  const latestFrame = framePrimes[0];
+  const latestBatchDate = latestFrame.releaseDate;
+
+  const batchItems = itemsCache.filter(i => 
+    i.name.endsWith('Prime') && 
+    i.releaseDate === latestBatchDate
+  );
+
+  return batchItems.map(p => ({
+    name: p.name,
+    releaseDate: p.releaseDate,
+    category: p.category
+  }));
+}

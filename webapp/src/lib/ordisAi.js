@@ -34,6 +34,18 @@ export async function sendOrdisMessage(userMessage) {
     return 'オペレーター、お待ちしておりました。オーディスは...敵を皆殺しに...あぁ、システムのメンテナンスを行っていました。';
   }
 
+  if (msg.includes('ありがとう') || msg.includes('thanks') || msg.includes('サンキュー')) {
+    return '光栄です、オペレーター！オーディスのデータ回路が温かい気持ちで満たされています...。次は何をお手伝いしましょうか？';
+  }
+
+  if (msg.includes('おすすめ') || msg.includes('オススメ') || msg.includes('強い')) {
+    return 'オペレーターのプレイスタイルによりますが...生存力なら Rhino や Revenant、殲滅力なら Saryn や Mesa が...星系を血の海に...あぁ、非常に強力です。近接武器では Glaive Prime が現在のメタで猛威を振るっています。';
+  }
+
+  if (msg.includes('ビルド') || msg.includes('build')) {
+    return 'ビルド構成ですね。「フレームビルド」のタブから各アイテムを選択してください。オーディスが最適なMOD構成を計算いたします。';
+  }
+
   return 'オペレーター、申し訳ありません。現在オーディスの通信モジュールはオフラインモードで動作しているため、複雑な会話には対応できません...。左側のメニューから各機能をご利用ください。';
 }
 

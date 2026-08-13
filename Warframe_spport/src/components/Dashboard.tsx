@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Compass, RefreshCw, Sun, Moon, Flame, Sparkles, Zap, ShieldAlert, ShoppingCart, Star, Target } from 'lucide-react';
-import { fetchWorldState, type WorldState, type Fissure } from '../utils/warframeApi';
+import { fetchWorldState, type WorldState } from '../utils/warframeApi';
 import { translateText } from '../utils/translate';
 
 interface DashboardProps {
@@ -17,7 +17,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ showSteelPath = true }) =>
   const userLocale = localStorage.getItem('ordis_locale') || navigator.language;
   const userTimeZone = localStorage.getItem('ordis_timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const [trackedItem, setTrackedItem] = useState<string | null>(null);
+  const [, setTrackedItem] = useState<string | null>(null);
   const [trackedLocations, setTrackedLocations] = useState<string[]>([]);
   const [favoriteNodes, setFavoriteNodes] = useState<string[]>([]);
 
@@ -372,13 +372,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ showSteelPath = true }) =>
                       }}
                     >
                       <div style={{ fontWeight: '600', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{challenge.title}</span>
-                        <span style={{ color: 'var(--color-teal)' }}>+{challenge.standing}</span>
+                        <span>{translateText(challenge.title)}</span>
+                        <span style={{ color: 'var(--color-teal)' }}>+{challenge.reputation}</span>
                       </div>
-                      <div className="cycle-sub" style={{ fontSize: '11px' }}>{challenge.desc}</div>
+                      <div className="cycle-sub" style={{ fontSize: '11px' }}>{translateText(challenge.desc)}</div>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Prime Resurgence Section */}
+            {worldState.vaultTrader && worldState.vaultTrader.schedule && (
+              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                <h3 className="card-title" style={{ color: 'var(--color-gold)', marginBottom: '12px' }}>
+                  <Star size={18} className="card-title-icon" style={{ color: 'var(--color-gold)' }} />
+                  Prime Resurgence (Varzia)
+                </h3>
+                {(() => {
+                  const currentItems = worldState.vaultTrader.schedule.filter(s => s.expiry && new Date(s.expiry).getTime() > Date.now());
+                  if (currentItems.length > 0) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="cycle-sub">現在のローテーション終了: {new Date(currentItems[0].expiry).toLocaleString(userLocale, { timeZone: userTimeZone })}</div>
+                        {currentItems.slice(0, 2).map((s, idx) => (
+                          <div key={idx} style={{ padding: '8px', background: 'rgba(255,183,3,0.05)', border: '1px solid rgba(255,183,3,0.2)', borderRadius: '6px', fontSize: '14px' }}>
+                            <div style={{ fontWeight: 'bold', color: 'var(--color-gold)' }}>{s.item || 'シークレットアイテム'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <div className="cycle-sub">現在のデータはありません</div>;
+                })()}
               </div>
             )}
           </div>

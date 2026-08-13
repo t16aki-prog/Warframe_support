@@ -95,10 +95,9 @@ function App() {
       case 'wishlist':
         return <Wishlist />;
       case 'dataexplorer':
-        // @ts-expect-error DataExplorer might not have navState types yet
         return <DataExplorer navState={navState} clearNavState={() => setNavState(null)} />;
       case 'relicgenerator':
-        return <RelicGenerator />;
+        return <RelicGenerator navState={navState} clearNavState={() => setNavState(null)} />;
       case 'tradehelper':
         return <TradeHelper />;
       case 'rulesguide':
@@ -108,8 +107,6 @@ function App() {
       case 'cephalonai':
         return <OrdisChat 
           apiKey={apiKey} 
-          cephalonName={'オーディス'} // Hardcoded since we don't have this state in this app yet
-          cephalonVoiceURI={''} 
           onNavigateToSettings={() => setActiveTab('settings')} 
         />;
       case 'settings':

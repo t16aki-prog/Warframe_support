@@ -57,7 +57,7 @@ export const Weekly: React.FC = () => {
     );
   }
 
-  const { archonHunt, nightwave, steelPath, voidTrader, duviriCycle } = worldState;
+  const { archonHunt, nightwave, steelPath, voidTrader, duviriCycle, sortie } = worldState;
 
   const normalCircuit = duviriCycle?.choices?.find(c => c.category === 'normal');
   const hardCircuit = duviriCycle?.choices?.find(c => c.category === 'hard');
@@ -70,6 +70,44 @@ export const Weekly: React.FC = () => {
       </h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Sortie */}
+        {sortie && (
+          <div className="glass-card neon-gold">
+            <h3 className="card-title" style={{ color: 'var(--color-gold)' }}>
+              <Target size={20} className="card-title-icon" style={{ color: 'var(--color-gold)' }} />
+              ソーティー (Sortie)
+              <span className="badge gold" style={{ marginLeft: 'auto', fontSize: '12px' }}>
+                {getDaysLeft(sortie.expiry)}
+              </span>
+            </h3>
+            
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>ターゲット</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{translateText(sortie.boss)}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>勢力</div>
+                <div style={{ fontSize: '18px' }}>{translateText(sortie.faction)}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sortie.variants.map((variant, idx) => (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', borderLeft: '4px solid var(--color-gold)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: '24px', fontWeight: 'bold', color: 'var(--color-gold)' }}>{idx + 1}.</div>
+                    <div style={{ flex: 1, fontWeight: 'bold' }}>{variant.node} - {translateText(variant.missionType)}</div>
+                  </div>
+                  <div style={{ paddingLeft: '24px', marginTop: '4px', fontSize: '13px', color: 'var(--color-danger)' }}>
+                    <strong>{translateText(variant.modifier)}:</strong> {translateText(variant.modifierDescription)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Archon Hunt */}
         {archonHunt && (
           <div className="glass-card neon-purple">

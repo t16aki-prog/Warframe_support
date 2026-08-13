@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package, Box, Archive, Star } from 'lucide-react';
+import { Package, Box, Archive, Star } from 'lucide-react';
 import { AutocompleteSearch } from './AutocompleteSearch';
+import { fetchWorldState, type WorldState } from '../utils/warframeApi';
 
 
 interface DataExplorerProps {
@@ -9,10 +10,18 @@ interface DataExplorerProps {
 }
 
 export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavState }) => {
-  const [activeTab, setActiveTab] = useState<'relics' | 'warframes' | 'vaulted' | 'augments' | 'resources'>('relics');
+  const [activeTab, setActiveTab] = useState<'relics' | 'warframes' | 'vaulted' | 'augments' | 'resources' | 'mods'>('relics');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [backTarget, setBackTarget] = useState<string | null>(null);
+  const [worldState, setWorldState] = useState<WorldState | null>(null);
+
+  useEffect(() => {
+    fetchWorldState().then(data => {
+      if (data) setWorldState(data);
+    });
+  }, []);
 
   const addToWishlist = (itemName: string, type: 'relic' | 'part' | 'frame' | 'resource') => {
     const current = JSON.parse(localStorage.getItem('warframe_wishlist') || '[]');
@@ -25,8 +34,8 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery.trim() && activeTab !== 'vaulted' && activeTab !== 'augments' && activeTab !== 'resources') return;
     
     setLoading(true);
@@ -41,6 +50,8 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
         endpoint = `/api/vaulted`;
       } else if (activeTab === 'augments') {
         endpoint = `/api/augments`;
+      } else if (activeTab === 'mods') {
+        endpoint = `/api/item-locations/${encodeURIComponent(searchQuery)}`;
       } else {
         endpoint = `/api/resources`;
       }
@@ -77,6 +88,8 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
               endpoint = `/api/relics?q=${encodeURIComponent(navState.query)}`;
             } else if (navState.subTab === 'warframes') {
               endpoint = `/api/warframes/${encodeURIComponent(navState.query)}`;
+            } else if (navState.subTab === 'mods') {
+              endpoint = `/api/item-locations/${encodeURIComponent(navState.query)}`;
             }
             if (endpoint) {
               const res = await fetch(endpoint);
@@ -89,6 +102,9 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
           setLoading(false);
         };
         runSearch();
+      }
+      if (navState.from) {
+        setBackTarget(navState.from);
       }
       if (clearNavState) clearNavState();
     }
@@ -108,6 +124,19 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
         <h2 className="page-title">データベース検索</h2>
         <p className="page-desc">レリックのドロップ先、フレームの取得方法、格納(Vault)済みのアイテムを確認できます。</p>
       </div>
+
+      {backTarget && (
+        <button 
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('navigateTab', { detail: { tab: backTarget } }));
+            setBackTarget(null);
+          }} 
+          className="btn-primary" 
+          style={{ marginBottom: '16px', background: 'var(--color-gold)', color: 'black' }}
+        >
+          ← 元の画面に戻る
+        </button>
+      )}
 
       <div className="glass-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px' }}>
@@ -151,6 +180,14 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
             <Package size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             素材・最適狩場
           </button>
+          <button 
+            onClick={() => setActiveTab('mods')}
+            className="btn-copy"
+            style={{ borderColor: activeTab === 'mods' ? 'var(--color-gold)' : 'var(--border-light)', color: activeTab === 'mods' ? 'var(--color-gold)' : 'var(--text-muted)' }}
+          >
+            <Star size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            MOD等入手先
+          </button>
         </div>
 
         {activeTab !== 'vaulted' && activeTab !== 'augments' && activeTab !== 'resources' && (
@@ -162,10 +199,11 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
             placeholder={
               activeTab === 'relics' ? '例: Lith G1, Axi L4...' : 
               activeTab === 'warframes' ? '例: Titania, Wukong...' :
+              activeTab === 'mods' ? '例: Blind Rage, Continuity...' :
               'キーワードを入力...'
             }
             type={activeTab === 'relics' ? 'relics' : activeTab === 'warframes' ? 'warframes' : 'all'}
-            disabled={activeTab === 'vaulted' || activeTab === 'augments' || activeTab === 'resources'}
+            disabled={false}
           />
         </div>
         )}
@@ -353,13 +391,51 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
       {results && !results.error && activeTab === 'vaulted' && (
         <div className="glass-card">
           <h3>格納済みのプライムアイテム (Vaulted Primes)</h3>
+
+          {worldState?.vaultTrader?.schedule && (
+            <div style={{ marginTop: '16px', marginBottom: '24px' }}>
+              <h4 style={{ color: 'var(--color-gold)', marginBottom: '8px', borderBottom: '1px solid var(--color-gold)', paddingBottom: '4px' }}>
+                🌟 現在リサージェンスで復刻中 (Prime Resurgence)
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                {worldState.vaultTrader.schedule
+                  .filter(s => s.expiry && new Date(s.expiry).getTime() > Date.now())
+                  .slice(0, 2)
+                  .map((s, idx) => (
+                    <div 
+                      key={`resurgence-${idx}`} 
+                      style={{ padding: '8px', background: 'rgba(255,183,3,0.05)', border: '1px solid var(--color-gold)', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
+                      title="クリックして自作レリック表に展開する"
+                      onClick={() => {
+                        let rawItem = s.item || '';
+                        // Remove Pack words and split by & or /
+                        rawItem = rawItem.replace(/ dual pack/gi, '').replace(/ pack/gi, '').replace(/&/g, '/').replace(/ and /gi, '/');
+                        const items = rawItem.split('/').map((i: string) => i.trim()).filter(Boolean);
+                        window.dispatchEvent(new CustomEvent('navigateTab', { 
+                          detail: { tab: 'relicgenerator', action: 'addResurgence', items } 
+                        }));
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', color: 'var(--color-gold)' }}>{s.item || 'シークレットアイテム'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-gold)', marginTop: '4px' }}>アヤ(Aya)と交換可能 (クリックでレリック表へ)</div>
+                    </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h4 style={{ color: 'var(--text-color)', marginBottom: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '4px' }}>
+            その他の格納済みアイテム
+          </h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
-            {results.map((item: any, i: number) => (
+            {results.map((item: any, i: number) => {
+              // 復刻中のアイテム名が含まれているか簡易チェックして色を変えるなどの処理も可能
+              return (
               <div key={i} style={{ padding: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-light)', borderRadius: '6px' }}>
                 <div style={{ fontWeight: 'bold' }}>{item.name}</div>
                 <div style={{ fontSize: '12px', color: 'var(--color-purple)' }}>{item.category}</div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}
@@ -469,6 +545,22 @@ export const DataExplorer: React.FC<DataExplorerProps> = ({ navState, clearNavSt
       {results?.error && (
         <div className="glass-card neon-danger">
           <p style={{ color: 'var(--color-danger)' }}>{results.error}</p>
+        </div>
+      )}
+
+      {results && !results.error && activeTab === 'mods' && (
+        <div className="glass-card">
+          <h3>MOD・アイテムドロップ場所 ({(results.locations || []).length}件)</h3>
+          <ul style={{ marginTop: '12px', paddingLeft: '20px', maxHeight: '500px', overflowY: 'auto' }}>
+            {(results.locations || []).map((loc: any, i: number) => (
+              <li key={i} style={{ marginBottom: '8px', fontSize: '15px' }}>
+                {loc}
+              </li>
+            ))}
+            {(!results.locations || results.locations.length === 0) && (
+              <li>見つかりませんでした。</li>
+            )}
+          </ul>
         </div>
       )}
     </div>

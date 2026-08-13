@@ -132,7 +132,7 @@ export const Builds: React.FC = () => {
       </div>
 
       {/* Category Tabs */}
-      <div className="tabs-container" style={{ flexWrap: 'wrap', gap: '8px' }}>
+      <div className="tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}

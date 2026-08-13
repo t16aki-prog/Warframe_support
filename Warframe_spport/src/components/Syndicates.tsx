@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Crosshair, Target, RefreshCw, ShieldAlert } from 'lucide-react';
 import { fetchWorldState, type WorldState } from '../utils/warframeApi';
+import { translateText } from '../utils/translate';
 
 interface SyndicatesProps {
   showSteelPath?: boolean;
@@ -12,8 +13,22 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [userRanks, setUserRanks] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    const saved = localStorage.getItem('syndicateRanks');
+    if (saved) {
+      setUserRanks(JSON.parse(saved));
+    } else {
+      setUserRanks({
+        'Ostrons': 5,
+        'Solaris United': 5,
+        'Entrati': 5,
+        'The Holdfasts': 5,
+        'Cavia': 5,
+        'The Hex': 5
+      });
+    }
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -171,7 +186,7 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
               {worldState.syndicateMissions
-                .filter(syn => ['Ostrons', 'Solaris United', 'Entrati', 'The Holdfasts', 'The Hex', 'Cavia'].includes(syn.syndicateKey))
+                .filter(syn => syn.jobs && syn.jobs.length > 0)
                 .map((syndicate) => {
                   const SYNDICATE_NAMES_JA: Record<string, string> = {
                     'Ostrons': 'オストロン (シータス)',
@@ -179,10 +194,33 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
                     'Entrati': 'エントラティ (ダイモス)',
                     'The Holdfasts': 'ホールドファスト (Zariman)',
                     'The Hex': 'The Hex (1999)',
-                    'Cavia': 'カビア (サンクタム)'
+                    'Cavia': 'カビア (サンクタム)',
+                    'Ostrons (Steel Path)': 'オストロン (鋼の道のり)',
+                    'Solaris United (Steel Path)': 'ソラリス連合 (鋼の道のり)'
                   };
 
-                  const ayaJobs = syndicate.jobs.filter(job => 
+                  const synNameJa = SYNDICATE_NAMES_JA[syndicate.syndicateKey] || syndicate.syndicateKey;
+                  const currentRank = userRanks[syndicate.syndicateKey] ?? 5; // Default to 5
+
+                  const getRequiredRank = (levels: number[]) => {
+                    const maxLvl = levels[1] || levels[0];
+                    if (maxLvl <= 15) return 1;
+                    if (maxLvl <= 30) return 2;
+                    if (maxLvl <= 40) return 3;
+                    if (maxLvl <= 50) return 4;
+                    return 5;
+                  };
+
+                  const availableJobs = syndicate.jobs.filter(job => {
+                     const isSteelPath = job.enemyLevels[0] >= 100;
+                     if (!showSteelPath && isSteelPath) return false;
+                     if (!isSteelPath && getRequiredRank(job.enemyLevels) > currentRank) return false;
+                     return true;
+                  });
+
+                  if (availableJobs.length === 0) return null;
+
+                  const ayaJobs = availableJobs.filter(job => 
                     (job.rewardPool || []).some(r => r.includes('Aya') || r.includes('アヤ')) &&
                     job.enemyLevels[0] < 100
                   );
@@ -193,11 +231,11 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
                   return (
                   <div key={syndicate.id} style={{ border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', background: 'rgba(255,255,255,0.015)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <strong style={{ color: 'var(--color-teal)' }}>{SYNDICATE_NAMES_JA[syndicate.syndicateKey]}</strong>
+                      <strong style={{ color: 'var(--color-teal)' }}>{synNameJa}</strong>
                       <span className="cycle-sub" style={{ fontVariantNumeric: 'tabular-nums' }}>更新まで: {getLiveTimeLeft(syndicate.expiry)}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {syndicate.jobs.map((job, idx) => {
+                      {availableJobs.map((job, idx) => {
                         const hasAya = (job.rewardPool || []).some(r => r.includes('Aya') || r.includes('アヤ'));
                         const isBestAya = hasAya && bestAyaJob && job.id === bestAyaJob.id;
 
@@ -208,7 +246,7 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
                           <details key={`${syndicate.id}-job-${idx}`} style={{ background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}>
                             <summary style={{ fontSize: '13px', fontWeight: '500', display: 'flex', justifyContent: 'space-between', outline: 'none' }}>
                               <span style={{ color: isBestAya ? 'var(--color-gold)' : 'inherit' }}>
-                                Lv {job.enemyLevels.join('-')} | {job.type}
+                                Lv {job.enemyLevels.join('-')} | {translateText(job.type)}
                                 {isSteelPath && <span style={{ color: 'var(--color-danger)', marginLeft: '6px', fontWeight: 'bold' }}>(鋼の道のり)</span>}
                               </span>
                               {isBestAya ? (
@@ -222,7 +260,7 @@ export const Syndicates: React.FC<SyndicatesProps> = ({ showSteelPath = true }) 
                                 const isAyaReward = reward.includes('Aya') || reward.includes('アヤ');
                                 return (
                                   <span key={ridx} style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', color: isAyaReward && isBestAya ? 'var(--color-gold)' : 'inherit' }}>
-                                    {reward}
+                                    {translateText(reward)}
                                   </span>
                                 );
                               })}

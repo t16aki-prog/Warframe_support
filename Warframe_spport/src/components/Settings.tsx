@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Eye, EyeOff, Trash2, ShieldAlert, Volume2, Info, Compass, Database } from 'lucide-react';
+import { Key, Eye, EyeOff, Trash2, ShieldAlert, Volume2, Info, Compass, Database, Crosshair } from 'lucide-react';
 
 interface SettingsProps {
   apiKey: string;
@@ -44,6 +44,19 @@ export const Settings: React.FC<SettingsProps> = ({
   const [localClipboardCopyMode, setLocalClipboardCopyMode] = useState(clipboardCopyMode || 'all');
   const [localShowSteelPath, setLocalShowSteelPath] = useState(showSteelPath ?? true);
   const [localExtensions, setLocalExtensions] = useState<Record<string, boolean>>(enabledExtensions || {});
+
+  const [localSyndicateRanks, setLocalSyndicateRanks] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('syndicateRanks');
+    if (saved) return JSON.parse(saved);
+    return {
+      'Ostrons': 5,
+      'Solaris United': 5,
+      'Entrati': 5,
+      'The Holdfasts': 5,
+      'Cavia': 5,
+      'The Hex': 5
+    };
+  });
 
   // Language and Region Settings
   const [locale, setLocale] = useState(localStorage.getItem('ordis_locale') || navigator.language);
@@ -93,6 +106,8 @@ export const Settings: React.FC<SettingsProps> = ({
       setEnabledExtensions(localExtensions);
       localStorage.setItem('enabledExtensions', JSON.stringify(localExtensions));
     }
+
+    localStorage.setItem('syndicateRanks', JSON.stringify(localSyndicateRanks));
 
     // Save Language and Region Settings
     localStorage.setItem('ordis_locale', locale);
@@ -385,6 +400,41 @@ export const Settings: React.FC<SettingsProps> = ({
                 </select>
                 <p className="cycle-sub" style={{ marginTop: '4px' }}>※ 世界地図に登録されているすべての国・地域から選択できます。</p>
               </div>
+            </div>
+          </div>
+
+          {/* Card 4: Syndicate Ranks */}
+          <div className="glass-card neon-purple" style={{ marginBottom: '24px' }}>
+            <h3 className="card-title" style={{ color: 'var(--color-purple)' }}>
+              <Crosshair size={20} className="card-title-icon" style={{ color: 'var(--color-purple)' }} />
+              中立シンジケート 地位ランク設定
+            </h3>
+            <p className="cycle-sub" style={{ marginBottom: '20px' }}>
+              現在の自分の地位ランク (0〜5) を設定すると、中立シンジケート画面で受注条件を満たさない依頼が非表示になります。
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              {[
+                { id: 'Ostrons', label: 'オストロン (シータス)' },
+                { id: 'Solaris United', label: 'ソラリス連合 (フォーチュナー)' },
+                { id: 'Entrati', label: 'エントラティ (ダイモス)' },
+                { id: 'The Holdfasts', label: 'ホールドファスト (Zariman)' },
+                { id: 'Cavia', label: 'カビア (サンクタム)' },
+                { id: 'The Hex', label: 'The Hex (1999)' },
+              ].map(syn => (
+                <div key={syn.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label className="form-label" style={{ fontSize: '13px' }}>{syn.label}</label>
+                  <select 
+                    className="input-text" 
+                    value={localSyndicateRanks[syn.id] ?? 5} 
+                    onChange={(e) => setLocalSyndicateRanks(prev => ({ ...prev, [syn.id]: Number(e.target.value) }))}
+                  >
+                    {[0, 1, 2, 3, 4, 5].map(rank => (
+                      <option key={rank} value={rank}>ランク {rank}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
           </div>
 

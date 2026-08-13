@@ -47,6 +47,7 @@ export interface WorldState {
     eta: string;
     activation: string;
     expiry: string;
+    isHard?: boolean;
   }>;
   voidTrader: {
     id: string;
@@ -62,6 +63,18 @@ export interface WorldState {
     active: boolean;
     startString: string;
     endString: string;
+  };
+  vaultTrader: {
+    id: string;
+    inventory: Array<{
+      item: string;
+      ducats: number | null;
+      credits: number | null;
+    }>;
+    schedule: Array<{
+      expiry: string;
+      item: string;
+    }>;
   };
   archonHunt: {
     id: string;
@@ -112,6 +125,20 @@ export interface WorldState {
       minMR: number;
     }>;
   }>;
+  sortie: {
+    id: string;
+    activation: string;
+    expiry: string;
+    boss: string;
+    faction: string;
+    variants: Array<{
+      boss: string;
+      missionType: string;
+      modifier: string;
+      modifierDescription: string;
+      node: string;
+    }>;
+  };
 }
 
 export async function fetchWorldState(): Promise<WorldState | null> {
