@@ -32,9 +32,8 @@ public:
     float spawnTimer;
     float spawnRate;
     
-    Texture2D* spriteSheet;
-    Rectangle rusherRect;
-    Rectangle shooterRect;
+    Texture2D* rammerTex;
+    Texture2D* shooterTex;
     
     EnemyManager();
     

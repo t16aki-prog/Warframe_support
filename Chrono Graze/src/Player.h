@@ -26,8 +26,12 @@ public:
     int specialGauge;
     int maxSpecialGauge;
     
-    Texture2D* spriteSheet;
-    Rectangle spriteRect;
+    bool isEvading;
+    float dodgeTimer;
+    float dodgeDuration;
+    float rotationAngle;
+    
+    Texture2D* texture;
 
     Player(Vector2 startPos);
     

@@ -4,9 +4,8 @@
 EnemyManager::EnemyManager() {
     spawnTimer = 0.0f;
     spawnRate = 2.0f;
-    spriteSheet = nullptr;
-    rusherRect = { 32, 0, 64, 64 };
-    shooterRect = { 64, 0, 64, 64 };
+    rammerTex = nullptr;
+    shooterTex = nullptr;
 }
 
 void EnemyManager::Clear() {
@@ -116,11 +115,12 @@ void EnemyManager::Draw() {
     for (const auto& e : enemies) {
         if (!e.active) continue;
         
-        if (spriteSheet) {
-            Rectangle sourceRect = (e.type == EnemyType::RUSHER) ? rusherRect : shooterRect;
+        Texture2D* tex = (e.type == EnemyType::RUSHER) ? rammerTex : shooterTex;
+        if (tex) {
+            Rectangle sourceRect = { 0.0f, 0.0f, (float)tex->width, (float)tex->height };
             Rectangle destRect = { e.position.x, e.position.y, 64.0f, 64.0f };
             Vector2 origin = { 32.0f, 32.0f };
-            DrawTexturePro(*spriteSheet, sourceRect, destRect, origin, 0.0f, WHITE);
+            DrawTexturePro(*tex, sourceRect, destRect, origin, 0.0f, WHITE);
         } else {
             if (e.type == EnemyType::RUSHER) {
                 DrawCircle(e.position.x, e.position.y, e.radius, RED); // Rusher

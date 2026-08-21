@@ -16,8 +16,12 @@ Player::Player(Vector2 startPos) {
     maxSpecialGauge = 50;
     specialGauge = 0;
     
-    spriteSheet = nullptr;
-    spriteRect = { 0, 0, 64, 64 };
+    isEvading = false;
+    dodgeTimer = 0.0f;
+    dodgeDuration = 0.4f;
+    rotationAngle = 0.0f;
+    
+    texture = nullptr;
 }
 
 void Player::Update(float dt) {
@@ -25,6 +29,21 @@ void Player::Update(float dt) {
     if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) position.x += speed * dt;
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) position.y -= speed * dt;
     if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) position.y += speed * dt;
+
+    if (isEvading) {
+        dodgeTimer -= dt;
+        rotationAngle += (360.0f / dodgeDuration) * dt;
+        if (dodgeTimer <= 0.0f) {
+            isEvading = false;
+            rotationAngle = 0.0f;
+        }
+    } else {
+        if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+            isEvading = true;
+            dodgeTimer = dodgeDuration;
+            rotationAngle = 0.0f;
+        }
+    }
 
     // Screen bounds
     if (position.x < grazeRadius) position.x = grazeRadius;
@@ -85,15 +104,16 @@ void Player::Draw() {
     DrawCircle(position.x, position.y, grazeRadius, Fade(BLUE, 0.3f));
     DrawCircleLines(position.x, position.y, grazeRadius, BLUE);
     
-    if (spriteSheet) {
+    if (texture) {
+        Rectangle sourceRect = { 0.0f, 0.0f, (float)texture->width, (float)texture->height };
         Rectangle destRect = { position.x, position.y, 64.0f, 64.0f }; // size to draw
         Vector2 origin = { 32.0f, 32.0f }; // center
-        DrawTexturePro(*spriteSheet, spriteRect, destRect, origin, 0.0f, WHITE);
-    } else {
-        // Core Hitbox (赤・発光)
-        DrawCircle(position.x, position.y, hitboxRadius, RED);
-        DrawCircle(position.x, position.y, hitboxRadius * 1.5f, Fade(RED, 0.5f)); // 発光エフェクト
+        DrawTexturePro(*texture, sourceRect, destRect, origin, rotationAngle, WHITE);
     }
+    
+    // Core Hitbox (赤・発光) - Always drawn on top now
+    DrawCircle(position.x, position.y, hitboxRadius, RED);
+    DrawCircle(position.x, position.y, hitboxRadius * 1.5f, Fade(RED, 0.5f)); // 発光エフェクト
 
     DrawBullets();
 }

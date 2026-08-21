@@ -20,18 +20,21 @@ int main() {
     InitWindow(screenWidth, screenHeight, "Chrono Graze - Prototype");
     SetTargetFPS(60);
 
-    Texture2D spriteSheet = LoadTexture("../art/Project_Graze_Ghost_Sprites.png");
+    Texture2D playerTex = LoadTexture("../art/player_transparent.png");
+    Texture2D rammerTex = LoadTexture("../art/enemy_rammer_transparent.png");
+    Texture2D shooterTex = LoadTexture("../art/enemy_shooter_transparent.png");
 
     GameState currentState = GameState::TITLE;
     
     Player player({ (float)screenWidth / 2, (float)screenHeight - 100 });
-    player.spriteSheet = &spriteSheet;
+    player.texture = &playerTex;
     
     JustDodgeSystem dodgeSystem;
     UpgradeSystem upgradeSystem;
     
     EnemyManager enemyManager;
-    enemyManager.spriteSheet = &spriteSheet;
+    enemyManager.rammerTex = &rammerTex;
+    enemyManager.shooterTex = &shooterTex;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -48,6 +51,11 @@ int main() {
                 break;
 
             case GameState::IN_GAME:
+                if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && player.TryFireSpecial()) {
+                    enemyManager.Clear();
+                    // Screen flash effect could be added here
+                }
+                
                 player.Update(dt);
                 dodgeSystem.Update(dt);
                 enemyManager.Update(enemyDt, player.position, screenWidth, screenHeight);
@@ -60,6 +68,10 @@ int main() {
                         if (CheckCollisionCircles(pb.position, pb.radius, e.position, e.radius)) {
                             pb.active = false;
                             e.hp -= 1.0f; // Player damage
+                            
+                            // Charge Special
+                            player.specialGauge = std::min(player.maxSpecialGauge, player.specialGauge + 1);
+
                             if (e.hp <= 0.0f) {
                                 e.active = false;
                                 upgradeSystem.AddPoints(50.0); // Reward for kill
@@ -76,9 +88,12 @@ int main() {
 
                     if (hitCore) {
                         e.active = false;
-                        currentState = GameState::UPGRADE; // Death
+                        player.hp -= 1;
+                        if (player.hp <= 0) {
+                            currentState = GameState::UPGRADE; // Death
+                        }
                     } else if (hitGraze) {
-                        if (!dodgeSystem.IsTriggered()) dodgeSystem.TriggerGraze();
+                        if (player.isEvading && !dodgeSystem.IsTriggered()) dodgeSystem.TriggerGraze();
                     }
                 }
 
@@ -90,9 +105,12 @@ int main() {
 
                     if (hitCore) {
                         eb.active = false;
-                        currentState = GameState::UPGRADE; // Death
+                        player.hp -= 1;
+                        if (player.hp <= 0) {
+                            currentState = GameState::UPGRADE; // Death
+                        }
                     } else if (hitGraze) {
-                        if (!dodgeSystem.IsTriggered()) dodgeSystem.TriggerGraze();
+                        if (player.isEvading && !dodgeSystem.IsTriggered()) dodgeSystem.TriggerGraze();
                     }
                 }
 
@@ -103,7 +121,17 @@ int main() {
                 break;
 
             case GameState::UPGRADE:
-                if (IsKeyPressed(KEY_ENTER)) currentState = GameState::IN_GAME;
+                if (IsKeyPressed(KEY_ENTER)) {
+                    currentState = GameState::IN_GAME;
+                    if (player.hp <= 0) {
+                        // Restart Stage
+                        player.hp = player.maxHp;
+                        player.position = { (float)screenWidth / 2, (float)screenHeight - 100 };
+                        player.specialGauge = 0;
+                        player.bullets.clear();
+                        enemyManager.Clear();
+                    }
+                }
                 
                 // アップグレードの購入処理
                 if (IsKeyPressed(KEY_ONE)) {
@@ -131,6 +159,11 @@ int main() {
 
                 // UI
                 DrawText(TextFormat("Points: %s", upgradeSystem.FormatNumber(upgradeSystem.current_points).c_str()), 10, 10, 20, BLACK);
+                DrawText(TextFormat("HP: %d / %d", player.hp, player.maxHp), 10, 40, 20, RED);
+                DrawText(TextFormat("SPECIAL: %d / %d", player.specialGauge, player.maxSpecialGauge), 10, 70, 20, BLUE);
+                if (player.specialGauge >= player.maxSpecialGauge) {
+                    DrawText("[RIGHT CLICK: CLEAR SCREEN]", 10, 100, 20, RED);
+                }
                 
                 if (dodgeSystem.IsTriggered()) {
                     DrawText(TextFormat("GRAZE! x%.0f", dodgeSystem.GetPointMultiplier()), screenWidth / 2 - 50, 50, 30, BLUE);
@@ -156,7 +189,9 @@ int main() {
         EndDrawing();
     }
 
-    UnloadTexture(spriteSheet);
+    UnloadTexture(playerTex);
+    UnloadTexture(rammerTex);
+    UnloadTexture(shooterTex);
     CloseWindow();
     return 0;
 }
