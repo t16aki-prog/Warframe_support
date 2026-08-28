@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Shield, Zap, Sparkles, AlertCircle, RefreshCw, Crosshair, Sword, Cpu, Rocket } from 'lucide-react';
+import { Search, Shield, Zap, Sparkles, AlertCircle, RefreshCw, Crosshair, Sword, Cpu, Rocket, Database } from 'lucide-react';
 
 interface Augment {
   name: string;
@@ -185,7 +185,7 @@ export const Builds: React.FC = () => {
       )}
 
       {viewMode === 'acquisition' && activeCategory === 'Warframes' ? (
-        <div className="glass-card" style={{ padding: '24px', overflowY: 'auto', maxHeight: '70vh' }} className="custom-scrollbar">
+        <div className="glass-card custom-scrollbar" style={{ padding: '24px', overflowY: 'auto', maxHeight: '70vh' }}>
           <h3 className="card-title" style={{ color: 'var(--color-primary)', marginBottom: '24px' }}>フレーム取得方法一覧</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {warframesData.filter(wf => !wf.name.includes('Prime') && !wf.name.includes('Umbra') && wf.components && wf.components.length > 0).map(wf => (

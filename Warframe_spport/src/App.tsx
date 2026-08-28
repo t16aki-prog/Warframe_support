@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar } from 'lucide-react';
+import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Map } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Syndicates } from './components/Syndicates';
 import { Builds } from './components/Builds';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Info, Map, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Info, Map } from 'lucide-react';
 import { beginnerRoadmap, criticalAlerts } from '../utils/beginnerData';
 
 export const BeginnerGuide: React.FC = () => {
