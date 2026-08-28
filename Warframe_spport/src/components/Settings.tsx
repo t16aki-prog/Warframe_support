@@ -449,6 +449,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
               {[
+                { id: 'beginnerguide', label: '初心者ガイド' },
                 { id: 'weekly', label: 'ウィークリー情報' },
                 { id: 'syndicates', label: '中立シンジケート' },
                 { id: 'builds', label: 'フレームビルド' },

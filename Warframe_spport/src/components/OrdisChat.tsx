@@ -384,7 +384,27 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
                 </div>
               </div>
             )}
-            <div ref={chatEndRef} />
+          </div>
+
+          <div style={{ padding: '0 12px 12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {['最初に何を作ればいい？', 'プラチナの使い道は？', '星系マップの進め方を教えて'].map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => submitMessage(prompt)}
+                disabled={isLoading}
+                style={{
+                  background: 'rgba(100, 255, 218, 0.1)',
+                  border: '1px solid rgba(100, 255, 218, 0.3)',
+                  color: '#64ffda',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                {prompt}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSend} className="chat-input-area">

@@ -12,9 +12,10 @@ import { DataExplorer } from './components/DataExplorer';
 import { RelicGenerator } from './components/RelicGenerator';
 import { Weekly } from './components/Weekly';
 import { OrdisChat } from './components/OrdisChat';
+import { BeginnerGuide } from './components/BeginnerGuide';
 import './App.css';
 
-type Tab = 'dashboard' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
+type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -28,6 +29,7 @@ function App() {
   const [clipboardCopyMode, setClipboardCopyMode] = useState<string>('all');
 
   const defaultExtensions = {
+    beginnerguide: true,
     weekly: true,
     syndicates: true,
     builds: true,
@@ -86,6 +88,8 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard showSteelPath={showSteelPath} />;
+      case 'beginnerguide':
+        return <BeginnerGuide />;
       case 'weekly':
         return <Weekly />;
       case 'syndicates':
@@ -148,6 +152,16 @@ function App() {
             <Compass size={18} />
             システム状況
           </button>
+
+          {enabledExtensions.beginnerguide && (
+            <button
+              onClick={() => setActiveTab('beginnerguide')}
+              className={`nav-item ${activeTab === 'beginnerguide' ? 'active' : ''}`}
+            >
+              <Map size={18} />
+              初心者ガイド
+            </button>
+          )}
           
           {enabledExtensions.weekly && (
             <button
