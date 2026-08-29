@@ -19,6 +19,10 @@ class SoundGenerator:
             "meow.wav": SoundGenerator.create_meow_sound,
             "purr_bgm.wav": SoundGenerator.create_purr_sound,
             "rain_bgm.wav": SoundGenerator.create_rain_sound,
+            "forest_bgm.wav": SoundGenerator.create_forest_sound,
+            "wave_bgm.wav": SoundGenerator.create_wave_sound,
+            "lofi_bgm.wav": SoundGenerator.create_lofi_sound,
+            "fire_bgm.wav": SoundGenerator.create_fire_sound,
             "level_up.wav": SoundGenerator.create_levelup_sound
         }
         
@@ -191,6 +195,116 @@ class SoundGenerator:
                 
         SoundGenerator._write_wav(path, samples, sr)
 
+    @staticmethod
+    def create_forest_sound(path):
+        """森の鳥のさえずりと風の音 (心地よい自然音)"""
+        sr = 22050
+        duration = 6.0
+        total_samples = int(sr * duration)
+        samples = [0.0] * total_samples
+        
+        # 優しい風のホワイトノイズ
+        for i in range(total_samples):
+            t = i / sr
+            wind = (random.random() * 2 - 1) * (0.15 + 0.1 * math.sin(2 * math.pi * 0.2 * t))
+            samples[i] = wind * 2500
+            
+        # 鳥のさえずり（ピピピッ、チチチッ）
+        bird_times = [0.5, 1.8, 3.2, 4.5]
+        for bt in bird_times:
+            start_i = int(bt * sr)
+            base_f = random.choice([2600, 3100, 3500])
+            chirp_len = int(0.25 * sr)
+            for j in range(chirp_len):
+                if start_i + j >= total_samples:
+                    break
+                tj = j / sr
+                freq = base_f + math.sin(tj * 60) * 800
+                env = math.sin(math.pi * (j / chirp_len)) ** 2
+                samples[start_i + j] += math.sin(2 * math.pi * freq * tj) * env * 8000
+                
+        SoundGenerator._write_wav(path, samples, sr)
+
+    @staticmethod
+    def create_wave_sound(path):
+        """穏やかな波の音 (周期的なピンクノイズの押し寄せと引き)"""
+        sr = 22050
+        duration = 6.0
+        total_samples = int(sr * duration)
+        samples = [0.0] * total_samples
+        
+        last_val = 0.0
+        for i in range(total_samples):
+            t = i / sr
+            # 6秒周期の波のうねり
+            wave_mod = (math.sin(2 * math.pi * (t / 5.0) - math.pi/2) + 1.0) / 2.0
+            white = random.random() * 2 - 1
+            last_val = (last_val * 0.96) + (white * 0.04) # ローパスフィルター
+            samples[i] = last_val * wave_mod * 16000
+            
+        SoundGenerator._write_wav(path, samples, sr)
+
+    @staticmethod
+    def create_lofi_sound(path):
+        """Lo-Fi チルピアノ (Cmaj7 -> Am7 -> Dm7 -> G7 の温かいピアノコード進行 + レコードノイズ)"""
+        sr = 22050
+        duration = 8.0
+        total_samples = int(sr * duration)
+        samples = [0.0] * total_samples
+        
+        # 4つのコード (周波数Hz)
+        chords = [
+            [261.63, 329.63, 392.00, 493.88],  # Cmaj7 (C4, E4, G4, B4)
+            [220.00, 261.63, 329.63, 392.00],  # Am7 (A3, C4, E4, G4)
+            [293.66, 349.23, 440.00, 523.25],  # Dm7 (D4, F4, A4, C5)
+            [196.00, 246.94, 293.66, 349.23]   # G7 (G3, B3, D4, F4)
+        ]
+        
+        for c_idx, chord in enumerate(chords):
+            c_start = int(c_idx * 2.0 * sr)
+            for freq in chord:
+                for j in range(int(1.9 * sr)):
+                    if c_start + j >= total_samples:
+                        break
+                    tj = j / sr
+                    # ピアノの減衰エンベロープ
+                    env = math.exp(-tj * 1.8) * 0.25
+                    # 暖かみのある三角波+正弦波
+                    val = (math.sin(2 * math.pi * freq * tj) * 0.7 + math.sin(4 * math.pi * freq * tj) * 0.2) * env * 14000
+                    samples[c_start + j] += val
+
+        # レコードのプチプチノイズ (Vinyl crackle)
+        for i in range(total_samples):
+            if random.random() < 0.003:
+                samples[i] += (random.random() * 2 - 1) * 6000
+                
+        SoundGenerator._write_wav(path, samples, sr)
+
+    @staticmethod
+    def create_fire_sound(path):
+        """焚き火の音 (パチパチ爆ぜる木と暖炉の温かな低音)"""
+        sr = 22050
+        duration = 6.0
+        total_samples = int(sr * duration)
+        samples = [0.0] * total_samples
+        
+        last_val = 0.0
+        for i in range(total_samples):
+            # 低音の暖炉の風
+            white = random.random() * 2 - 1
+            last_val = (last_val * 0.95) + (white * 0.05)
+            samples[i] = last_val * 7000
+            
+            # 木のパチパチ音 (Crackle / Pop)
+            if random.random() < 0.008:
+                pop_len = random.randint(10, 40)
+                pop_amp = random.uniform(8000, 22000)
+                for k in range(pop_len):
+                    if i + k < total_samples:
+                        samples[i + k] += (random.random() * 2 - 1) * pop_amp * (1.0 - k / pop_len)
+                        
+        SoundGenerator._write_wav(path, samples, sr)
+
 
 class SoundManager:
     """サウンドの再生・環境音BGMループ制御を行うマネージャ"""
@@ -220,17 +334,24 @@ class SoundManager:
                 print(f"Error playing SE {sound_name}: {e}")
 
     def set_bgm(self, bgm_type):
-        """BGMを設定 ('none', 'rain', 'purr')"""
+        """BGMを設定 ('none', 'rain', 'purr', 'forest', 'wave', 'lofi', 'fire')"""
         if self.current_bgm == bgm_type:
             return
             
         self.stop_bgm()
         self.current_bgm = bgm_type
         
-        if bgm_type == "rain":
-            self._start_bgm_loop(os.path.join(self.sounds_dir, "rain_bgm.wav"))
-        elif bgm_type == "purr":
-            self._start_bgm_loop(os.path.join(self.sounds_dir, "purr_bgm.wav"))
+        bgm_map = {
+            "rain": "rain_bgm.wav",
+            "purr": "purr_bgm.wav",
+            "forest": "forest_bgm.wav",
+            "wave": "wave_bgm.wav",
+            "lofi": "lofi_bgm.wav",
+            "fire": "fire_bgm.wav"
+        }
+        
+        if bgm_type in bgm_map:
+            self._start_bgm_loop(os.path.join(self.sounds_dir, bgm_map[bgm_type]))
 
     def _start_bgm_loop(self, wav_path):
         if not os.path.exists(wav_path):

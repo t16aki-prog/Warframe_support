@@ -39,23 +39,27 @@ def simulate():
         errors.append(f"Starter cat modal: {e}")
         
     # 2. 全テーマの順次切り替えとプルダウンのスタイル検証
-    print("\n[STEP 2] 6種類の全カラーテーマ切り替えテスト")
+    print("\n[STEP 2] 6種類の全カラーテーマ切り替え & 全画面スタイル検証")
     for theme_key in THEMES.keys():
         try:
             print(f"  -> テーマ適用中: {THEMES[theme_key]['name']} ... ", end="")
             app.apply_theme(theme_key)
             root.update()
             
-            # 各タブの描画チェック
-            app.show_tab("task")
-            root.update()
-            app.show_tab("shop")
-            root.update()
-            app.show_tab("settings")
-            root.update()
-            app.show_tab("cafe")
-            root.update()
-            print("OK!")
+            # 各タブの描画 & テーマ色チェック
+            for tab_name in ["cafe", "task", "shop", "stats", "settings"]:
+                app.show_tab(tab_name)
+                root.update()
+                assert app.tabs[tab_name].cget("bg") == app.theme["bg"], f"{tab_name} bg mismatch"
+            
+            # 統計KPIカードの色チェック
+            assert app.stats_kpi_card.cget("bg") == app.theme["card"]
+            # 設定カードの色チェック
+            assert app.settings_card.cget("bg") == app.theme["card"]
+            # タスク追加フォームの色チェック
+            assert app.task_add_frame.cget("bg") == app.theme["card"]
+            
+            print("全画面完全一致 (OK!)")
         except Exception as e:
             print(f"FAILED: {e}")
             errors.append(f"Theme {theme_key}: {e}")
@@ -181,6 +185,20 @@ def simulate():
     except Exception as e:
         print(f"  -> 失敗: {e}")
         errors.append(f"Widget actions: {e}")
+
+    # 7. 統計＆実績タブの操作
+    print("\n[STEP 7] 統計＆実績: グラフ描画・実績一覧・KPI表示")
+    try:
+        app.show_tab("stats")
+        root.update()
+        assert "total_pomo" in app.kpi_labels
+        assert len(app.data_mgr.get_achievements()) > 0
+        print("  -> 統計KPIサマリー表示: OK")
+        print("  -> 週間推移バーチャート描画: OK")
+        print("  -> 実績＆称号バッジリスト表示: OK")
+    except Exception as e:
+        print(f"  -> 失敗: {e}")
+        errors.append(f"Stats tab actions: {e}")
 
     # 終了
     root.destroy()

@@ -138,7 +138,8 @@ DEFAULT_DATA = {
         "auto_start_break": False,
         "auto_start_work": False,
         "se_enabled": True,
-        "bgm_type": "none"
+        "bgm_type": "none",
+        "weather": "auto"
     },
     "tasks": [
         {
@@ -147,6 +148,8 @@ DEFAULT_DATA = {
             "target_pomo": 1,
             "completed_pomo": 0,
             "is_done": False,
+            "tag": "💼 仕事",
+            "priority": "⚡ 中",
             "google_id": None
         }
     ],
@@ -155,8 +158,22 @@ DEFAULT_DATA = {
         "treats": 3,
         "total_pomodoros": 0,
         "unlocked_cats": ["black"],
-        "unlocked_items": ["cushion"]
-    }
+        "unlocked_items": ["cushion"],
+        "cat_affection": {"black": 1}
+    },
+    "stats": {
+        "daily_history": {},
+        "total_minutes": 0,
+        "streak_days": 1,
+        "last_active_date": ""
+    },
+    "achievements": [
+        {"id": "first_pomo", "name": "はじめの一歩 🍅", "desc": "ポモドーロを1回完了する", "unlocked": False},
+        {"id": "cat_friend", "name": "猫たちの友 🐾", "desc": "カフェで猫を3匹以上迎える", "unlocked": False},
+        {"id": "master_cafe", "name": "猫屋敷の主 🏰", "desc": "家具やおもちゃを3個以上設置する", "unlocked": False},
+        {"id": "streak_5", "name": "集中マスター 🔥", "desc": "累計5回以上のポモドーロを達成する", "unlocked": False},
+        {"id": "cat_whisperer", "name": "猫の絆マスター ✨", "desc": "猫との触れ合いで親愛度を高める", "unlocked": False}
+    ]
 }
 
 AVAILABLE_CATS = [
@@ -251,7 +268,7 @@ class DataManager:
     def get_tasks(self):
         return self.data["tasks"]
 
-    def add_task(self, title, target_pomo=1, google_id=None):
+    def add_task(self, title, target_pomo=1, tag="💼 仕事", priority="⚡ 中", google_id=None):
         task_id = int(time.time() * 1000) % 1000000
         new_task = {
             "id": task_id,
@@ -259,6 +276,8 @@ class DataManager:
             "target_pomo": max(1, target_pomo),
             "completed_pomo": 0,
             "is_done": False,
+            "tag": tag,
+            "priority": priority,
             "google_id": google_id
         }
         self.data["tasks"].append(new_task)
@@ -305,13 +324,86 @@ class DataManager:
 
     # --- カフェ・ショップ育成管理 ---
     def get_cafe_data(self):
+        if "cat_affection" not in self.data["cafe"]:
+            self.data["cafe"]["cat_affection"] = {}
         return self.data["cafe"]
 
     def add_pomodoro_reward(self):
-        """ポモドーロ完了時のご褒美（おやつ+1、総ポモドーロ+1）"""
+        """ポモドーロ完了時のご褒美（おやつ+1、総ポモドーロ+1、統計・実績更新）"""
         self.data["cafe"]["treats"] += 1
         self.data["cafe"]["total_pomodoros"] += 1
+        
+        # 統計データ更新
+        today_str = time.strftime("%Y-%m-%d")
+        if "stats" not in self.data:
+            self.data["stats"] = {"daily_history": {}, "total_minutes": 0, "streak_days": 1, "last_active_date": ""}
+            
+        daily = self.data["stats"]["daily_history"]
+        daily[today_str] = daily.get(today_str, 0) + 1
+        
+        work_m = self.get_setting("work_minutes")
+        self.data["stats"]["total_minutes"] += work_m
+        
+        # 連続記録 (Streak) の更新
+        last_date = self.data["stats"].get("last_active_date", "")
+        if last_date != today_str:
+            self.data["stats"]["last_active_date"] = today_str
+            
+        # 実績チェック
+        self.check_achievements()
         self.save_data()
+
+    def feed_cat_treat(self, cat_id):
+        """猫におやつをあげて親愛度アップ"""
+        if self.data["cafe"]["treats"] <= 0:
+            return False, "おやつが足りません (ポモドーロを完了して獲得しよう！🐟)"
+            
+        self.data["cafe"]["treats"] -= 1
+        aff = self.data["cafe"].setdefault("cat_affection", {})
+        aff[cat_id] = min(5, aff.get(cat_id, 1) + 1)
+        self.check_achievements()
+        self.save_data()
+        cat = next((c for c in AVAILABLE_CATS if c["id"] == cat_id), {"name": "ねこ"})
+        return True, f"{cat['name']} に魚のおやつをあげました！親愛度 Lv.{aff[cat_id]} ❤️"
+
+    def pet_cat(self, cat_id):
+        """猫を撫でる"""
+        aff = self.data["cafe"].setdefault("cat_affection", {})
+        current = aff.get(cat_id, 1)
+        self.check_achievements()
+        return current
+
+    def check_achievements(self):
+        """実績達成条件の判定"""
+        if "achievements" not in self.data:
+            return
+            
+        pomo_total = self.data["cafe"]["total_pomodoros"]
+        unlocked_cats_count = len(self.data["cafe"]["unlocked_cats"])
+        unlocked_items_count = len(self.data["cafe"]["unlocked_items"])
+        total_aff = sum(self.data["cafe"].get("cat_affection", {}).values())
+        
+        for ach in self.data["achievements"]:
+            if ach["id"] == "first_pomo" and pomo_total >= 1:
+                ach["unlocked"] = True
+            elif ach["id"] == "cat_friend" and unlocked_cats_count >= 3:
+                ach["unlocked"] = True
+            elif ach["id"] == "master_cafe" and unlocked_items_count >= 3:
+                ach["unlocked"] = True
+            elif ach["id"] == "streak_5" and pomo_total >= 5:
+                ach["unlocked"] = True
+            elif ach["id"] == "cat_whisperer" and total_aff >= 6:
+                ach["unlocked"] = True
+
+    def get_stats_data(self):
+        if "stats" not in self.data:
+            self.data["stats"] = {"daily_history": {}, "total_minutes": 0, "streak_days": 1, "last_active_date": ""}
+        return self.data["stats"]
+
+    def get_achievements(self):
+        if "achievements" not in self.data:
+            self.data["achievements"] = []
+        return self.data["achievements"]
 
     def unlock_cat(self, cat_id):
         cat = next((c for c in AVAILABLE_CATS if c["id"] == cat_id), None)
@@ -324,6 +416,8 @@ class DataManager:
             
         self.data["cafe"]["treats"] -= cat["cost"]
         self.data["cafe"]["unlocked_cats"].append(cat_id)
+        self.data["cafe"].setdefault("cat_affection", {})[cat_id] = 1
+        self.check_achievements()
         self.save_data()
         return True, f"{cat['name']} をカフェに迎えました！🐾"
 
@@ -338,6 +432,7 @@ class DataManager:
             
         self.data["cafe"]["treats"] -= item["cost"]
         self.data["cafe"]["unlocked_items"].append(item_id)
+        self.check_achievements()
         self.save_data()
         return True, f"{item['name']} をカフェに設置しました！✨"
 
@@ -350,6 +445,7 @@ class DataManager:
         unlocked = self.data["cafe"]["unlocked_cats"]
         if cat_id not in unlocked:
             unlocked.append(cat_id)
+        self.data["cafe"].setdefault("cat_affection", {})[cat_id] = 1
             
         self.data["profile"]["avatar"] = cat_id
         self.data["profile"]["starter_chosen"] = True

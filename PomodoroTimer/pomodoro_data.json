@@ -17,14 +17,15 @@
     "auto_start_break": false,
     "auto_start_work": false,
     "se_enabled": true,
-    "bgm_type": "none"
+    "bgm_type": "none",
+    "weather": "auto"
   },
   "tasks": [
     {
       "id": 1,
       "title": "今日のタスクを計画する 📝",
       "target_pomo": 1,
-      "completed_pomo": 37,
+      "completed_pomo": 41,
       "is_done": false
     },
     {
@@ -54,8 +55,8 @@
   ],
   "active_task_id": 1,
   "cafe": {
-    "treats": 95,
-    "total_pomodoros": 37,
+    "treats": 179,
+    "total_pomodoros": 41,
     "unlocked_cats": [
       "black",
       "calico",
@@ -71,6 +72,50 @@
     "unlocked_items": [
       "cushion",
       "toy_mouse"
-    ]
-  }
+    ],
+    "cat_affection": {
+      "black": 1,
+      "siamese": 1
+    }
+  },
+  "stats": {
+    "daily_history": {
+      "2026-08-29": 4
+    },
+    "total_minutes": 120,
+    "streak_days": 1,
+    "last_active_date": "2026-08-29"
+  },
+  "achievements": [
+    {
+      "id": "first_pomo",
+      "name": "はじめの一歩 🍅",
+      "desc": "ポモドーロを1回完了する",
+      "unlocked": true
+    },
+    {
+      "id": "cat_friend",
+      "name": "猫たちの友 🐾",
+      "desc": "カフェで猫を3匹以上迎える",
+      "unlocked": true
+    },
+    {
+      "id": "master_cafe",
+      "name": "猫屋敷の主 🏰",
+      "desc": "家具やおもちゃを3個以上設置する",
+      "unlocked": false
+    },
+    {
+      "id": "streak_5",
+      "name": "集中マスター 🔥",
+      "desc": "累計5回以上のポモドーロを達成する",
+      "unlocked": true
+    },
+    {
+      "id": "cat_whisperer",
+      "name": "猫の絆マスター ✨",
+      "desc": "猫との触れ合いで親愛度を高める",
+      "unlocked": false
+    }
+  ]
 }
