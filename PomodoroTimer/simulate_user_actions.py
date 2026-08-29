@@ -84,17 +84,17 @@ def simulate():
         root.update()
         print(f"  -> カウントダウン表示: {app.timer_label.cget('text')} (OK)")
         
-        # スキップして休憩へ
-        app.skip_session()
+        # タイマー完了時のモード切り替え
+        app.switch_mode()
         root.update()
         assert app.session_mode == "short_break"
-        print("  -> スキップして短い休憩へ遷移: OK")
+        print("  -> 短い休憩へ自動遷移: OK")
         
-        # スキップして作業へ復帰
-        app.skip_session()
+        # 休憩完了時の作業モード復帰
+        app.switch_mode()
         root.update()
         assert app.session_mode == "work"
-        print("  -> 再度スキップして作業へ復帰: OK")
+        print("  -> 作業へ復帰: OK")
     except Exception as e:
         print(f"  -> 失敗: {e}")
         errors.append(f"Cafe tab actions: {e}")

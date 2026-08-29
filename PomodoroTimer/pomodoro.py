@@ -600,7 +600,6 @@ class PomodoroApp:
         self.status_label.configure(bg=self.theme["bg"])
         self.timer_label.configure(bg=self.theme["bg"])
         self.start_btn.configure(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-        self.skip_btn.configure(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
         self.reset_btn.configure(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
         
         # ウィジェット
@@ -656,14 +655,11 @@ class PomodoroApp:
         btn_frame = tk.Frame(tab, bg=self.theme["bg"])
         btn_frame.pack(pady=5)
         
-        self.start_btn = tk.Button(btn_frame, text="▶ 開始", command=self.toggle_timer, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=16, pady=4, cursor="hand2")
-        self.start_btn.pack(side="left", padx=6)
+        self.start_btn = tk.Button(btn_frame, text="▶ 開始", command=self.toggle_timer, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=20, pady=5, cursor="hand2")
+        self.start_btn.pack(side="left", padx=8)
         
-        self.skip_btn = tk.Button(btn_frame, text="⏭ 次へ", command=self.skip_session, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=12, pady=4, cursor="hand2")
-        self.skip_btn.pack(side="left", padx=6)
-        
-        self.reset_btn = tk.Button(btn_frame, text="↺ リセット", command=self.reset_timer, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=12, pady=4, cursor="hand2")
-        self.reset_btn.pack(side="left", padx=6)
+        self.reset_btn = tk.Button(btn_frame, text="↺ リセット", command=self.reset_timer, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=15, pady=5, cursor="hand2")
+        self.reset_btn.pack(side="left", padx=8)
 
     def spawn_cats_and_items(self):
         self.cat_canvas.delete("cat")
@@ -1437,7 +1433,6 @@ class PomodoroApp:
         self.menu = tk.Menu(self.root, tearoff=0)
         self.menu.add_command(label="アプリを開く (復帰)", command=self.restore_from_widget)
         self.menu.add_command(label="タイマー開始 / 停止", command=self.toggle_timer)
-        self.menu.add_command(label="スキップ / 次へ", command=self.skip_session)
         self.menu.add_separator()
         self.menu.add_command(label="終了 (Quit)", command=self.quit_app)
 
@@ -1510,9 +1505,6 @@ class PomodoroApp:
         self.timer_label.config(text=self.format_time(self.time_left))
         self.widget_label.config(text=self.format_time(self.time_left))
         self.update_status_display()
-
-    def skip_session(self):
-        self.switch_mode()
 
     def switch_mode(self):
         if self.session_mode == "work":
