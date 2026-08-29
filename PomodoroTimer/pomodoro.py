@@ -429,10 +429,15 @@ class PomodoroApp:
                 
         # カフェタブ
         self.cat_canvas.configure(bg=self.theme["bg"])
-        self.cycle_label.configure(bg=self.theme["bg"], fg=self.theme["text"])
+        if hasattr(self, 'info_card'):
+            self.info_card.configure(bg=self.theme["card"])
+            self.cycle_label.configure(bg=self.theme["card"], fg=self.theme["text"])
+            self.total_pomo_label.configure(bg=self.theme["card"], fg=self.theme["work"])
         self.active_task_banner.configure(bg=self.theme["card"], fg=self.theme["text"])
         self.status_label.configure(bg=self.theme["bg"])
         self.timer_label.configure(bg=self.theme["bg"])
+        if hasattr(self, 'btn_frame'):
+            self.btn_frame.configure(bg=self.theme["bg"])
         self.start_btn.configure(bg=self.theme["btn"], fg=self.theme["btn_fg"])
         self.feed_btn.configure(bg=self.theme["card"], fg=self.theme["accent"])
         self.reset_btn.configure(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
@@ -474,19 +479,21 @@ class PomodoroApp:
         self.cats = []
         self.spawn_cats_and_items()
         
-        info_bar = tk.Frame(tab, bg=self.theme["bg"])
-        info_bar.pack(fill='x', pady=(0, 2))
+        # インフォメーションカード (セット数 & 本日進捗)
+        self.info_card = tk.Frame(tab, bg=self.theme["card"], padx=12, pady=5, relief="flat")
+        self.info_card.pack(fill='x', padx=10, pady=(2, 4))
         
-        self.cycle_label = tk.Label(info_bar, text="セット 1/4 🐾 ⚪ ⚪ ⚪", font=FONT_SUB, fg=self.theme["text"], bg=self.theme["bg"])
-        self.cycle_label.pack(side='left', padx=10)
+        self.cycle_label = tk.Label(self.info_card, text="セット 1/4 🐾 ⚪ ⚪ ⚪", font=FONT_SUB, fg=self.theme["text"], bg=self.theme["card"])
+        self.cycle_label.pack(side='left')
         
         prof = self.data_mgr.get_profile()
         done_pomo = self.data_mgr.get_cafe_data()['total_pomodoros']
-        self.total_pomo_label = tk.Label(info_bar, text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", font=FONT_SUB, fg=self.theme["work"], bg=self.theme["bg"])
-        self.total_pomo_label.pack(side='right', padx=10)
+        self.total_pomo_label = tk.Label(self.info_card, text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", font=FONT_SUB, fg=self.theme["work"], bg=self.theme["card"])
+        self.total_pomo_label.pack(side='right')
         
-        self.active_task_banner = tk.Label(tab, text="作業中タスク: 今日のタスクを計画する 📝", font=FONT_BOLD, fg=self.theme["text"], bg=self.theme["card"], padx=10, pady=3, relief="groove")
-        self.active_task_banner.pack(fill='x', padx=10, pady=(0, 2))
+        # 作業中タスクバナー
+        self.active_task_banner = tk.Label(tab, text="作業中: 今日のタスクを計画する 📝", font=FONT_BOLD, fg=self.theme["text"], bg=self.theme["card"], padx=10, pady=4, relief="flat")
+        self.active_task_banner.pack(fill='x', padx=10, pady=(0, 4))
         
         self.status_label = tk.Label(tab, text="おしごと (停止中)", font=FONT_SUB, fg=self.theme["work"], bg=self.theme["bg"])
         self.status_label.pack(pady=(2, 0))
@@ -494,16 +501,16 @@ class PomodoroApp:
         self.timer_label = tk.Label(tab, text=self.format_time(self.time_left), font=FONT_MAIN, fg=self.theme["work"], bg=self.theme["bg"])
         self.timer_label.pack(pady=(0, 0))
         
-        btn_frame = tk.Frame(tab, bg=self.theme["bg"])
-        btn_frame.pack(pady=5)
+        self.btn_frame = tk.Frame(tab, bg=self.theme["bg"])
+        self.btn_frame.pack(pady=6)
         
-        self.start_btn = tk.Button(btn_frame, text="▶ 開始", command=self.toggle_timer, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=18, pady=5, cursor="hand2")
+        self.start_btn = tk.Button(self.btn_frame, text="▶ 開始", command=self.toggle_timer, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=18, pady=5, cursor="hand2")
         self.start_btn.pack(side="left", padx=5)
         
-        self.feed_btn = tk.Button(btn_frame, text="🐟 おやつをあげる", command=self.feed_active_cat, bg=self.theme["card"], fg=self.theme["accent"], font=FONT_SUB, relief="flat", padx=12, pady=5, cursor="hand2")
+        self.feed_btn = tk.Button(self.btn_frame, text="🐟 おやつをあげる", command=self.feed_active_cat, bg=self.theme["card"], fg=self.theme["accent"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
         self.feed_btn.pack(side="left", padx=5)
         
-        self.reset_btn = tk.Button(btn_frame, text="↺ リセット", command=self.reset_timer, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=12, pady=5, cursor="hand2")
+        self.reset_btn = tk.Button(self.btn_frame, text="↺ リセット", command=self.reset_timer, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
         self.reset_btn.pack(side="left", padx=5)
 
     def feed_active_cat(self):
@@ -532,11 +539,11 @@ class PomodoroApp:
             
         unlocked_items = self.data_mgr.get_cafe_data().get("unlocked_items", ["cushion"])
         item_positions = {
-            "cushion": (70, 220, "🛋️"),
-            "toy_mouse": (160, 240, "🐭"),
-            "scratcher": (400, 180, "🪵"),
-            "treat_bowl": (240, 240, "🥣"),
-            "cat_tree": (390, 95, "🏰")
+            "cushion": (75, 205, "🛋️"),
+            "toy_mouse": (165, 225, "🐭"),
+            "scratcher": (395, 175, "🪵"),
+            "treat_bowl": (240, 225, "🥣"),
+            "cat_tree": (390, 105, "🏰")
         }
         for item_id in unlocked_items:
             if item_id in item_positions:
@@ -544,10 +551,23 @@ class PomodoroApp:
                 self.cat_canvas.create_text(x, y, text=icon, font=("Segoe UI Emoji", 22), tags="item")
                 
         unlocked_cats = self.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
-        for cat_id in unlocked_cats:
+        
+        # 床面の自然なスポーン位置候補 (重なり防止グリッド)
+        spawn_slots = [
+            (115, 185), (200, 175), (285, 180), (355, 195),
+            (145, 215), (250, 215), (320, 220), (85, 155),
+            (180, 145), (265, 145), (340, 155), (410, 215)
+        ]
+        random.shuffle(spawn_slots)
+        
+        for idx, cat_id in enumerate(unlocked_cats):
             if cat_id in self.cat_textures:
-                x = random.randint(50, self.canvas_w - 50)
-                y = random.randint(50, self.canvas_h - 50)
+                if idx < len(spawn_slots):
+                    x, y = spawn_slots[idx]
+                else:
+                    x = random.randint(70, 410)
+                    y = random.randint(145, 225)
+                    
                 canvas_id = self.cat_canvas.create_image(x, y, image=self.cat_textures[cat_id]["sleep_0"], tags="cat")
                 self.cats.append({
                     "type": cat_id,
@@ -565,8 +585,17 @@ class PomodoroApp:
         self.treat_label.config(text=f"🐟 {self.data_mgr.get_cafe_data()['treats']}個", fg=self.theme["accent"])
         prof = self.data_mgr.get_profile()
         done_pomo = self.data_mgr.get_cafe_data()['total_pomodoros']
-        self.total_pomo_label.config(text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", fg=self.theme["work"])
         
+        if hasattr(self, 'info_card'):
+            self.info_card.config(bg=self.theme["card"])
+            self.cycle_label.config(fg=self.theme["text"], bg=self.theme["card"])
+            self.total_pomo_label.config(text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", fg=self.theme["work"], bg=self.theme["card"])
+            self.active_task_banner.config(bg=self.theme["card"], fg=self.theme["text"])
+            self.btn_frame.config(bg=self.theme["bg"])
+            self.start_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
+            self.feed_btn.config(bg=self.theme["card"], fg=self.theme["accent"])
+            self.reset_btn.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
+            
         icon = AVATAR_ICONS.get(prof.get("avatar", "black"), "🐾")
         self.account_btn.config(text=f"{icon} {prof['name'][:8]}")
         
@@ -1781,8 +1810,6 @@ class PomodoroApp:
                 self.cat_canvas.delete("lighting")
                 if time_tag == "night":
                     self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#0d1124", stipple="gray25", outline="", tags="lighting")
-                    # ランプの暖かい光
-                    self.cat_canvas.create_oval(200, 20, 280, 100, fill="#ffeaa7", stipple="gray12", outline="", tags="lighting")
                 elif time_tag == "evening":
                     self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#e17055", stipple="gray12", outline="", tags="lighting")
                 self.cat_canvas.tag_lower("lighting")
@@ -1806,12 +1833,20 @@ class PomodoroApp:
                         cat["x"] += cat["dx"]
                         cat["y"] += cat["dy"]
                         
-                        if cat["x"] < 25 or cat["x"] > self.canvas_w - 25:
-                            cat["dx"] *= -1
-                            cat["x"] += cat["dx"]
-                        if cat["y"] < 25 or cat["y"] > self.canvas_h - 25:
-                            cat["dy"] *= -1
-                            cat["y"] += cat["dy"]
+                        # 床面エリア内（x: 60〜420, y: 135〜235）に厳格制限
+                        if cat["x"] < 60:
+                            cat["x"] = 60
+                            cat["dx"] = abs(cat["dx"])
+                        elif cat["x"] > 420:
+                            cat["x"] = 420
+                            cat["dx"] = -abs(cat["dx"])
+                            
+                        if cat["y"] < 135:
+                            cat["y"] = 135
+                            cat["dy"] = abs(cat["dy"])
+                        elif cat["y"] > 235:
+                            cat["y"] = 235
+                            cat["dy"] = -abs(cat["dy"])
                             
                         cat["facing"] = "awake_r" if cat["dx"] > 0 else "awake_l"
                         y_off = 2 if (self.anim_tick % 4 < 2) and cat["state"] == "dash" else 0
