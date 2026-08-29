@@ -25,14 +25,14 @@
       "id": 1,
       "title": "今日のタスクを計画する 📝",
       "target_pomo": 1,
-      "completed_pomo": 41,
-      "is_done": false
+      "completed_pomo": 40,
+      "is_done": true
     },
     {
       "id": 438860,
       "title": "【サンプル】企画書の作成 📑",
       "target_pomo": 2,
-      "completed_pomo": 0,
+      "completed_pomo": 1,
       "is_done": false,
       "google_id": "demo_task_1"
     },
@@ -55,7 +55,7 @@
   ],
   "active_task_id": 1,
   "cafe": {
-    "treats": 179,
+    "treats": 177,
     "total_pomodoros": 41,
     "unlocked_cats": [
       "black",

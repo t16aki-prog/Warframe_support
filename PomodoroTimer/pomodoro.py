@@ -2,11 +2,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from PIL import Image, ImageTk
 import os
+import sys
 import math
 import time
 import random
 import threading
 import numpy as np
+
+# カレントディレクトリ・親ディレクトリからのインポートを保証
+_cur_dir = os.path.dirname(os.path.abspath(__file__))
+if _cur_dir not in sys.path:
+    sys.path.insert(0, _cur_dir)
 
 from sound_generator import SoundManager
 from data_manager import DataManager, AVAILABLE_CATS, AVAILABLE_ITEMS, THEMES
