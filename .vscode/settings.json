@@ -1,0 +1,45 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/build/_deps": true,
+    "**/build/CMakeFiles": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/.venv": true,
+    "**/venv": true
+  },
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/build",
+    "**/dist",
+    "**/.venv",
+    "**/venv"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none"
+  },
+  "C_Cpp.files.exclude": {
+    "**/.vscode": true,
+    "**/build": true,
+    "**/build/**": true,
+    "**/_deps/**": true,
+    "**/node_modules/**": true
+  },
+  "typescript.validate.enable": true,
+  "javascript.validate.enable": true
+}

@@ -1,0 +1,76 @@
+{
+  "profile": {
+    "id": "default",
+    "name": "にゃんこマスター 🐾",
+    "avatar": "siamese",
+    "starter_chosen": true,
+    "daily_goal": 4,
+    "email": "",
+    "google_connected": false
+  },
+  "settings": {
+    "theme": "dark",
+    "work_minutes": 30,
+    "short_break_minutes": 7,
+    "long_break_minutes": 15,
+    "long_break_interval": 4,
+    "auto_start_break": false,
+    "auto_start_work": false,
+    "se_enabled": true,
+    "bgm_type": "none"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "今日のタスクを計画する 📝",
+      "target_pomo": 1,
+      "completed_pomo": 27,
+      "is_done": false
+    },
+    {
+      "id": 438860,
+      "title": "【サンプル】企画書の作成 📑",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "google_id": "demo_task_1"
+    },
+    {
+      "id": 438927,
+      "title": "【サンプル】メール返信とスケジュール確認 ✉️",
+      "target_pomo": 1,
+      "completed_pomo": 0,
+      "is_done": false,
+      "google_id": "demo_task_2"
+    },
+    {
+      "id": 438928,
+      "title": "【サンプル】コードレビュー 💻",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "google_id": "demo_task_3"
+    }
+  ],
+  "active_task_id": 1,
+  "cafe": {
+    "treats": 65,
+    "total_pomodoros": 27,
+    "unlocked_cats": [
+      "black",
+      "calico",
+      "siamese",
+      "mint",
+      "white",
+      "gray",
+      "orange",
+      "cream",
+      "ginger",
+      "tuxedo"
+    ],
+    "unlocked_items": [
+      "cushion",
+      "toy_mouse"
+    ]
+  }
+}
