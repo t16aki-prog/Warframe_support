@@ -1858,171 +1858,168 @@ class PomodoroApp:
         if not getattr(self, 'is_alive', True):
             return
             
-        if self.has_images:
-            self.anim_tick += 1
-            is_sleep_time = not self.is_running or self.session_mode != "work"
-            
-            # 時間帯に応じた環境光・ライティング判定
-            cur_hour = time.localtime().tm_hour
-            time_tag = "night" if (cur_hour >= 19 or cur_hour < 6) else ("evening" if cur_hour >= 17 else ("morning" if cur_hour < 11 else "day"))
-            
-            # 昼夜ライティングオーバーレイの更新 (100tickごと)
-            if self.anim_tick % 60 == 1:
-                self.cat_canvas.delete("lighting")
-                if time_tag == "night":
-                    self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#0d1124", stipple="gray25", outline="", tags="lighting")
-                elif time_tag == "evening":
-                    self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#e17055", stipple="gray12", outline="", tags="lighting")
-                self.cat_canvas.tag_lower("lighting")
-                if hasattr(self, 'bg_photo'):
-                    self.cat_canvas.tag_lower(1) # 背景画像を最背面に
-            
-            for cat in self.cats:
-                c_id = cat["type"]
-                tex = self.cat_textures[c_id]
-                facing = cat.get("facing", "r")
-                state = cat.get("state", "sit")
+        try:
+            if self.has_images:
+                self.anim_tick += 1
+                is_sleep_time = not self.is_running or self.session_mode != "work"
                 
+                # 時間帯に応じた環境光・ライティング判定
+                cur_hour = time.localtime().tm_hour
+                time_tag = "night" if (cur_hour >= 19 or cur_hour < 6) else ("evening" if cur_hour >= 17 else ("morning" if cur_hour < 11 else "day"))
+                
+                # 昼夜ライティングオーバーレイの更新
+                if self.anim_tick % 60 == 1:
+                    self.cat_canvas.delete("lighting")
+                    if time_tag == "night":
+                        self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#0d1124", stipple="gray25", outline="", tags="lighting")
+                    elif time_tag == "evening":
+                        self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#e17055", stipple="gray12", outline="", tags="lighting")
+                    self.cat_canvas.tag_lower("lighting")
+                    if hasattr(self, 'bg_photo'):
+                        self.cat_canvas.tag_lower(1)
+                
+                for cat in self.cats:
+                    c_id = cat["type"]
+                    tex = self.cat_textures[c_id]
+                    facing = cat.get("facing", "r")
+                    state = cat.get("state", "sit")
+                    
+                    if is_sleep_time:
+                        sp_type = cat.get("sleep_pose", "sleep_curl")
+                        f_idx = (self.anim_tick // 14) % 2
+                        frame_key = f"{sp_type}_{f_idx}"
+                        try:
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            else:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex["sleep_0"])
+                        except Exception:
+                            pass
+                    else:
+                        self.process_cat_ai(cat)
+                        
+                        if state in ["walk", "dash"]:
+                            cat["x"] += cat["dx"]
+                            cat["y"] += cat["dy"]
+                            
+                            if cat["x"] < 60:
+                                cat["x"] = 60
+                                cat["dx"] = abs(cat["dx"])
+                                cat["facing"] = "r"
+                            elif cat["x"] > 420:
+                                cat["x"] = 420
+                                cat["dx"] = -abs(cat["dx"])
+                                cat["facing"] = "l"
+                                
+                            if cat["y"] < 135:
+                                cat["y"] = 135
+                                cat["dy"] = abs(cat["dy"])
+                            elif cat["y"] > 235:
+                                cat["y"] = 235
+                                cat["dy"] = -abs(cat["dy"])
+                                
+                            facing = cat["facing"]
+                            f_idx = (self.anim_tick // 6) % 2
+                            frame_key = f"{state}_{facing}_{f_idx}"
+                            y_off = 2 if (self.anim_tick % 4 < 2) and state == "dash" else 0
+                            try:
+                                self.cat_canvas.coords(cat["id"], cat["x"], cat["y"] - y_off)
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                                
+                            # 肉球足跡エフェクト
+                            if self.anim_tick % 14 == 0 and len(self.floating_effects) < 20:
+                                paw_id = self.cat_canvas.create_text(cat["x"], cat["y"] + 14, text="🐾", font=("Segoe UI Emoji", 7), fill=self.theme["border"])
+                                self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 16})
+                                
+                        elif state == "sit":
+                            frame_key = f"sit_{facing}"
+                            try:
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                                
+                        elif state == "groom":
+                            f_idx = (self.anim_tick // 8) % 3
+                            frame_key = f"groom_{facing}_{f_idx}"
+                            try:
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                                
+                        elif state == "stretch":
+                            f_idx = (self.anim_tick // 12) % 2
+                            frame_key = f"stretch_{facing}_{f_idx}"
+                            try:
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                                
+                        elif state == "play":
+                            f_idx = (self.anim_tick // 6) % 3
+                            frame_key = f"play_{facing}_{f_idx}"
+                            try:
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                                
+                        elif state == "pounce":
+                            f_idx = (self.anim_tick // 8) % 2
+                            frame_key = f"pounce_{facing}_{f_idx}"
+                            try:
+                                if frame_key in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                            except Exception:
+                                pass
+                            
                 if is_sleep_time:
-                    # 多彩な寝相 (丸まり寝 / 仰向けヘソ天寝 / のびのび寝) + 呼吸アニメーション
-                    sp_type = cat.get("sleep_pose", "sleep_curl")
-                    f_idx = (self.anim_tick // 14) % 2
-                    frame_key = f"{sp_type}_{f_idx}"
+                    f_idx = (self.anim_tick // 15) % 2
                     try:
-                        if frame_key in tex:
-                            self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        else:
-                            self.cat_canvas.itemconfig(cat["id"], image=tex["sleep_0"])
+                        self.widget_cat.config(image=self.widget_cat_frames["sleep"][f_idx])
                     except Exception:
                         pass
                 else:
-                    self.process_cat_ai(cat)
+                    f_idx = (self.anim_tick // 15) % 2
+                    try:
+                        self.widget_cat.config(image=self.widget_cat_frames["awake"][f_idx])
+                    except Exception:
+                        pass
                     
-                    if state in ["walk", "dash"]:
-                        cat["x"] += cat["dx"]
-                        cat["y"] += cat["dy"]
-                        
-                        # 床面エリア内（x: 60〜420, y: 135〜235）に厳格制限
-                        if cat["x"] < 60:
-                            cat["x"] = 60
-                            cat["dx"] = abs(cat["dx"])
-                            cat["facing"] = "r"
-                        elif cat["x"] > 420:
-                            cat["x"] = 420
-                            cat["dx"] = -abs(cat["dx"])
-                            cat["facing"] = "l"
-                            
-                        if cat["y"] < 135:
-                            cat["y"] = 135
-                            cat["dy"] = abs(cat["dy"])
-                        elif cat["y"] > 235:
-                            cat["y"] = 235
-                            cat["dy"] = -abs(cat["dy"])
-                            
-                        facing = cat["facing"]
-                        f_idx = (self.anim_tick // 6) % 2
-                        frame_key = f"{state}_{facing}_{f_idx}"
-                        y_off = 2 if (self.anim_tick % 4 < 2) and state == "dash" else 0
-                        try:
-                            self.cat_canvas.coords(cat["id"], cat["x"], cat["y"] - y_off)
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                            
-                        # 肉球足跡エフェクト
-                        if self.anim_tick % 14 == 0 and len(self.floating_effects) < 20:
-                            paw_id = self.cat_canvas.create_text(cat["x"], cat["y"] + 14, text="🐾", font=("Segoe UI Emoji", 7), fill=self.theme["border"])
-                            self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 16})
-                            
-                    elif state == "sit":
-                        frame_key = f"sit_{facing}"
-                        try:
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                            
-                    elif state == "groom":
-                        # 毛づくろい (3フレーム)
-                        f_idx = (self.anim_tick // 8) % 3
-                        frame_key = f"groom_{facing}_{f_idx}"
-                        try:
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                            
-                    elif state == "stretch":
-                        # 伸びポーズ (2フレーム)
-                        f_idx = (self.anim_tick // 12) % 2
-                        frame_key = f"stretch_{facing}_{f_idx}"
-                        try:
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                            
-                    elif state == "play":
-                        # じゃれる・チョイチョイ (3フレーム)
-                        f_idx = (self.anim_tick // 6) % 3
-                        frame_key = f"play_{facing}_{f_idx}"
-                        try:
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                            
-                    elif state == "pounce":
-                        # 飛びつき・跳ねる (2フレーム)
-                        f_idx = (self.anim_tick // 8) % 2
-                        frame_key = f"pounce_{facing}_{f_idx}"
-                        try:
-                            if frame_key in tex:
-                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                        except Exception:
-                            pass
-                        
-            if is_sleep_time:
-                f_idx = (self.anim_tick // 15) % 2
-                try:
-                    self.widget_cat.config(image=self.widget_cat_frames["sleep"][f_idx])
-                except Exception:
-                    pass
-            else:
-                f_idx = (self.anim_tick // 15) % 2
-                try:
-                    self.widget_cat.config(image=self.widget_cat_frames["awake"][f_idx])
-                except Exception:
-                    pass
-                
-            # 環境パーティクル（天候・時間帯連動）
-            if self.anim_tick % 16 == 0 and len(self.floating_effects) < 18:
-                px = random.randint(20, self.canvas_w - 20)
-                py = random.randint(10, self.canvas_h - 40)
-                icons = ["✨", "🌸", "⭐", "🐾", "🍃"] if time_tag != "night" else ["⭐", "✨", "🌌", "🌙", "🐾"]
-                p_icon = random.choice(icons)
-                p_id = self.cat_canvas.create_text(px, py, text=p_icon, font=("Segoe UI Emoji", 10), fill=self.theme["border"])
-                self.floating_effects.append({"id": p_id, "x": px, "y": py, "life": random.randint(30, 60), "dx": random.uniform(-0.6, 0.6)})
-                
-            for effect in self.floating_effects[:]:
-                effect["y"] -= 0.8
-                if "dx" in effect:
-                    effect["x"] += effect["dx"]
-                effect["life"] -= 1
-                try:
-                    self.cat_canvas.coords(effect["id"], effect["x"], effect["y"])
-                    if effect["life"] <= 0:
-                        self.cat_canvas.delete(effect["id"])
-                        self.floating_effects.remove(effect)
-                except Exception:
-                    pass
+                # 環境パーティクル
+                if self.anim_tick % 16 == 0 and len(self.floating_effects) < 18:
+                    px = random.randint(20, self.canvas_w - 20)
+                    py = random.randint(10, self.canvas_h - 40)
+                    icons = ["✨", "🌸", "⭐", "🐾", "🍃"] if time_tag != "night" else ["⭐", "✨", "🌌", "🌙", "🐾"]
+                    p_icon = random.choice(icons)
+                    p_id = self.cat_canvas.create_text(px, py, text=p_icon, font=("Segoe UI Emoji", 10), fill=self.theme["border"])
+                    self.floating_effects.append({"id": p_id, "x": px, "y": py, "life": random.randint(30, 60), "dx": random.uniform(-0.6, 0.6)})
                     
-        if getattr(self, 'is_alive', True):
-            try:
-                self.root.after(50, self.animate_loop)
-            except Exception:
-                pass
+                for effect in self.floating_effects[:]:
+                    effect["y"] -= 0.8
+                    if "dx" in effect:
+                        effect["x"] += effect["dx"]
+                    effect["life"] -= 1
+                    try:
+                        self.cat_canvas.coords(effect["id"], effect["x"], effect["y"])
+                        if effect["life"] <= 0:
+                            self.cat_canvas.delete(effect["id"])
+                            self.floating_effects.remove(effect)
+                    except Exception:
+                        pass
+                        
+            if getattr(self, 'is_alive', True):
+                try:
+                    self.root.after(50, self.animate_loop)
+                except Exception:
+                    pass
+        except (KeyboardInterrupt, Exception):
+            pass
 
 
 if __name__ == "__main__":

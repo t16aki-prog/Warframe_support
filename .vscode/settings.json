@@ -9,37 +9,65 @@
     "**/__pycache__": true,
     "**/*.pyc": true,
     "**/node_modules": true,
+    "**/.next": true,
     "**/dist": true,
     "**/build": true,
     "**/build/_deps": true,
-    "**/build/CMakeFiles": true
+    "**/build/CMakeFiles": true,
+    "**/legacy_raylib": true
   },
   "search.exclude": {
     "**/node_modules": true,
+    "**/.next": true,
     "**/bower_components": true,
     "**/*.code-search": true,
     "**/build": true,
     "**/dist": true,
     "**/.venv": true,
-    "**/venv": true
+    "**/venv": true,
+    "**/sprites": true,
+    "**/legacy_raylib": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/build/**": true,
+    "**/dist/**": true,
+    "**/sprites/**": true,
+    "**/legacy_raylib/**": true
   },
   "python.analysis.exclude": [
     "**/node_modules",
+    "**/.next",
     "**/build",
     "**/dist",
     "**/.venv",
-    "**/venv"
+    "**/venv",
+    "**/sprites",
+    "**/legacy_raylib"
   ],
   "python.analysis.diagnosticSeverityOverrides": {
-    "reportMissingImports": "none"
+    "reportMissingImports": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalMemberAccess": "none"
   },
   "C_Cpp.files.exclude": {
     "**/.vscode": true,
     "**/build": true,
     "**/build/**": true,
     "**/_deps/**": true,
-    "**/node_modules/**": true
+    "**/node_modules/**": true,
+    "**/legacy_raylib/**": true
   },
-  "typescript.validate.enable": true,
-  "javascript.validate.enable": true
+  "typescript.validate.enable": false,
+  "javascript.validate.enable": false,
+  "typescript.suggestionActions.enabled": false,
+  "javascript.suggestionActions.enabled": false,
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "html.validate.scripts": false,
+  "html.validate.styles": false
 }
