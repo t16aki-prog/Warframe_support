@@ -288,11 +288,25 @@ class PomodoroApp:
                 "sleep_stretch": load_or_fallback("cat_sleep_stretch.png", self.base_sleep)
             }
                 
+            sprites_dir = os.path.join(base_dir, "sprites")
             self.cat_textures = {}
             for cat_info in AVAILABLE_CATS:
                 c_id = cat_info["id"]
-                raw_poses = generate_cat_poses(base_pose_images, None, c_id)
-                self.cat_textures[c_id] = {k: ImageTk.PhotoImage(v) for k, v in raw_poses.items()}
+                tex_dict = {}
+                # 事前生成された個別スプライトがあれば高速ロード
+                if os.path.exists(sprites_dir):
+                    for fname in os.listdir(sprites_dir):
+                        if fname.startswith(f"{c_id}_") and fname.endswith(".png"):
+                            pose_k = fname[len(c_id) + 1:-4]
+                            fpath = os.path.join(sprites_dir, fname)
+                            tex_dict[pose_k] = ImageTk.PhotoImage(Image.open(fpath).convert("RGBA"))
+                
+                # スプライトが存在しない場合は動的生成
+                if not tex_dict:
+                    raw_poses = generate_cat_poses(base_pose_images, None, c_id)
+                    tex_dict = {k: ImageTk.PhotoImage(v) for k, v in raw_poses.items()}
+                    
+                self.cat_textures[c_id] = tex_dict
                 
             self._update_widget_cat_frames()
             self.has_images = True
