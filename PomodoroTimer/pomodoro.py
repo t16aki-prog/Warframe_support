@@ -1867,8 +1867,8 @@ class PomodoroApp:
                 cur_hour = time.localtime().tm_hour
                 time_tag = "night" if (cur_hour >= 19 or cur_hour < 6) else ("evening" if cur_hour >= 17 else ("morning" if cur_hour < 11 else "day"))
                 
-                # 昼夜ライティングオーバーレイの更新
-                if self.anim_tick % 60 == 1:
+                # 昼夜ライティングオーバーレイの更新 (60FPS基準で180フレーム=約3秒ごとに更新)
+                if self.anim_tick % 180 == 1:
                     self.cat_canvas.delete("lighting")
                     if time_tag == "night":
                         self.cat_canvas.create_rectangle(0, 0, self.canvas_w, self.canvas_h, fill="#0d1124", stipple="gray25", outline="", tags="lighting")
@@ -1878,6 +1878,7 @@ class PomodoroApp:
                     if hasattr(self, 'bg_photo'):
                         self.cat_canvas.tag_lower(1)
                 
+                # スプライト切り替え速度を60FPSに合わせて調整 (元の3倍のtickが必要)
                 for cat in self.cats:
                     c_id = cat["type"]
                     tex = self.cat_textures[c_id]
@@ -1886,7 +1887,7 @@ class PomodoroApp:
                     
                     if is_sleep_time:
                         sp_type = cat.get("sleep_pose", "sleep_curl")
-                        f_idx = (self.anim_tick // 14) % 2
+                        f_idx = (self.anim_tick // 42) % 2
                         frame_key = f"{sp_type}_{f_idx}"
                         try:
                             if frame_key in tex:
@@ -1896,11 +1897,14 @@ class PomodoroApp:
                         except Exception:
                             pass
                     else:
-                        self.process_cat_ai(cat)
+                        # AI処理の頻度調整 (元の3倍遅く判定)
+                        if self.anim_tick % 3 == 0:
+                            self.process_cat_ai(cat)
                         
                         if state in ["walk", "dash"]:
-                            cat["x"] += cat["dx"]
-                            cat["y"] += cat["dy"]
+                            # 60FPSでの滑らかな移動
+                            cat["x"] += cat["dx"] * 0.33
+                            cat["y"] += cat["dy"] * 0.33
                             
                             if cat["x"] < 60:
                                 cat["x"] = 60
@@ -1919,9 +1923,9 @@ class PomodoroApp:
                                 cat["dy"] = -abs(cat["dy"])
                                 
                             facing = cat["facing"]
-                            f_idx = (self.anim_tick // 6) % 2
+                            f_idx = (self.anim_tick // 18) % 2
                             frame_key = f"{state}_{facing}_{f_idx}"
-                            y_off = 2 if (self.anim_tick % 4 < 2) and state == "dash" else 0
+                            y_off = 2 if (self.anim_tick % 12 < 6) and state == "dash" else 0
                             try:
                                 self.cat_canvas.coords(cat["id"], cat["x"], cat["y"] - y_off)
                                 if frame_key in tex:
@@ -1930,9 +1934,9 @@ class PomodoroApp:
                                 pass
                                 
                             # 肉球足跡エフェクト
-                            if self.anim_tick % 14 == 0 and len(self.floating_effects) < 20:
+                            if self.anim_tick % 42 == 0 and len(self.floating_effects) < 20:
                                 paw_id = self.cat_canvas.create_text(cat["x"], cat["y"] + 14, text="🐾", font=("Segoe UI Emoji", 7), fill=self.theme["border"])
-                                self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 16})
+                                self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 48})
                                 
                         elif state == "sit":
                             frame_key = f"sit_{facing}"
@@ -1943,7 +1947,7 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "groom":
-                            f_idx = (self.anim_tick // 8) % 3
+                            f_idx = (self.anim_tick // 24) % 3
                             frame_key = f"groom_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1952,7 +1956,7 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "stretch":
-                            f_idx = (self.anim_tick // 12) % 2
+                            f_idx = (self.anim_tick // 36) % 2
                             frame_key = f"stretch_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1961,7 +1965,7 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "play":
-                            f_idx = (self.anim_tick // 6) % 3
+                            f_idx = (self.anim_tick // 18) % 3
                             frame_key = f"play_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1970,7 +1974,7 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "pounce":
-                            f_idx = (self.anim_tick // 8) % 2
+                            f_idx = (self.anim_tick // 24) % 2
                             frame_key = f"pounce_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1979,29 +1983,29 @@ class PomodoroApp:
                                 pass
                             
                 if is_sleep_time:
-                    f_idx = (self.anim_tick // 15) % 2
+                    f_idx = (self.anim_tick // 45) % 2
                     try:
                         self.widget_cat.config(image=self.widget_cat_frames["sleep"][f_idx])
                     except Exception:
                         pass
                 else:
-                    f_idx = (self.anim_tick // 15) % 2
+                    f_idx = (self.anim_tick // 45) % 2
                     try:
                         self.widget_cat.config(image=self.widget_cat_frames["awake"][f_idx])
                     except Exception:
                         pass
                     
                 # 環境パーティクル
-                if self.anim_tick % 16 == 0 and len(self.floating_effects) < 18:
+                if self.anim_tick % 48 == 0 and len(self.floating_effects) < 18:
                     px = random.randint(20, self.canvas_w - 20)
                     py = random.randint(10, self.canvas_h - 40)
                     icons = ["✨", "🌸", "⭐", "🐾", "🍃"] if time_tag != "night" else ["⭐", "✨", "🌌", "🌙", "🐾"]
                     p_icon = random.choice(icons)
                     p_id = self.cat_canvas.create_text(px, py, text=p_icon, font=("Segoe UI Emoji", 10), fill=self.theme["border"])
-                    self.floating_effects.append({"id": p_id, "x": px, "y": py, "life": random.randint(30, 60), "dx": random.uniform(-0.6, 0.6)})
+                    self.floating_effects.append({"id": p_id, "x": px, "y": py, "life": random.randint(90, 180), "dx": random.uniform(-0.2, 0.2)})
                     
                 for effect in self.floating_effects[:]:
-                    effect["y"] -= 0.8
+                    effect["y"] -= 0.26
                     if "dx" in effect:
                         effect["x"] += effect["dx"]
                     effect["life"] -= 1
@@ -2015,7 +2019,7 @@ class PomodoroApp:
                         
             if getattr(self, 'is_alive', True):
                 try:
-                    self.root.after(50, self.animate_loop)
+                    self.root.after(16, self.animate_loop)
                 except Exception:
                     pass
         except (KeyboardInterrupt, Exception):
