@@ -2,10 +2,10 @@ import numpy as np
 from PIL import Image
 
 def generate_natural_cat(rgba_img, cat_type):
-    """実写の猫の写真・毛並みを参照し、毛流れ・多層ファー・立体陰影・光彩ハイライトを融合して超リアルな猫を生成"""
+    """猫学・遺伝学的特徴に厳格に基づいた本物の毛柄・毛並みレンダリング"""
     arr = np.array(rgba_img.convert("RGBA"), dtype=np.float32)
     alpha = arr[:, :, 3]
-    mask = alpha > 35
+    mask = alpha > 30
     
     if not np.any(mask):
         return rgba_img.copy()
@@ -13,16 +13,15 @@ def generate_natural_cat(rgba_img, cat_type):
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
     orig_brightness = (0.299 * r + 0.587 * g + 0.114 * b)
     
-    # 輪郭線（アウトライン、口、目の中の黒など）
-    is_outline = mask & (orig_brightness < 20)
-    # 耳の内側（ピンク系ピクセル）
-    is_inner_ear = mask & (r > 75) & (r > g + 8) & (r > b - 10)
-    # 目の白目・ハイライト
-    is_eye_white = mask & (r > 115) & (g > 115) & (b > 115)
-    # 体の毛（ボディ）
+    # 輪郭線
+    is_outline = mask & (orig_brightness < 22)
+    # 耳の内側
+    is_inner_ear = mask & (r > 70) & (r > g + 6) & (r > b - 12)
+    # 目のハイライト
+    is_eye_white = mask & (r > 120) & (g > 120) & (b > 120)
+    # ボディ
     is_body = mask & ~is_outline & ~is_inner_ear & ~is_eye_white
     
-    # 正規化座標
     y_indices, x_indices = np.where(mask)
     y_min, y_max = y_indices.min(), y_indices.max()
     x_min, x_max = x_indices.min(), x_indices.max()
@@ -33,26 +32,15 @@ def generate_natural_cat(rgba_img, cat_type):
     ny = (Y - y_min) / float(h)  # 0: 頭頂, 1: 足元
     nx = (X - x_min) / float(w)  # 0: しっぽ, 1: 顔
     
-    # 実写猫の毛流れベクトル (頭部から尾・足元へ流れる角度)
-    fur_angle = np.arctan2(ny - 0.35, nx - 0.55)
+    # 微細なアグーチ毛並みノイズ
+    fur_grain = np.sin(nx * 40 + ny * 25) * np.cos(nx * 20 - ny * 35) * 0.12
+    dither = ((X % 2) ^ (Y % 2)) * 0.04 - 0.02
     
-    # 多層実写ファーノイズ (極細の毛並み筋 + 中周期の波 + 大周期の体幹グラデーション)
-    micro_fur = np.sin(nx * 55 * np.cos(fur_angle) + ny * 55 * np.sin(fur_angle)) * 0.08
-    med_fur = np.cos(nx * 26 + ny * 18) * np.sin(nx * 14 - ny * 22) * 0.15
-    macro_fur = np.sin(nx * 8 + ny * 6) * 0.12
-    fur_texture = micro_fur + med_fur + macro_fur
-    
-    # ディザリング用チェッカーパターン
-    dither = ((X % 2) ^ (Y % 2)) * 0.05 - 0.025
-    
-    # 実写参照の環境オクルージョン（お腹や首下の柔らかな影）
-    ao_shadow = np.clip(1.0 - (ny * 0.22) - (np.abs(nx - 0.5) * 0.08), 0.72, 1.08)
-    
-    # 元画像のシェーディング（立体陰影の係数 0.78 〜 1.25）
+    # 立体陰影
     body_brights = orig_brightness[is_body]
     avg_b = np.mean(body_brights) if len(body_brights) > 0 else 45.0
     shade = np.ones_like(orig_brightness)
-    shade[mask] = np.clip((orig_brightness[mask] - avg_b) * 0.0085 + 1.0, 0.78, 1.25) * ao_shadow[mask]
+    shade[mask] = np.clip((orig_brightness[mask] - avg_b) * 0.008 + 1.0, 0.80, 1.22)
     
     target_r = np.zeros_like(r)
     target_g = np.zeros_like(g)
@@ -63,187 +51,161 @@ def generate_natural_cat(rgba_img, cat_type):
         target_g[m] = cg
         target_b[m] = cb
 
-    outline_r, outline_g, outline_b = 18, 18, 24
-    ear_r, ear_g, ear_b = 255, 182, 202
+    outline_r, outline_g, outline_b = 18, 18, 22
+    ear_r, ear_g, ear_b = 255, 185, 205
     
-    # --- 15種類の実写写真ベースの極上毛柄設計 ---
+    # ==========================================
+    # 🧬 15猫種の遺伝的・学術的毛柄モデリング
+    # ==========================================
+    
     if cat_type == "black":
-        # 実写黒猫: 漆黒のベルベット光沢 + 光の当たる背中のハイライト + 胸元のホワイトエンジェルマーク
-        black_val = np.clip(32 + fur_texture * 40, 18, 65)
-        target_r[mask] = black_val[mask]
-        target_g[mask] = black_val[mask]
-        target_b[mask] = np.clip(black_val[mask] * 1.15, 20, 75)
-        # 胸元のエンジェルマーク
-        chest_mask = (ny >= 0.44) & (ny <= 0.62) & (np.abs(nx - 0.48) < (0.62 - ny) * 0.7 + fur_texture * 0.05)
-        apply_color(chest_mask, 242, 242, 248)
+        # 1. 漆黒猫 (Solid Black): 遺伝子 a/a (ノンアグーチ), B/B (ブラック)
+        apply_color(mask, 32, 32, 38)
+        angel_mark = (ny >= 0.46) & (ny <= 0.58) & (np.abs(nx - 0.48) < 0.06 + fur_grain * 0.02)
+        apply_color(angel_mark, 245, 245, 250)
         outline_r, outline_g, outline_b = 12, 12, 16
-
+        
     elif cat_type == "white":
-        # 実写白猫: ふんわり柔らかい純白ファー + ほんのりシルバーピンクの耳
-        white_val = np.clip(252 - np.abs(fur_texture) * 25, 230, 255)
-        target_r[mask] = white_val[mask]
-        target_g[mask] = white_val[mask]
-        target_b[mask] = np.clip(white_val[mask] * 1.02, 235, 255)
-        outline_r, outline_g, outline_b = 78, 82, 94
-        ear_r, ear_g, ear_b = 255, 178, 198
-
+        # 2. 純白猫 (Solid White): 遺伝子 W (優性白)
+        apply_color(mask, 253, 253, 255)
+        outline_r, outline_g, outline_b = 85, 88, 100
+        ear_r, ear_g, ear_b = 255, 180, 200
+        
     elif cat_type == "gray":
-        # 実写ロシアンブルー: ビロードのような青みがかったシルバーグレー + 白ソックス
-        base_gray = np.clip(136 + fur_texture * 35, 105, 175)
-        target_r[mask] = base_gray[mask]
-        target_g[mask] = np.clip(base_gray[mask] * 1.05, 110, 185)
-        target_b[mask] = np.clip(base_gray[mask] * 1.18, 125, 205)
-        # 背中の濃色
+        # 3. ロシアンブルー (Russian Blue): 遺伝子 a/a, B/B, d/d
+        apply_color(mask, 132, 142, 160)
         back = (nx > 0.60) | (ny < 0.28)
-        target_r[back] = np.clip(target_r[back] * 0.85, 85, 150)
-        target_g[back] = np.clip(target_g[back] * 0.85, 90, 160)
-        target_b[back] = np.clip(target_b[back] * 0.88, 100, 180)
-        # 白靴下
-        socks = (ny > 0.76 + dither)
-        apply_color(socks, 246, 247, 252)
-        outline_r, outline_g, outline_b = 40, 44, 52
-
-    elif cat_type == "calico":
-        # 実写三毛猫: 写真のような有機的ブロック（茶トラ斑点・漆黒斑点・純白ベース）
-        apply_color(mask, 252, 252, 254)
-        patch1 = (((nx - 0.44)**2 + (ny - 0.50)**2) < (0.034 + fur_texture * 0.02)) | \
-                 ((nx > 0.60) & (ny < 0.38 + fur_texture * 0.05)) | \
-                 ((nx < 0.24) & (ny > 0.54 + fur_texture * 0.04))
-        # 茶トラパッチ（微細な縞模様入り）
-        c_tabby = np.sin(nx * 30 + ny * 10) * 20
-        target_r[patch1] = np.clip(232 + c_tabby[patch1], 190, 255)
-        target_g[patch1] = np.clip(118 + c_tabby[patch1] * 0.6, 90, 150)
-        target_b[patch1] = np.clip(40 + c_tabby[patch1] * 0.2, 25, 65)
-        # 漆黒パッチ
-        patch2 = (((nx - 0.28)**2 + (ny - 0.45)**2) < (0.028 + fur_texture * 0.015)) | \
-                 ((nx >= 0.38) & (nx <= 0.58) & (ny < 0.34 + fur_texture * 0.04)) | \
-                 (nx > 0.75 + fur_texture * 0.04)
-        apply_color(patch2, 34, 34, 40)
-        outline_r, outline_g, outline_b = 30, 30, 36
-
-    elif cat_type == "siamese":
-        # 実写シャム猫: 顔・耳・手足・しっぽへと滑らかに広がるシールポイントグラデーション
-        apply_color(mask, 248, 238, 224)
-        face_dist = np.sqrt(((nx - 0.58) * 1.6)**2 + ((ny - 0.40) * 1.8)**2)
-        grad_point = np.clip(1.0 - (face_dist * 2.2) + fur_texture * 0.15, 0.0, 1.0)
-        points = (ny < 0.26) | (grad_point > 0.35) | (ny > 0.74 + dither) | (nx < 0.20)
-        # シャムのチョコレートダークポイント
-        target_r[points] = np.clip(54 + (1.0 - grad_point[points]) * 40, 40, 120)
-        target_g[points] = np.clip(36 + (1.0 - grad_point[points]) * 30, 28, 90)
-        target_b[points] = np.clip(26 + (1.0 - grad_point[points]) * 20, 20, 75)
-        outline_r, outline_g, outline_b = 38, 26, 20
-
-    elif cat_type == "orange":
-        # 実写茶トラ: 本物のマッカレルタビー（流れるような細密な縞模様）+ 白い胸元
-        apply_color(mask, 240, 138, 38)
-        tabby_wave = np.sin(nx * 20 + ny * 8 + fur_texture * 4.0)
-        stripes = (tabby_wave > 0.28) | ((ny < 0.36) & (np.sin(nx * 28 + fur_texture * 3.0) > 0.35))
-        apply_color(stripes, 162, 58, 8)
-        belly = (ny > 0.60 + fur_texture * 0.04) & (np.abs(nx - 0.44) < 0.25)
-        apply_color(belly, 255, 248, 236)
+        apply_color(back, 110, 118, 135)
         socks = (ny > 0.78 + dither)
-        apply_color(socks, 255, 248, 236)
-        outline_r, outline_g, outline_b = 48, 20, 6
-
+        apply_color(socks, 248, 248, 252)
+        outline_r, outline_g, outline_b = 40, 45, 55
+        
+    elif cat_type == "orange":
+        # 4. 茶トラ (Red Mackerel Tabby): 遺伝子 O, A/-, Mc/-
+        apply_color(mask, 240, 138, 36)
+        tabby_stripes = (np.sin(nx * 22 + ny * 8 + fur_grain * 3.0) > 0.25) | \
+                        ((ny < 0.32) & (np.sin(nx * 32) > 0.30))
+        apply_color(tabby_stripes, 162, 56, 8)
+        white_under = ((ny > 0.58 + fur_grain * 0.03) & (np.abs(nx - 0.44) < 0.26)) | (ny > 0.78 + dither)
+        apply_color(white_under, 255, 248, 238)
+        outline_r, outline_g, outline_b = 48, 18, 6
+        
+    elif cat_type == "calico":
+        # 5. 三毛猫 (Calico): 遺伝子 O/o, S/-
+        apply_color(mask, 252, 252, 254)
+        patch_orange = (((nx - 0.44)**2 + (ny - 0.48)**2) < (0.032 + fur_grain * 0.015)) | \
+                       ((nx > 0.60) & (ny < 0.36 + fur_grain * 0.04))
+        apply_color(patch_orange, 235, 120, 38)
+        patch_black = (((nx - 0.26)**2 + (ny - 0.46)**2) < (0.026 + fur_grain * 0.012)) | \
+                      ((nx >= 0.38) & (nx <= 0.56) & (ny < 0.32 + fur_grain * 0.04))
+        apply_color(patch_black, 34, 34, 40)
+        outline_r, outline_g, outline_b = 30, 30, 36
+        
+    elif cat_type == "tortoiseshell":
+        # 6. サビ猫 (Tortoiseshell): 遺伝子 O/o, s/s
+        apply_color(mask, 38, 32, 30)
+        amber_mosaic = (np.sin(nx * 15 + ny * 12 + fur_grain * 4.0) * np.cos(nx * 8 - ny * 14)) > 0.02
+        apply_color(amber_mosaic, 216, 108, 32)
+        gold_flecks = (np.cos(nx * 18 + ny * 16 - fur_grain * 3.0) * np.sin(nx * 10 - ny * 8)) > 0.08
+        apply_color(gold_flecks, 234, 185, 62)
+        outline_r, outline_g, outline_b = 20, 16, 14
+        
+    elif cat_type == "siamese":
+        # 7. シャム (Seal Point Siamese): 遺伝子 cs/cs
+        apply_color(mask, 248, 238, 224)
+        face_dist = np.sqrt(((nx - 0.58) * 1.5)**2 + ((ny - 0.38) * 1.8)**2)
+        face_mask = (face_dist < 0.26 + fur_grain * 0.03) & (ny >= 0.24) & (ny <= 0.54)
+        seal_points = (ny < 0.25) | face_mask | (ny > 0.74 + dither) | (nx < 0.18)
+        apply_color(seal_points, 52, 34, 24)
+        outline_r, outline_g, outline_b = 36, 24, 18
+        
+    elif cat_type == "tuxedo":
+        # 8. ハチワレ / タキシード (Tuxedo Bicolor): 遺伝子 a/a, S/-
+        apply_color(mask, 28, 32, 42)
+        hachi_curve = np.abs(nx - 0.58) * 1.4 + 0.24 + fur_grain * 0.03
+        hachiware = (ny >= 0.25) & (ny <= 0.55) & (ny > hachi_curve)
+        apply_color(hachiware, 255, 255, 255)
+        chest_socks = ((ny > 0.46 + fur_grain * 0.03) & (nx > 0.30) & (nx < 0.68)) | (ny > 0.76 + dither)
+        apply_color(chest_socks, 255, 255, 255)
+        outline_r, outline_g, outline_b = 15, 18, 24
+        
     elif cat_type == "cream":
-        # 実写クリーム: 優しいミルクティーベージュ + キャラメルバック
+        # 9. クリーム (Cream Dilute): 遺伝子 e/e, d/d
         apply_color(mask, 250, 242, 226)
-        back = (ny < 0.36 + fur_texture * 0.04) | ((nx > 0.48) & (ny < 0.58 + fur_texture * 0.04))
-        apply_color(back, 222, 192, 148)
+        back = (ny < 0.36 + fur_grain * 0.03) | ((nx > 0.48) & (ny < 0.58 + fur_grain * 0.03))
+        apply_color(back, 222, 192, 146)
         belly = (ny > 0.68 + dither)
         apply_color(belly, 255, 252, 248)
         outline_r, outline_g, outline_b = 58, 46, 36
-
+        
     elif cat_type == "ginger":
-        # 実写ジンジャー: 深みのある赤狐レッド + 白いマズルとしっぽ先
-        apply_color(mask, 218, 64, 24)
-        white_parts = ((ny > 0.54 + fur_texture * 0.04) & (np.abs(nx - 0.44) < 0.26)) | \
-                      ((ny >= 0.40) & (ny <= 0.60) & (nx >= 0.44) & (nx <= 0.60)) | \
-                      (nx < 0.16 + fur_texture * 0.03)
-        apply_color(white_parts, 255, 250, 244)
+        # 10. ジンジャー (Deep Ginger Red)
+        apply_color(mask, 218, 62, 22)
+        white_accents = ((ny > 0.54 + fur_grain * 0.03) & (np.abs(nx - 0.44) < 0.25)) | (nx < 0.16)
+        apply_color(white_accents, 255, 250, 244)
         outline_r, outline_g, outline_b = 45, 14, 8
-
-    elif cat_type == "tuxedo":
-        # 実写ハチワレ: 完璧な八の字ホワイトマスク + タキシード胸元 + 白ソックス
-        apply_color(mask, 30, 34, 44)
-        hachi_curve = np.abs(nx - 0.58) * 1.5 + 0.24 + fur_texture * 0.04
-        hachiware = (ny >= 0.26) & (ny <= 0.56) & (ny > hachi_curve)
-        apply_color(hachiware, 255, 255, 255)
-        tuxedo_belly = ((ny > 0.48 + fur_texture * 0.04) & (nx > 0.30) & (nx < 0.68)) | (ny > 0.76 + dither)
-        apply_color(tuxedo_belly, 255, 255, 255)
-        outline_r, outline_g, outline_b = 16, 18, 26
-
-    elif cat_type == "tortoiseshell":
-        # 実写サビ猫: 漆黒×琥珀アンバー×ゴールドが複雑に絡み合う本物のモザイク
-        apply_color(mask, 40, 32, 30)
-        amber_patch = (np.sin(nx * 14 + ny * 12 + fur_texture * 5.0) * np.cos(nx * 8 - ny * 14)) > 0.03
-        apply_color(amber_patch, 216, 108, 34)
-        gold_patch = (np.cos(nx * 16 + ny * 18 - fur_texture * 4.0) * np.sin(nx * 10 - ny * 8)) > 0.09
-        apply_color(gold_patch, 232, 184, 64)
-        outline_r, outline_g, outline_b = 22, 16, 14
-
+        
     elif cat_type == "sakura":
-        # さくらねこ: ほんのり桜色 + 花びらチェリーピンクグラデーション
+        # 11. さくら (Sakura Pink)
         apply_color(mask, 255, 226, 238)
-        cherry = (ny < 0.32 + fur_texture * 0.04) | ((nx > 0.52) & (ny < 0.56 + fur_texture * 0.04)) | (nx < 0.16)
+        cherry = (ny < 0.32 + fur_grain * 0.03) | ((nx > 0.52) & (ny < 0.56 + fur_grain * 0.03)) | (nx < 0.16)
         apply_color(cherry, 255, 114, 170)
-        belly = (ny > 0.65 + dither) & (np.abs(nx - 0.44) < 0.25)
+        belly = (ny > 0.65 + dither) & (np.abs(nx - 0.44) < 0.24)
         apply_color(belly, 255, 250, 252)
         outline_r, outline_g, outline_b = 68, 38, 54
-
+        
     elif cat_type == "mint":
-        # ミントねこ: パステルミント + 爽やかなリーフ模様
+        # 12. ミント (Pastel Mint)
         apply_color(mask, 202, 248, 222)
-        leaf = (np.sin(nx * 18 + ny * 8 + fur_texture * 4.0) > 0.24) | (ny < 0.28 + fur_texture * 0.04)
+        leaf = (np.sin(nx * 18 + ny * 8 + fur_grain * 3.0) > 0.24) | (ny < 0.28)
         apply_color(leaf, 54, 186, 128)
         belly = (ny > 0.65 + dither) & (np.abs(nx - 0.44) < 0.24)
         apply_color(belly, 255, 255, 255)
         outline_r, outline_g, outline_b = 26, 58, 44
-
+        
     elif cat_type == "sky":
-        # スカイねこ: 青空スカイブルー + 雲の白ぶち + マリンブルー
+        # 13. スカイ (Sky Blue)
         apply_color(mask, 180, 224, 255)
-        clouds = (((nx - 0.42)**2 + (ny - 0.50)**2) < (0.038 + fur_texture * 0.02)) | \
-                 (((nx - 0.62)**2 + (ny - 0.58)**2) < (0.026 + fur_texture * 0.015))
+        clouds = (((nx - 0.42)**2 + (ny - 0.50)**2) < (0.036 + fur_grain * 0.015))
         apply_color(clouds, 255, 255, 255)
-        blue_points = (ny < 0.28 + fur_texture * 0.03) | (nx < 0.16)
-        apply_color(blue_points, 30, 118, 216)
+        blue_pt = (ny < 0.28) | (nx < 0.16)
+        apply_color(blue_pt, 30, 118, 216)
         outline_r, outline_g, outline_b = 22, 48, 84
-
+        
     elif cat_type == "lavender":
-        # パステルラベンダー: 幻想的なライラック + アメジストバイオレット
+        # 14. パステルラベンダー (Pastel Lavender)
         apply_color(mask, 228, 206, 252)
-        amethyst = (ny < 0.30 + fur_texture * 0.04) | ((nx > 0.60) & (ny < 0.52 + fur_texture * 0.04)) | (nx < 0.16)
+        amethyst = (ny < 0.30) | ((nx > 0.60) & (ny < 0.52)) | (nx < 0.16)
         apply_color(amethyst, 138, 68, 224)
         belly = (ny > 0.65 + dither) & (np.abs(nx - 0.44) < 0.24)
         apply_color(belly, 254, 250, 255)
         outline_r, outline_g, outline_b = 52, 28, 78
-
+        
     elif cat_type == "golden":
-        # ゴールドキャット: きらめく黄金イエロー + 琥珀星屑タビー
+        # 15. ゴールドキャット (Golden Star Tabby)
         apply_color(mask, 255, 216, 76)
-        gold_stripes = (np.sin(nx * 18 + ny * 8 + fur_texture * 4.0) > 0.24) | (ny < 0.28 + fur_texture * 0.04)
-        apply_color(gold_stripes, 236, 118, 24)
-        chest = (ny > 0.48 + fur_texture * 0.03) & (np.abs(nx - 0.46) < 0.24)
+        gold_st = (np.sin(nx * 18 + ny * 8 + fur_grain * 3.0) > 0.24) | (ny < 0.28)
+        apply_color(gold_st, 236, 118, 24)
+        chest = (ny > 0.48) & (np.abs(nx - 0.46) < 0.24)
         apply_color(chest, 255, 250, 218)
         outline_r, outline_g, outline_b = 62, 38, 6
 
-    # 1. ボディに陰影（Shading）とファー微細テクスチャを乗算合成して立体感を付与
+    # 陰影合成
     final_r = target_r * shade
     final_g = target_g * shade
     final_b = target_b * shade
     
-    # 2. 輪郭線（アウトライン）の適用
+    # 輪郭線
     final_r[is_outline] = outline_r
     final_g[is_outline] = outline_g
     final_b[is_outline] = outline_b
     
-    # 3. 耳の内側（ピンク）の適用
+    # 耳の内側
     final_r[is_inner_ear] = ear_r
     final_g[is_inner_ear] = ear_g
     final_b[is_inner_ear] = ear_b
     
-    # 4. 目のハイライト・白目の保護
+    # 目のハイライト
     final_r[is_eye_white] = 255
     final_g[is_eye_white] = 255
     final_b[is_eye_white] = 255

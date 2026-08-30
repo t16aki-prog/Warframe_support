@@ -25,7 +25,7 @@
       "id": 1,
       "title": "今日のタスクを計画する 📝",
       "target_pomo": 1,
-      "completed_pomo": 45,
+      "completed_pomo": 46,
       "is_done": true
     },
     {
@@ -55,8 +55,8 @@
   ],
   "active_task_id": 1,
   "cafe": {
-    "treats": 282,
-    "total_pomodoros": 46,
+    "treats": 303,
+    "total_pomodoros": 47,
     "unlocked_cats": [
       "black",
       "calico",
@@ -81,9 +81,9 @@
   "stats": {
     "daily_history": {
       "2026-08-29": 5,
-      "2026-08-30": 4
+      "2026-08-30": 5
     },
-    "total_minutes": 270,
+    "total_minutes": 300,
     "streak_days": 1,
     "last_active_date": "2026-08-30"
   },
