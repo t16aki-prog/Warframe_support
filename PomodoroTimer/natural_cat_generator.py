@@ -228,117 +228,135 @@ def generate_natural_cat(rgba_img, cat_type):
     return Image.fromarray(out_arr, mode="RGBA")
 
 
-def generate_cat_poses(base_awake, base_sleep, cat_type):
+def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     """
-    1種類の猫から、動いている時・寝ている時の全レパートリー（仰向けヘソ天、伸び寝、毛づくろい、じゃれ、伸び、歩行、ダッシュ等）のスプライト辞書を生成
+    動いている時・寝ている時の全モーション専用ベース画像から、15種類の猫固有の極上テクスチャを個別合成したスプライト辞書を生成
     """
-    tex_awake = generate_natural_cat(base_awake, cat_type)
-    tex_sleep = generate_natural_cat(base_sleep, cat_type)
-    
-    # 基本サイズ 48x48
-    aw_base = tex_awake.resize((48, 48), Image.Resampling.LANCZOS)
-    sl_base = tex_sleep.resize((48, 48), Image.Resampling.LANCZOS)
-    
+    if isinstance(base_images_or_awake, dict):
+        base_dict = base_images_or_awake
+    else:
+        # 後方互換性
+        aw = base_images_or_awake
+        sl = base_sleep_or_none
+        base_dict = {
+            "awake": aw,
+            "sleep": sl,
+            "walk_0": aw,
+            "walk_1": aw,
+            "dash": aw,
+            "groom": aw,
+            "stretch": aw,
+            "play": aw,
+            "pounce": aw,
+            "sleep_belly": sl,
+            "sleep_stretch": sl
+        }
+        
     poses = {}
     
     # 1. 立ち・座り (sit)
-    poses["sit_r"] = aw_base.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["sit_l"] = aw_base
+    tex_sit = generate_natural_cat(base_dict["awake"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    poses["sit_r"] = tex_sit.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["sit_l"] = tex_sit
     poses["awake_r"] = poses["sit_r"]
     poses["awake_l"] = poses["sit_l"]
     
-    # 2. 歩行 (walk) - 2フレーム足踏み・体揺れ
-    w_f0 = aw_base.copy()
-    w_f1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    w_f1.paste(aw_base.resize((48, 46), Image.Resampling.LANCZOS), (0, 2))
-    poses["walk_l_0"] = w_f0
-    poses["walk_l_1"] = w_f1
-    poses["walk_r_0"] = w_f0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["walk_r_1"] = w_f1.transpose(Image.FLIP_LEFT_RIGHT)
+    # 2. 歩行 (walk) - 専用歩行ベース画像 0 & 1
+    tex_w0 = generate_natural_cat(base_dict["walk_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    tex_w1 = generate_natural_cat(base_dict["walk_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    poses["walk_r_0"] = tex_w0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["walk_r_1"] = tex_w1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["walk_l_0"] = tex_w0
+    poses["walk_l_1"] = tex_w1
     
-    # 3. ダッシュ (dash) - 前傾小走り
+    # 3. ダッシュ (dash) - 専用疾走ベース画像
+    tex_dash = generate_natural_cat(base_dict["dash"], cat_type).resize((50, 46), Image.Resampling.LANCZOS)
     d_f0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    d_f0.paste(aw_base.resize((50, 44), Image.Resampling.LANCZOS), (-1, 4))
+    d_f0.paste(tex_dash, (-1, 2))
     d_f1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    d_f1.paste(aw_base.resize((52, 42), Image.Resampling.LANCZOS), (-2, 6))
-    poses["dash_l_0"] = d_f0
-    poses["dash_l_1"] = d_f1
+    d_f1.paste(tex_dash.resize((50, 44), Image.Resampling.LANCZOS), (-1, 4))
     poses["dash_r_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_l_0"] = d_f0
+    poses["dash_l_1"] = d_f1
     
-    # 4. 毛づくろい (groom / 顔洗い) - 前足を顔の横に上げてごしごし
-    gr_0 = aw_base.copy()
+    # 4. 毛づくろい (groom / 顔洗い) - 専用前足持ち上げベース画像
+    tex_gr = generate_natural_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    gr_0 = tex_gr.copy()
     gr_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    gr_1.paste(aw_base.rotate(-10, resample=Image.Resampling.BICUBIC), (0, 0))
+    gr_1.paste(tex_gr.rotate(-8, resample=Image.Resampling.BICUBIC), (0, 0))
     gr_2 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    gr_2.paste(aw_base.rotate(8, resample=Image.Resampling.BICUBIC), (0, 0))
-    poses["groom_l_0"] = gr_0
-    poses["groom_l_1"] = gr_1
-    poses["groom_l_2"] = gr_2
+    gr_2.paste(tex_gr.rotate(6, resample=Image.Resampling.BICUBIC), (0, 0))
     poses["groom_r_0"] = gr_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["groom_r_1"] = gr_1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["groom_r_2"] = gr_2.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["groom_l_0"] = gr_0
+    poses["groom_l_1"] = gr_1
+    poses["groom_l_2"] = gr_2
     
-    # 5. 猫の伸びポーズ (stretch) - 前足をぐーっと伸ばしてお尻アップ
+    # 5. 猫の伸びポーズ (stretch) - 専用背伸びベース画像
+    tex_st = generate_natural_cat(base_dict["stretch"], cat_type).resize((52, 42), Image.Resampling.LANCZOS)
     st_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    st_0.paste(aw_base.resize((54, 40), Image.Resampling.LANCZOS), (-3, 8))
+    st_0.paste(tex_st, (-2, 6))
     st_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    st_1.paste(aw_base.resize((56, 38), Image.Resampling.LANCZOS), (-4, 10))
-    poses["stretch_l_0"] = st_0
-    poses["stretch_l_1"] = st_1
+    st_1.paste(tex_st.resize((54, 40), Image.Resampling.LANCZOS), (-3, 8))
     poses["stretch_r_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["stretch_r_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_l_0"] = st_0
+    poses["stretch_l_1"] = st_1
     
-    # 6. じゃれる・チョイチョイ (play / 猫パンチ)
-    pl_0 = aw_base.copy()
+    # 6. じゃれる・チョイチョイ (play) - 専用前足浮かしベース画像
+    tex_pl = generate_natural_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    pl_0 = tex_pl.copy()
     pl_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    pl_1.paste(aw_base.rotate(14, resample=Image.Resampling.BICUBIC), (2, -2))
+    pl_1.paste(tex_pl.rotate(8, resample=Image.Resampling.BICUBIC), (2, -2))
     pl_2 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    pl_2.paste(aw_base.rotate(18, resample=Image.Resampling.BICUBIC), (4, -4))
-    poses["play_l_0"] = pl_0
-    poses["play_l_1"] = pl_1
-    poses["play_l_2"] = pl_2
+    pl_2.paste(tex_pl.rotate(14, resample=Image.Resampling.BICUBIC), (3, -3))
     poses["play_r_0"] = pl_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["play_r_1"] = pl_1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["play_r_2"] = pl_2.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["play_l_0"] = pl_0
+    poses["play_l_1"] = pl_1
+    poses["play_l_2"] = pl_2
     
-    # 7. 飛びつき・跳ねる (pounce)
+    # 7. 飛びつき・跳ねる (pounce) - 専用ジャンプベース画像
+    tex_po = generate_natural_cat(base_dict["pounce"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     po_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    po_0.paste(aw_base.resize((48, 40), Image.Resampling.LANCZOS), (0, 8))
+    po_0.paste(tex_po.resize((48, 42), Image.Resampling.LANCZOS), (0, 6))
     po_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    po_1.paste(aw_base.resize((50, 48), Image.Resampling.LANCZOS), (0, -6))
-    poses["pounce_l_0"] = po_0
-    poses["pounce_l_1"] = po_1
+    po_1.paste(tex_po, (0, -4))
     poses["pounce_r_0"] = po_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["pounce_r_1"] = po_1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["pounce_l_0"] = po_0
+    poses["pounce_l_1"] = po_1
     
     # --- 寝姿レパートリー (Sleep Poses) ---
     
-    # A. 丸まり寝 (sleep_curl) - すやすや呼吸 (2フレーム)
-    sl_curl_0 = sl_base.copy()
-    sl_curl_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    sl_curl_1.paste(sl_base.resize((48, 44), Image.Resampling.LANCZOS), (0, 4))
-    poses["sleep_curl_0"] = sl_curl_0
-    poses["sleep_curl_1"] = sl_curl_1
-    poses["sleep_0"] = sl_curl_0
-    poses["sleep_1"] = sl_curl_1
+    # A. 丸まり寝 (sleep_curl) - 専用丸まりベース画像 + 呼吸
+    tex_sl = generate_natural_cat(base_dict["sleep"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    sl_c0 = tex_sl.copy()
+    sl_c1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    sl_c1.paste(tex_sl.resize((48, 44), Image.Resampling.LANCZOS), (0, 4))
+    poses["sleep_curl_0"] = sl_c0
+    poses["sleep_curl_1"] = sl_c1
+    poses["sleep_0"] = sl_c0
+    poses["sleep_1"] = sl_c1
     
-    # B. 仰向けヘソ天寝 (sleep_belly) - お腹を上に向けて手足を広げて寝る
-    sl_belly_base = sl_base.transpose(Image.FLIP_TOP_BOTTOM).rotate(-8, resample=Image.Resampling.BICUBIC)
-    sl_belly_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    sl_belly_0.paste(sl_belly_base.resize((48, 46), Image.Resampling.LANCZOS), (0, 2))
-    sl_belly_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    sl_belly_1.paste(sl_belly_base.resize((48, 44), Image.Resampling.LANCZOS), (0, 4))
-    poses["sleep_belly_0"] = sl_belly_0
-    poses["sleep_belly_1"] = sl_belly_1
+    # B. 仰向けヘソ天寝 (sleep_belly) - 専用ヘソ天ベース画像 + 呼吸
+    tex_sb = generate_natural_cat(base_dict["sleep_belly"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    sb_0 = tex_sb.copy()
+    sb_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    sb_1.paste(tex_sb.resize((48, 45), Image.Resampling.LANCZOS), (0, 3))
+    poses["sleep_belly_0"] = sb_0
+    poses["sleep_belly_1"] = sb_1
     
-    # C. 体を広げて伸ばして寝る (sleep_stretch) - のびのび寝
-    sl_str_base = Image.new("RGBA", (54, 48), (0, 0, 0, 0))
-    sl_str_base.paste(sl_base.resize((54, 40), Image.Resampling.LANCZOS), (0, 8))
-    sl_str_0 = sl_str_base
-    sl_str_1 = Image.new("RGBA", (54, 48), (0, 0, 0, 0))
-    sl_str_1.paste(sl_base.resize((54, 38), Image.Resampling.LANCZOS), (0, 10))
-    poses["sleep_stretch_0"] = sl_str_0
-    poses["sleep_stretch_1"] = sl_str_1
+    # C. 体を広げて伸ばして寝る (sleep_stretch) - 専用のびのびベース画像 + 呼吸
+    tex_ss = generate_natural_cat(base_dict["sleep_stretch"], cat_type).resize((52, 44), Image.Resampling.LANCZOS)
+    ss_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    ss_0.paste(tex_ss, (-2, 4))
+    ss_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    ss_1.paste(tex_ss.resize((52, 42), Image.Resampling.LANCZOS), (-2, 6))
+    poses["sleep_stretch_0"] = ss_0
+    poses["sleep_stretch_1"] = ss_1
     
     return poses

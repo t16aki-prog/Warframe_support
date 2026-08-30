@@ -267,10 +267,31 @@ class PomodoroApp:
             else:
                 self.base_sleep = make_transparent(Image.open(sleep_jpg))
                 
+            # 各モーション・寝相専用ベーススプライトのロード
+            def load_or_fallback(fname, fallback):
+                fpath = os.path.join(base_dir, fname)
+                if os.path.exists(fpath):
+                    return Image.open(fpath).convert("RGBA")
+                return fallback
+                
+            base_pose_images = {
+                "awake": self.base_awake,
+                "sleep": self.base_sleep,
+                "walk_0": load_or_fallback("cat_walk_0.png", self.base_awake),
+                "walk_1": load_or_fallback("cat_walk_1.png", self.base_awake),
+                "dash": load_or_fallback("cat_dash.png", self.base_awake),
+                "groom": load_or_fallback("cat_groom.png", self.base_awake),
+                "stretch": load_or_fallback("cat_stretch.png", self.base_awake),
+                "play": load_or_fallback("cat_play.png", self.base_awake),
+                "pounce": load_or_fallback("cat_pounce.png", self.base_awake),
+                "sleep_belly": load_or_fallback("cat_sleep_belly.png", self.base_sleep),
+                "sleep_stretch": load_or_fallback("cat_sleep_stretch.png", self.base_sleep)
+            }
+                
             self.cat_textures = {}
             for cat_info in AVAILABLE_CATS:
                 c_id = cat_info["id"]
-                raw_poses = generate_cat_poses(self.base_awake, self.base_sleep, c_id)
+                raw_poses = generate_cat_poses(base_pose_images, None, c_id)
                 self.cat_textures[c_id] = {k: ImageTk.PhotoImage(v) for k, v in raw_poses.items()}
                 
             self._update_widget_cat_frames()
