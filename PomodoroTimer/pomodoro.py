@@ -17,6 +17,7 @@ if _cur_dir not in sys.path:
 from sound_generator import SoundManager
 from data_manager import DataManager, AVAILABLE_CATS, AVAILABLE_ITEMS, THEMES
 from google_sync import GoogleSyncManager
+from natural_cat_generator import generate_natural_cat, generate_cat_poses
 
 FONT_TITLE = ("Meiryo", 14, "bold")
 FONT_MAIN = ("Comic Sans MS", 50, "bold")
@@ -269,22 +270,8 @@ class PomodoroApp:
             self.cat_textures = {}
             for cat_info in AVAILABLE_CATS:
                 c_id = cat_info["id"]
-                t_awake = colorize_cat(self.base_awake, c_id)
-                t_sleep = colorize_cat(self.base_sleep, c_id)
-                
-                img_aw_main = t_awake.resize((48, 48), Image.Resampling.LANCZOS)
-                img_sl_main = t_sleep.resize((48, 48), Image.Resampling.LANCZOS)
-                
-                breath_img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-                resized_breath = t_sleep.resize((48, 44), Image.Resampling.LANCZOS)
-                breath_img.paste(resized_breath, (0, 4))
-                
-                self.cat_textures[c_id] = {
-                    "awake_r": ImageTk.PhotoImage(img_aw_main.transpose(Image.FLIP_LEFT_RIGHT)),
-                    "awake_l": ImageTk.PhotoImage(img_aw_main),
-                    "sleep_0": ImageTk.PhotoImage(img_sl_main),
-                    "sleep_1": ImageTk.PhotoImage(breath_img)
-                }
+                raw_poses = generate_cat_poses(self.base_awake, self.base_sleep, c_id)
+                self.cat_textures[c_id] = {k: ImageTk.PhotoImage(v) for k, v in raw_poses.items()}
                 
             self._update_widget_cat_frames()
             self.has_images = True
@@ -302,8 +289,8 @@ class PomodoroApp:
         
         prof = self.data_mgr.get_profile()
         av_cat = prof.get("avatar", "black")
-        t_aw = colorize_cat(self.base_awake, av_cat)
-        t_sl = colorize_cat(self.base_sleep, av_cat)
+        t_aw = generate_natural_cat(self.base_awake, av_cat)
+        t_sl = generate_natural_cat(self.base_sleep, av_cat)
         
         def make_widget_frame(img):
             resized = img.resize(w_size, Image.Resampling.LANCZOS)
@@ -562,6 +549,8 @@ class PomodoroApp:
         ]
         random.shuffle(spawn_slots)
         
+        sleep_pose_types = ["sleep_curl", "sleep_belly", "sleep_stretch"]
+        
         for idx, cat_id in enumerate(unlocked_cats):
             if cat_id in self.cat_textures:
                 if idx < len(spawn_slots):
@@ -570,17 +559,19 @@ class PomodoroApp:
                     x = random.randint(70, 410)
                     y = random.randint(145, 225)
                     
-                canvas_id = self.cat_canvas.create_image(x, y, image=self.cat_textures[cat_id]["sleep_0"], tags="cat")
+                sp_type = random.choice(sleep_pose_types)
+                canvas_id = self.cat_canvas.create_image(x, y, image=self.cat_textures[cat_id][f"{sp_type}_0"], tags="cat")
                 self.cats.append({
                     "type": cat_id,
                     "id": canvas_id,
                     "x": x,
                     "y": y,
                     "state": "sleep",
+                    "sleep_pose": sp_type,
                     "state_timer": random.randint(20, 80),
                     "dx": 0,
                     "dy": 0,
-                    "facing": random.choice(["awake_l", "awake_r"])
+                    "facing": random.choice(["r", "l"])
                 })
 
     def refresh_cafe_elements(self):
@@ -1778,51 +1769,53 @@ class PomodoroApp:
         for other in self.cats:
             if other["id"] != cat["id"]:
                 dist = math.hypot(cat["x"] - other["x"], cat["y"] - other["y"])
-                if dist < 32 and cat["state"] in ["walk", "dash"] and random.random() < 0.12:
-                    cat["state"] = "sit"
-                    cat["state_timer"] = 35
-                    other["state"] = "sit"
-                    other["state_timer"] = 35
-                    # 鼻タッチ・ハート
+                if dist < 34 and cat["state"] in ["walk", "dash"] and random.random() < 0.16:
+                    cat["state"] = random.choice(["play", "groom"])
+                    cat["state_timer"] = random.randint(30, 60)
+                    other["state"] = random.choice(["play", "sit"])
+                    other["state_timer"] = random.randint(30, 60)
+                    # 鼻タッチ・じゃれあいハート
                     hx = (cat["x"] + other["x"]) / 2
                     hy = min(cat["y"], other["y"]) - 18
-                    h_id = self.cat_canvas.create_text(hx, hy, text="❤️", font=("Segoe UI Emoji", 12), fill=self.theme["work"])
-                    self.floating_effects.append({"id": h_id, "x": hx, "y": hy, "life": 20})
+                    h_id = self.cat_canvas.create_text(hx, hy, text="💖", font=("Segoe UI Emoji", 13), fill=self.theme["work"])
+                    self.floating_effects.append({"id": h_id, "x": hx, "y": hy, "life": 22})
                     return
 
         # 家具インタラクション判定
         unlocked_items = self.data_mgr.get_cafe_data().get("unlocked_items", [])
-        if "cushion" in unlocked_items and math.hypot(cat["x"] - 70, cat["y"] - 220) < 30 and random.random() < 0.15:
-            cat["state"] = "sleep"
-            cat["state_timer"] = random.randint(50, 100)
+        if "cushion" in unlocked_items and math.hypot(cat["x"] - 75, cat["y"] - 205) < 32 and random.random() < 0.18:
+            cat["state"] = random.choice(["groom", "stretch", "sit"])
+            cat["state_timer"] = random.randint(40, 90)
             return
-        if "scratcher" in unlocked_items and math.hypot(cat["x"] - 400, cat["y"] - 180) < 30 and random.random() < 0.15:
-            cat["state"] = "dash"
-            cat["state_timer"] = 25
+        if "toy_mouse" in unlocked_items and math.hypot(cat["x"] - 165, cat["y"] - 225) < 32 and random.random() < 0.22:
+            cat["state"] = random.choice(["play", "pounce"])
+            cat["state_timer"] = random.randint(25, 45)
+            return
+        if "scratcher" in unlocked_items and math.hypot(cat["x"] - 395, cat["y"] - 175) < 32 and random.random() < 0.20:
+            cat["state"] = "stretch"
+            cat["state_timer"] = random.randint(30, 60)
             return
 
         if cat["state_timer"] <= 0:
-            states = ["walk", "sit", "dash", "sleep"]
-            weights = [40, 30, 10, 20]
+            states = ["walk", "sit", "dash", "groom", "stretch", "play", "pounce"]
+            weights = [28, 22, 10, 15, 10, 10, 5]
             new_state = random.choices(states, weights=weights)[0]
             cat["state"] = new_state
             
             if new_state == "walk":
                 cat["dx"] = random.choice([-2, -1, 1, 2])
                 cat["dy"] = random.choice([-1, 1])
+                cat["facing"] = "r" if cat["dx"] > 0 else "l"
                 cat["state_timer"] = random.randint(30, 80)
             elif new_state == "dash":
                 cat["dx"] = random.choice([-4, -3, 3, 4])
                 cat["dy"] = random.choice([-2, 2])
+                cat["facing"] = "r" if cat["dx"] > 0 else "l"
                 cat["state_timer"] = random.randint(15, 30)
-            elif new_state == "sit":
+            elif new_state in ["sit", "groom", "stretch", "play", "pounce"]:
                 cat["dx"] = 0
                 cat["dy"] = 0
                 cat["state_timer"] = random.randint(25, 60)
-            elif new_state == "sleep":
-                cat["dx"] = 0
-                cat["dy"] = 0
-                cat["state_timer"] = random.randint(40, 120)
         else:
             cat["state_timer"] -= 1
 
@@ -1852,17 +1845,25 @@ class PomodoroApp:
             for cat in self.cats:
                 c_id = cat["type"]
                 tex = self.cat_textures[c_id]
+                facing = cat.get("facing", "r")
+                state = cat.get("state", "sit")
                 
                 if is_sleep_time:
-                    f_idx = (self.anim_tick // 15) % 2
+                    # 多彩な寝相 (丸まり寝 / 仰向けヘソ天寝 / のびのび寝) + 呼吸アニメーション
+                    sp_type = cat.get("sleep_pose", "sleep_curl")
+                    f_idx = (self.anim_tick // 14) % 2
+                    frame_key = f"{sp_type}_{f_idx}"
                     try:
-                        self.cat_canvas.itemconfig(cat["id"], image=tex[f"sleep_{f_idx}"])
+                        if frame_key in tex:
+                            self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                        else:
+                            self.cat_canvas.itemconfig(cat["id"], image=tex["sleep_0"])
                     except Exception:
                         pass
                 else:
                     self.process_cat_ai(cat)
                     
-                    if cat["state"] in ["walk", "dash"]:
+                    if state in ["walk", "dash"]:
                         cat["x"] += cat["dx"]
                         cat["y"] += cat["dy"]
                         
@@ -1870,9 +1871,11 @@ class PomodoroApp:
                         if cat["x"] < 60:
                             cat["x"] = 60
                             cat["dx"] = abs(cat["dx"])
+                            cat["facing"] = "r"
                         elif cat["x"] > 420:
                             cat["x"] = 420
                             cat["dx"] = -abs(cat["dx"])
+                            cat["facing"] = "l"
                             
                         if cat["y"] < 135:
                             cat["y"] = 135
@@ -1881,11 +1884,14 @@ class PomodoroApp:
                             cat["y"] = 235
                             cat["dy"] = -abs(cat["dy"])
                             
-                        cat["facing"] = "awake_r" if cat["dx"] > 0 else "awake_l"
-                        y_off = 2 if (self.anim_tick % 4 < 2) and cat["state"] == "dash" else 0
+                        facing = cat["facing"]
+                        f_idx = (self.anim_tick // 6) % 2
+                        frame_key = f"{state}_{facing}_{f_idx}"
+                        y_off = 2 if (self.anim_tick % 4 < 2) and state == "dash" else 0
                         try:
                             self.cat_canvas.coords(cat["id"], cat["x"], cat["y"] - y_off)
-                            self.cat_canvas.itemconfig(cat["id"], image=tex[cat["facing"]])
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                         except Exception:
                             pass
                             
@@ -1893,15 +1899,52 @@ class PomodoroApp:
                         if self.anim_tick % 14 == 0 and len(self.floating_effects) < 20:
                             paw_id = self.cat_canvas.create_text(cat["x"], cat["y"] + 14, text="🐾", font=("Segoe UI Emoji", 7), fill=self.theme["border"])
                             self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 16})
-                    elif cat["state"] == "sit":
+                            
+                    elif state == "sit":
+                        frame_key = f"sit_{facing}"
                         try:
-                            self.cat_canvas.itemconfig(cat["id"], image=tex[cat["facing"]])
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                         except Exception:
                             pass
-                    elif cat["state"] == "sleep":
-                        f_idx = (self.anim_tick // 15) % 2
+                            
+                    elif state == "groom":
+                        # 毛づくろい (3フレーム)
+                        f_idx = (self.anim_tick // 8) % 3
+                        frame_key = f"groom_{facing}_{f_idx}"
                         try:
-                            self.cat_canvas.itemconfig(cat["id"], image=tex[f"sleep_{f_idx}"])
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                        except Exception:
+                            pass
+                            
+                    elif state == "stretch":
+                        # 伸びポーズ (2フレーム)
+                        f_idx = (self.anim_tick // 12) % 2
+                        frame_key = f"stretch_{facing}_{f_idx}"
+                        try:
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                        except Exception:
+                            pass
+                            
+                    elif state == "play":
+                        # じゃれる・チョイチョイ (3フレーム)
+                        f_idx = (self.anim_tick // 6) % 3
+                        frame_key = f"play_{facing}_{f_idx}"
+                        try:
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                        except Exception:
+                            pass
+                            
+                    elif state == "pounce":
+                        # 飛びつき・跳ねる (2フレーム)
+                        f_idx = (self.anim_tick // 8) % 2
+                        frame_key = f"pounce_{facing}_{f_idx}"
+                        try:
+                            if frame_key in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                         except Exception:
                             pass
                         
