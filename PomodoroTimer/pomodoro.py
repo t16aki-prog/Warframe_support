@@ -335,16 +335,16 @@ class PomodoroApp:
         self.header_title_label = tk.Label(self.header_frame, text="🐾 猫カフェ・ポモドーロ", font=FONT_TITLE, fg=self.theme["text"], bg=self.theme["header"])
         self.header_title_label.pack(side='left')
         
-        right_frame = tk.Frame(self.header_frame, bg=self.theme["header"])
-        right_frame.pack(side='right')
+        self.right_frame = tk.Frame(self.header_frame, bg=self.theme["header"])
+        self.right_frame.pack(side='right')
         
-        self.treat_label = tk.Label(right_frame, text=f"🐟 {self.data_mgr.get_cafe_data()['treats']}個", font=FONT_SUB, fg=self.theme["accent"], bg=self.theme["header"])
+        self.treat_label = tk.Label(self.right_frame, text=f"🐟 {self.data_mgr.get_cafe_data()['treats']}個", font=FONT_SUB, fg=self.theme["accent"], bg=self.theme["header"])
         self.treat_label.pack(side='left', padx=6)
         
         prof = self.data_mgr.get_profile()
         icon = AVATAR_ICONS.get(prof.get("avatar", "black"), "🐾")
         self.account_btn = tk.Button(
-            right_frame, text=f"{icon} {prof['name'][:8]}", font=FONT_TEXT,
+            self.right_frame, text=f"{icon} {prof['name'][:8]}", font=FONT_TEXT,
             bg=self.theme["card"], fg=self.theme["text"], relief="flat", padx=8, pady=2,
             cursor="hand2", command=self.open_account_modal
         )
@@ -408,6 +408,8 @@ class PomodoroApp:
         self.root.configure(bg=self.theme["bg"])
         self.header_frame.configure(bg=self.theme["header"])
         self.header_title_label.configure(bg=self.theme["header"], fg=self.theme["text"])
+        if hasattr(self, 'right_frame'):
+            self.right_frame.configure(bg=self.theme["header"])
         self.treat_label.configure(bg=self.theme["header"], fg=self.theme["accent"])
         self.account_btn.configure(bg=self.theme["card"], fg=self.theme["text"])
         self.tab_bar.configure(bg=self.theme["bg"])
@@ -656,39 +658,41 @@ class PomodoroApp:
         self.btn_cal_sync.pack(side='right', padx=3)
         
         # タスク追加フォーム (拡張版)
-        self.task_add_frame = tk.Frame(tab, bg=self.theme["card"], padx=10, pady=8, relief="groove", bd=1)
+        self.task_add_frame = tk.Frame(tab, bg=self.theme["card"], padx=10, pady=8, relief="flat", bd=0)
         self.task_add_frame.pack(fill='x', pady=4)
         
         self.task_add_title = tk.Label(self.task_add_frame, text="＋ 新しいタスクを追加", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"])
         self.task_add_title.pack(anchor='w', pady=(0, 4))
         
-        top_input_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
-        top_input_row.pack(fill='x', pady=2)
+        self.top_input_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
+        self.top_input_row.pack(fill='x', pady=2)
         
-        self.task_entry = tk.Entry(top_input_row, font=FONT_TEXT, bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"])
+        self.task_entry = tk.Entry(self.top_input_row, font=FONT_TEXT, bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"], relief="solid", bd=1)
         self.task_entry.pack(side='left', fill='x', expand=True, padx=(0, 6))
         self.task_entry.bind("<Return>", lambda e: self.add_new_task())
         
-        self.task_target_lbl = tk.Label(top_input_row, text="目標🍅:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
+        self.task_target_lbl = tk.Label(self.top_input_row, text="目標🍅:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
         self.task_target_lbl.pack(side='left', padx=2)
-        self.task_target_spin = ttk.Spinbox(top_input_row, from_=1, to=12, width=3, font=FONT_TEXT)
+        self.task_target_spin = ttk.Spinbox(self.top_input_row, from_=1, to=12, width=3, font=FONT_TEXT)
         self.task_target_spin.set(2)
         self.task_target_spin.pack(side='left', padx=(0, 6))
         
-        bottom_opts_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
-        bottom_opts_row.pack(fill='x', pady=2)
+        self.bottom_opts_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
+        self.bottom_opts_row.pack(fill='x', pady=2)
         
-        tk.Label(bottom_opts_row, text="タグ:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(side='left', padx=(0, 2))
+        self.task_tag_lbl = tk.Label(self.bottom_opts_row, text="タグ:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"])
+        self.task_tag_lbl.pack(side='left', padx=(0, 2))
         self.task_tag_var = tk.StringVar(value="💼 仕事")
-        self.task_tag_combo = ttk.Combobox(bottom_opts_row, textvariable=self.task_tag_var, values=["💼 仕事", "📚 勉強", "🎨 創作", "🏠 その他"], state="readonly", width=8, font=FONT_TEXT)
+        self.task_tag_combo = ttk.Combobox(self.bottom_opts_row, textvariable=self.task_tag_var, values=["💼 仕事", "📚 勉強", "🎨 創作", "🏠 その他"], state="readonly", width=8, font=FONT_TEXT)
         self.task_tag_combo.pack(side='left', padx=(0, 8))
         
-        tk.Label(bottom_opts_row, text="優先度:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(side='left', padx=(0, 2))
+        self.task_prio_lbl = tk.Label(self.bottom_opts_row, text="優先度:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"])
+        self.task_prio_lbl.pack(side='left', padx=(0, 2))
         self.task_prio_var = tk.StringVar(value="⚡ 中")
-        self.task_prio_combo = ttk.Combobox(bottom_opts_row, textvariable=self.task_prio_var, values=["🔥 高", "⚡ 中", "☕ 低"], state="readonly", width=6, font=FONT_TEXT)
+        self.task_prio_combo = ttk.Combobox(self.bottom_opts_row, textvariable=self.task_prio_var, values=["🔥 高", "⚡ 中", "☕ 低"], state="readonly", width=6, font=FONT_TEXT)
         self.task_prio_combo.pack(side='left', padx=(0, 8))
         
-        self.task_add_btn = tk.Button(bottom_opts_row, text="追加 ＋", command=self.add_new_task, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_BOLD, relief="flat", padx=12, pady=1, cursor="hand2")
+        self.task_add_btn = tk.Button(self.bottom_opts_row, text="追加 ＋", command=self.add_new_task, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_BOLD, relief="flat", padx=12, pady=1, cursor="hand2")
         self.task_add_btn.pack(side='right')
 
         # フィルターバー
@@ -744,11 +748,26 @@ class PomodoroApp:
         self.task_sync_bar.config(bg=self.theme["card"])
         self.btn_tasks_sync.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
         self.btn_cal_sync.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
+        
+        # タスク追加フォームのテーマ更新
         self.task_add_frame.config(bg=self.theme["card"])
         self.task_add_title.config(bg=self.theme["card"], fg=self.theme["text"])
+        self.top_input_row.config(bg=self.theme["card"])
         self.task_entry.config(bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"])
         self.task_target_lbl.config(bg=self.theme["card"], fg=self.theme["text"])
+        self.bottom_opts_row.config(bg=self.theme["card"])
+        self.task_tag_lbl.config(bg=self.theme["card"], fg=self.theme["sub_text"])
+        self.task_prio_lbl.config(bg=self.theme["card"], fg=self.theme["sub_text"])
         self.task_add_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
+        
+        # フィルターバーのテーマ更新
+        self.filter_frame.config(bg=self.theme["bg"])
+        for k, btn in self.filter_btns.items():
+            if k == self.task_filter:
+                btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
+            else:
+                btn.config(bg=self.theme["card"], fg=self.theme["text"])
+                
         self.task_canvas.config(bg=self.theme["bg"])
         self.task_inner_frame.config(bg=self.theme["bg"])
         
@@ -772,7 +791,7 @@ class PomodoroApp:
             is_active = (t_id == active_id)
             card_bg = self.theme["header"] if is_active else self.theme["card"]
             
-            card = tk.Frame(self.task_inner_frame, bg=card_bg, padx=10, pady=7, relief="solid", bd=1 if is_active else 0)
+            card = tk.Frame(self.task_inner_frame, bg=card_bg, padx=10, pady=7, relief="flat", bd=0)
             card.pack(fill='x', pady=3, padx=2)
             
             top_line = tk.Frame(card, bg=card_bg)
@@ -1238,16 +1257,18 @@ class PomodoroApp:
         bind_mousewheel_to_all(self.stats_scroll_frame, self.stats_canvas)
         
         # 1. サマリーカード (4つの主要KPI)
-        self.stats_kpi_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="groove", bd=1)
+        self.stats_kpi_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
         self.stats_kpi_card.pack(fill="x", padx=6, pady=6)
         
-        kpi_title = tk.Label(self.stats_kpi_card, text="📊 集中パフォーマンス・サマリー", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        kpi_title.pack(anchor="w", pady=(0, 8))
+        self.kpi_title = tk.Label(self.stats_kpi_card, text="📊 集中パフォーマンス・サマリー", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
+        self.kpi_title.pack(anchor="w", pady=(0, 8))
         
         self.kpi_grid = tk.Frame(self.stats_kpi_card, bg=self.theme["card"])
         self.kpi_grid.pack(fill="x")
         
         self.kpi_labels = {}
+        self.kpi_cells = []
+        self.kpi_cell_titles = []
         kpi_items = [
             ("total_pomo", "🍅 累計ポモドーロ", "0 回"),
             ("total_time", "⏱️ 総集中時間", "0 分"),
@@ -1259,29 +1280,32 @@ class PomodoroApp:
             cell = tk.Frame(self.kpi_grid, bg=self.theme["bg"], padx=10, pady=8, relief="flat")
             cell.grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
             self.kpi_grid.grid_columnconfigure(c, weight=1)
+            self.kpi_cells.append(cell)
             
             lbl_title = tk.Label(cell, text=title, font=FONT_TEXT, bg=self.theme["bg"], fg=self.theme["sub_text"])
             lbl_title.pack(anchor="w")
+            self.kpi_cell_titles.append(lbl_title)
+            
             lbl_val = tk.Label(cell, text=default_val, font=FONT_SUB, bg=self.theme["bg"], fg=self.theme["work"])
             lbl_val.pack(anchor="w", pady=(2, 0))
             self.kpi_labels[k_id] = lbl_val
 
         # 2. 週間推移バーグラフカード
-        self.stats_chart_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="groove", bd=1)
+        self.stats_chart_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
         self.stats_chart_card.pack(fill="x", padx=6, pady=6)
         
-        chart_title = tk.Label(self.stats_chart_card, text="📈 週間集中レポート (直近7日間)", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        chart_title.pack(anchor="w", pady=(0, 6))
+        self.chart_title = tk.Label(self.stats_chart_card, text="📈 週間集中レポート (直近7日間)", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
+        self.chart_title.pack(anchor="w", pady=(0, 6))
         
         self.chart_canvas = tk.Canvas(self.stats_chart_card, height=150, bg=self.theme["bg"], highlightthickness=0)
         self.chart_canvas.pack(fill="x", pady=4)
 
         # 3. 実績＆トロフィーバッジカード
-        self.stats_ach_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="groove", bd=1)
+        self.stats_ach_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
         self.stats_ach_card.pack(fill="x", padx=6, pady=6)
         
-        ach_title = tk.Label(self.stats_ach_card, text="🏆 実績・称号バッジ", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        ach_title.pack(anchor="w", pady=(0, 8))
+        self.ach_title = tk.Label(self.stats_ach_card, text="🏆 実績・称号バッジ", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
+        self.ach_title.pack(anchor="w", pady=(0, 8))
         
         self.ach_list_frame = tk.Frame(self.stats_ach_card, bg=self.theme["card"])
         self.ach_list_frame.pack(fill="x")
@@ -1294,10 +1318,19 @@ class PomodoroApp:
         self.stats_canvas.config(bg=self.theme["bg"])
         self.stats_scroll_frame.config(bg=self.theme["bg"])
         self.stats_kpi_card.config(bg=self.theme["card"])
+        self.kpi_title.config(bg=self.theme["card"], fg=self.theme["text"])
         self.kpi_grid.config(bg=self.theme["card"])
+        
+        for cell in self.kpi_cells:
+            cell.config(bg=self.theme["bg"])
+        for lbl_t in self.kpi_cell_titles:
+            lbl_t.config(bg=self.theme["bg"], fg=self.theme["sub_text"])
+            
         self.stats_chart_card.config(bg=self.theme["card"])
+        self.chart_title.config(bg=self.theme["card"], fg=self.theme["text"])
         self.chart_canvas.config(bg=self.theme["bg"])
         self.stats_ach_card.config(bg=self.theme["card"])
+        self.ach_title.config(bg=self.theme["card"], fg=self.theme["text"])
         self.ach_list_frame.config(bg=self.theme["card"])
         
         stats = self.data_mgr.get_stats_data()
