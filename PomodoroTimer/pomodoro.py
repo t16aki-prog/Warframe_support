@@ -1,3 +1,11 @@
+from core.timer import PomodoroTimer
+from core.cat_ai import CatAIEngine
+from ui.tabs.settings_tab import SettingsTab
+from ui.tabs.stats_tab import StatsTab
+from ui.tabs.shop_tab import ShopTab
+from ui.tabs.task_tab import TaskTab
+from ui.tabs.cafe_tab import CafeTab
+from ui.tabs.settings_tab import SettingsTab
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from PIL import Image, ImageTk
@@ -14,10 +22,10 @@ _cur_dir = os.path.dirname(os.path.abspath(__file__))
 if _cur_dir not in sys.path:
     sys.path.insert(0, _cur_dir)
 
-from sound_generator import SoundManager
+from scripts.sound_generator import SoundManager
 from data_manager import DataManager, AVAILABLE_CATS, AVAILABLE_ITEMS, THEMES
 from google_sync import GoogleSyncManager
-from natural_cat_generator import generate_natural_cat, generate_cat_poses
+from scripts.natural_cat_generator import generate_natural_cat, generate_cat_poses
 
 FONT_TITLE = ("Meiryo", 14, "bold")
 FONT_MAIN = ("Comic Sans MS", 50, "bold")
@@ -80,7 +88,7 @@ def make_transparent(img):
         return square_img
     return res
 
-from natural_cat_generator import generate_natural_cat
+from scripts.natural_cat_generator import generate_natural_cat
 
 def colorize_cat(rgba_img, cat_type):
     """猫のベース画像から、立体陰影・毛並みテクスチャ・有機的な柄を融合して超自然な猫を生成"""
@@ -126,16 +134,19 @@ class PomodoroApp:
         self.is_alive = True
         self.root.protocol("WM_DELETE_WINDOW", self.quit_app)
         
-        # タイマー設定
-        self.work_mins = self.data_mgr.get_setting("work_minutes")
-        self.short_break_mins = self.data_mgr.get_setting("short_break_minutes")
-        self.long_break_mins = self.data_mgr.get_setting("long_break_minutes")
-        self.long_break_interval = self.data_mgr.get_setting("long_break_interval")
-        
-        self.time_left = self.work_mins * 60
-        self.is_running = False
-        self.session_mode = "work"
-        self.cycle_count = 1
+        self.timer = PomodoroTimer(callbacks={
+            'on_tick': self._on_timer_tick,
+            'on_state_change': self._on_timer_state_change,
+            'on_work_end': self._on_work_end,
+            'on_break_end': self._on_break_end
+        })
+        self.timer.sync_settings(
+            self.data_mgr.get_setting("work_minutes"),
+            self.data_mgr.get_setting("short_break_minutes"),
+            self.data_mgr.get_setting("long_break_minutes"),
+            self.data_mgr.get_setting("long_break_interval")
+        )
+        self.timer.reset()
         self.anim_tick = 0
         self.floating_effects = []
         
@@ -250,7 +261,7 @@ class PomodoroApp:
         sleep_png = os.path.join(base_dir, "cat_sleep.png")
         awake_jpg = os.path.join(base_dir, "cat_awake.jpg")
         sleep_jpg = os.path.join(base_dir, "cat_sleep.jpg")
-        bg_path = os.path.join(base_dir, "room_bg.jpg")
+        bg_path = os.path.join(base_dir, "assets", "backgrounds", "room_bg.jpg")
         
         self.has_images = False
         try:
@@ -345,7 +356,7 @@ class PomodoroApp:
         }
         
         if hasattr(self, 'widget_cat'):
-            is_sleep = not self.is_running or self.session_mode != "work"
+            is_sleep = not self.timer.is_running or self.timer.session_mode != "work"
             frame_set = self.widget_cat_frames["sleep"] if is_sleep else self.widget_cat_frames["awake"]
             self.widget_cat.config(image=frame_set[0])
 
@@ -409,7 +420,7 @@ class PomodoroApp:
         elif tab_id == "shop":
             self.refresh_shop_view()
         elif tab_id == "cafe":
-            self.refresh_cafe_elements()
+            self.cafe_tab_obj.refresh_cafe_elements()
         elif tab_id == "stats":
             self.refresh_stats_view()
         elif tab_id == "settings":
@@ -477,7 +488,7 @@ class PomodoroApp:
         self.widget_play_btn.configure(bg=self.theme["btn"], fg=self.theme["btn_fg"])
         
         # 全タブのUI状態を一括リフレッシュ
-        self.refresh_cafe_elements()
+        self.cafe_tab_obj.refresh_cafe_elements()
         self.refresh_task_list()
         self.refresh_shop_view()
         self.refresh_stats_view()
@@ -488,54 +499,7 @@ class PomodoroApp:
 
     # --- 1. カフェタブ ---
     def _build_cafe_tab(self):
-        tab = tk.Frame(self.content_frame, bg=self.theme["bg"])
-        self.tabs["cafe"] = tab
-        
-        self.canvas_w = 480
-        self.canvas_h = 270
-        self.cat_canvas = tk.Canvas(tab, width=self.canvas_w, height=self.canvas_h, bg=self.theme["bg"], highlightthickness=0, cursor="hand2")
-        self.cat_canvas.pack(pady=(0, 5))
-        self.cat_canvas.bind("<Button-1>", self.on_canvas_click)
-        
-        if self.has_images:
-            self.cat_canvas.create_image(self.canvas_w/2, self.canvas_h/2, image=self.bg_photo)
-            
-        self.cats = []
-        self.spawn_cats_and_items()
-        
-        # インフォメーションカード (セット数 & 本日進捗)
-        self.info_card = tk.Frame(tab, bg=self.theme["card"], padx=12, pady=5, relief="flat")
-        self.info_card.pack(fill='x', padx=10, pady=(2, 4))
-        
-        self.cycle_label = tk.Label(self.info_card, text="セット 1/4 🐾 ⚪ ⚪ ⚪", font=FONT_SUB, fg=self.theme["text"], bg=self.theme["card"])
-        self.cycle_label.pack(side='left')
-        
-        prof = self.data_mgr.get_profile()
-        done_pomo = self.data_mgr.get_cafe_data()['total_pomodoros']
-        self.total_pomo_label = tk.Label(self.info_card, text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", font=FONT_SUB, fg=self.theme["work"], bg=self.theme["card"])
-        self.total_pomo_label.pack(side='right')
-        
-        # 作業中タスクバナー
-        self.active_task_banner = tk.Label(tab, text="作業中: 今日のタスクを計画する 📝", font=FONT_BOLD, fg=self.theme["text"], bg=self.theme["card"], padx=10, pady=4, relief="flat")
-        self.active_task_banner.pack(fill='x', padx=10, pady=(0, 4))
-        
-        self.status_label = tk.Label(tab, text="おしごと (停止中)", font=FONT_SUB, fg=self.theme["work"], bg=self.theme["bg"])
-        self.status_label.pack(pady=(2, 0))
-        
-        self.timer_label = tk.Label(tab, text=self.format_time(self.time_left), font=FONT_MAIN, fg=self.theme["work"], bg=self.theme["bg"])
-        self.timer_label.pack(pady=(0, 0))
-        
-        self.btn_frame = tk.Frame(tab, bg=self.theme["bg"])
-        self.btn_frame.pack(pady=6)
-        
-        self.start_btn = tk.Button(self.btn_frame, text="▶ 開始", command=self.toggle_timer, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=18, pady=5, cursor="hand2")
-        self.start_btn.pack(side="left", padx=5)
-        
-        self.feed_btn = tk.Button(self.btn_frame, text="🐟 おやつをあげる", command=self.feed_active_cat, bg=self.theme["card"], fg=self.theme["accent"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
-        self.feed_btn.pack(side="left", padx=5)
-        
-        self.reset_btn = tk.Button(self.btn_frame, text="↺ リセット", command=self.reset_timer, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
-        self.reset_btn.pack(side="left", padx=5)
+        self.cafe_tab_obj = CafeTab(self)
 
     def feed_active_cat(self):
         """相棒猫またはカフェの猫におやつをあげる"""
@@ -544,7 +508,7 @@ class PomodoroApp:
         if ok:
             self.sound_mgr.play_se("level_up")
             messagebox.showinfo("🐟 おやつタイム", msg)
-            self.refresh_cafe_elements()
+            self.cafe_tab_obj.refresh_cafe_elements()
             if self.cats:
                 cat = self.cats[0]
                 heart_id = self.cat_canvas.create_text(cat["x"], cat["y"] - 25, text="💖 ごちそうさまニャ！", font=("Meiryo", 11, "bold"), fill=self.theme["work"])
@@ -608,32 +572,6 @@ class PomodoroApp:
                     "dy": 0,
                     "facing": random.choice(["r", "l"])
                 })
-
-    def refresh_cafe_elements(self):
-        self.treat_label.config(text=f"🐟 {self.data_mgr.get_cafe_data()['treats']}個", fg=self.theme["accent"])
-        prof = self.data_mgr.get_profile()
-        done_pomo = self.data_mgr.get_cafe_data()['total_pomodoros']
-        
-        if hasattr(self, 'info_card'):
-            self.info_card.config(bg=self.theme["card"])
-            self.cycle_label.config(fg=self.theme["text"], bg=self.theme["card"])
-            self.total_pomo_label.config(text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", fg=self.theme["work"], bg=self.theme["card"])
-            self.active_task_banner.config(bg=self.theme["card"], fg=self.theme["text"])
-            self.btn_frame.config(bg=self.theme["bg"])
-            self.start_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-            self.feed_btn.config(bg=self.theme["card"], fg=self.theme["accent"])
-            self.reset_btn.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
-            
-        icon = AVATAR_ICONS.get(prof.get("avatar", "black"), "🐾")
-        self.account_btn.config(text=f"{icon} {prof['name'][:8]}")
-        
-        active_t = self.data_mgr.get_active_task()
-        if active_t:
-            done_mark = " (完了)" if active_t["is_done"] else ""
-            self.active_task_banner.config(text=f"作業中: {active_t['title']}{done_mark}")
-        else:
-            self.active_task_banner.config(text="作業中タスクなし 📝")
-        self.spawn_cats_and_items()
 
     def on_canvas_click(self, event):
         clicked_cat = None
@@ -765,106 +703,6 @@ class PomodoroApp:
                 btn.config(bg=self.theme["card"], fg=self.theme["text"])
         self.refresh_task_list()
 
-    def refresh_task_list(self):
-        for widget in self.task_inner_frame.winfo_children():
-            widget.destroy()
-            
-        g_status = "🟢 接続中" if self.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
-        self.sync_status_lbl.config(text=f"Google連携: {g_status}", bg=self.theme["card"], fg=self.theme["text"])
-        self.task_sync_bar.config(bg=self.theme["card"])
-        self.btn_tasks_sync.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
-        self.btn_cal_sync.config(bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"])
-        
-        # タスク追加フォームのテーマ更新
-        self.task_add_frame.config(bg=self.theme["card"])
-        self.task_add_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.top_input_row.config(bg=self.theme["card"])
-        self.task_entry.config(bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"])
-        self.task_target_lbl.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.bottom_opts_row.config(bg=self.theme["card"])
-        self.task_tag_lbl.config(bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.task_prio_lbl.config(bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.task_add_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-        
-        # フィルターバーのテーマ更新
-        self.filter_frame.config(bg=self.theme["bg"])
-        for k, btn in self.filter_btns.items():
-            if k == self.task_filter:
-                btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-            else:
-                btn.config(bg=self.theme["card"], fg=self.theme["text"])
-                
-        self.task_canvas.config(bg=self.theme["bg"])
-        self.task_inner_frame.config(bg=self.theme["bg"])
-        
-        tasks = self.data_mgr.get_tasks()
-        active_task = self.data_mgr.get_active_task()
-        active_id = active_task["id"] if active_task else None
-        
-        # フィルター適用
-        if self.task_filter == "active":
-            tasks = [t for t in tasks if not t["is_done"]]
-        elif self.task_filter == "done":
-            tasks = [t for t in tasks if t["is_done"]]
-            
-        if not tasks:
-            empty_lbl = tk.Label(self.task_inner_frame, text="該当するタスクはありません 🐾", font=FONT_TEXT, fg=self.theme["sub_text"], bg=self.theme["bg"], pady=20)
-            empty_lbl.pack()
-            return
-            
-        for t in tasks:
-            t_id = t["id"]
-            is_active = (t_id == active_id)
-            card_bg = self.theme["header"] if is_active else self.theme["card"]
-            
-            card = tk.Frame(self.task_inner_frame, bg=card_bg, padx=10, pady=7, relief="flat", bd=0)
-            card.pack(fill='x', pady=3, padx=2)
-            
-            top_line = tk.Frame(card, bg=card_bg)
-            top_line.pack(fill='x')
-            
-            chk_var = tk.BooleanVar(value=t["is_done"])
-            chk = tk.Checkbutton(top_line, variable=chk_var, bg=card_bg, activebackground=card_bg, command=lambda tid=t_id: self.toggle_task(tid))
-            chk.pack(side='left')
-            
-            # タグと優先度バッジ
-            tag_text = t.get("tag", "💼 仕事")
-            prio_text = t.get("priority", "⚡ 中")
-            tk.Label(top_line, text=tag_text, font=("Meiryo", 8), bg=self.theme["bg"], fg=self.theme["text"], padx=4).pack(side='left', padx=2)
-            tk.Label(top_line, text=prio_text, font=("Meiryo", 8), bg=self.theme["bg"], fg=self.theme["accent"], padx=4).pack(side='left', padx=2)
-            
-            if t.get("google_id"):
-                g_badge = tk.Label(top_line, text="G", font=("Segoe UI", 8, "bold"), bg=self.theme["btn_sec"], fg=GOOGLE_BLUE, padx=4)
-                g_badge.pack(side='left', padx=(0, 4))
-                
-            strike = " (済)" if t["is_done"] else ""
-            t_title = t["title"] + strike
-            lbl_title = tk.Label(top_line, text=t_title, font=FONT_BOLD if is_active else FONT_TEXT, bg=card_bg, fg=self.theme["sub_text"] if t["is_done"] else self.theme["text"], anchor='w')
-            lbl_title.pack(side='left', fill='x', expand=True, padx=4)
-            
-            pomo_str = f"🍅 {t['completed_pomo']}/{t['target_pomo']}"
-            lbl_pomo = tk.Label(top_line, text=pomo_str, font=FONT_TEXT, bg=card_bg, fg=self.theme["work"])
-            lbl_pomo.pack(side='left', padx=4)
-            
-            if not is_active and not t["is_done"]:
-                select_btn = tk.Button(top_line, text="選択", font=("Meiryo", 8), bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=6, cursor="hand2", command=lambda tid=t_id: self.select_task(tid))
-                select_btn.pack(side='left', padx=2)
-            elif is_active:
-                tag = tk.Label(top_line, text="作業中", font=("Meiryo", 8, "bold"), bg=self.theme["work"], fg="#fff", padx=5)
-                tag.pack(side='left', padx=2)
-                
-            del_btn = tk.Button(top_line, text="✕", font=("Meiryo", 8), bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], relief="flat", padx=5, cursor="hand2", command=lambda tid=t_id: self.delete_task(tid))
-            del_btn.pack(side='right')
-
-            # 進捗プログレスバー
-            prog_ratio = min(1.0, float(t['completed_pomo']) / max(1, t['target_pomo']))
-            prog_frame = tk.Frame(card, bg=self.theme["border"], height=4)
-            prog_frame.pack(fill='x', pady=(4, 1))
-            prog_fill = tk.Frame(prog_frame, bg=self.theme["work"], height=4)
-            prog_fill.place(relx=0, rely=0, relwidth=prog_ratio, relheight=1.0)
-
-        bind_mousewheel_to_all(self.task_inner_frame, self.task_canvas)
-
     def add_new_task(self):
         title = self.task_entry.get().strip()
         if not title:
@@ -878,26 +716,12 @@ class PomodoroApp:
         self.data_mgr.add_task(title, target, tag=tag, priority=prio)
         self.task_entry.delete(0, 'end')
         self.refresh_task_list()
-        self.refresh_cafe_elements()
-
-    def toggle_task(self, task_id):
-        t = self.data_mgr.toggle_task_done(task_id)
-        if t and t["is_done"]:
-            self.sound_mgr.play_se("level_up")
-            if t.get("google_id"):
-                threading.Thread(target=lambda: self.google_sync.complete_task(t["google_id"]), daemon=True).start()
-        self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.cafe_tab_obj.refresh_cafe_elements()
 
     def select_task(self, task_id):
         self.data_mgr.set_active_task(task_id)
         self.refresh_task_list()
-        self.refresh_cafe_elements()
-
-    def delete_task(self, task_id):
-        self.data_mgr.delete_task(task_id)
-        self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.cafe_tab_obj.refresh_cafe_elements()
 
     def sync_google_tasks(self):
         tasks = self.google_sync.fetch_tasks()
@@ -910,7 +734,7 @@ class PomodoroApp:
                 added_count += 1
                 
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.cafe_tab_obj.refresh_cafe_elements()
         self.sound_mgr.play_se("level_up")
         
         mode_str = "Google Tasks" if self.google_sync.is_authenticated() else "Google Tasks (サンプルデモ)"
@@ -951,7 +775,7 @@ class PomodoroApp:
         self.data_mgr.add_task(summary, target_pomo=2)
         self.sound_mgr.play_se("level_up")
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.cafe_tab_obj.refresh_cafe_elements()
         messagebox.showinfo("タスク追加", f"「{summary}」をタスクに追加しました！")
 
     # --- 最初の相棒猫選択モーダル ---
@@ -988,7 +812,7 @@ class PomodoroApp:
             self.sound_mgr.play_se("level_up")
             messagebox.showinfo("相棒決定！", "最初の相棒猫を設定しました！🐾")
             modal.destroy()
-            self.refresh_cafe_elements()
+            self.cafe_tab_obj.refresh_cafe_elements()
             self.refresh_shop_view()
 
         cur_avatar = self.data_mgr.get_profile().get("avatar", "black")
@@ -1094,7 +918,7 @@ class PomodoroApp:
                 new_goal = 4
             self.data_mgr.update_profile(name=new_name, avatar=raw_av, daily_goal=new_goal)
             self._update_widget_cat_frames()
-            self.refresh_cafe_elements()
+            self.cafe_tab_obj.refresh_cafe_elements()
             self.refresh_task_list()
             messagebox.showinfo("更新完了", "プロフィールを更新しました！🐾")
             modal.destroy()
@@ -1139,464 +963,19 @@ class PomodoroApp:
 
     # --- 3. ショップ & 育成タブ ---
     def _build_shop_tab(self):
-        tab = tk.Frame(self.content_frame, bg=self.theme["bg"])
-        self.tabs["shop"] = tab
-        
-        container = tk.Frame(tab, bg=self.theme["bg"])
-        container.pack(fill='both', expand=True)
-        
-        self.shop_canvas = tk.Canvas(container, bg=self.theme["bg"], highlightthickness=0)
-        self.shop_scrollbar = ttk.Scrollbar(container, orient="vertical", command=self.shop_canvas.yview)
-        self.shop_inner = tk.Frame(self.shop_canvas, bg=self.theme["bg"])
-        
-        self.shop_inner.bind("<Configure>", lambda e: self.shop_canvas.configure(scrollregion=self.shop_canvas.bbox("all")))
-        self.shop_win = self.shop_canvas.create_window((0, 0), window=self.shop_inner, anchor="nw")
-        self.shop_canvas.bind("<Configure>", lambda e: self.shop_canvas.itemconfig(self.shop_win, width=e.width))
-        
-        self.shop_canvas.configure(yscrollcommand=self.shop_scrollbar.set)
-        self.shop_canvas.pack(side="left", fill="both", expand=True)
-        self.shop_scrollbar.pack(side="right", fill="y")
-        
-        bind_mousewheel_to_all(self.shop_inner, self.shop_canvas)
-
+        self.shop_tab_obj = ShopTab(self)
     def refresh_shop_view(self):
-        for widget in self.shop_inner.winfo_children():
-            widget.destroy()
-            
-        self.shop_canvas.config(bg=self.theme["bg"])
-        self.shop_inner.config(bg=self.theme["bg"])
-        
-        cafe_data = self.data_mgr.get_cafe_data()
-        treats = cafe_data["treats"]
-        
-        banner = tk.Frame(self.shop_inner, bg=self.theme["card"], padx=12, pady=10, relief="groove", bd=1)
-        banner.pack(fill='x', pady=5, padx=4)
-        tk.Label(banner, text="🎁 カフェショップ & 育成", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"]).pack(anchor='w')
-        tk.Label(banner, text="ポモドーロを1回完了するごとに おやつ🐟 が1つもらえます！\nおやつを集めて新しい猫や家具をアンロックしよう！", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"], justify='left').pack(anchor='w', pady=(2, 6))
-        
-        starter_btn = tk.Button(
-            banner, text="🐾 最初の相棒猫を選び直す (無料)", font=FONT_BOLD,
-            bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=10, pady=4, cursor="hand2",
-            command=self.open_starter_cat_modal
-        )
-        starter_btn.pack(anchor='w')
-        
-        tk.Label(self.shop_inner, text="🐾 新しい猫を迎える", font=FONT_SUB, bg=self.theme["bg"], fg=self.theme["text"]).pack(anchor='w', pady=(10, 2), padx=4)
-        
-        unlocked_cats = cafe_data.get("unlocked_cats", ["black"])
-        for cat in AVAILABLE_CATS:
-            c_id = cat["id"]
-            is_unlocked = c_id in unlocked_cats
-            
-            card = tk.Frame(self.shop_inner, bg=self.theme["card"], padx=12, pady=9, relief="solid", bd=0)
-            card.pack(fill='x', pady=3, padx=4)
-            
-            tk.Label(card, text=cat["name"], font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).pack(side='left')
-            tk.Label(card, text=f" - {cat['desc']}", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(side='left', padx=5)
-            
-            if is_unlocked:
-                tk.Label(card, text="在籍中 ✨", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["break"]).pack(side='right')
-            else:
-                can_buy = treats >= cat["cost"]
-                btn = tk.Button(
-                    card, text=f"迎える (🐟 {cat['cost']}個)",
-                    font=FONT_TEXT, bg=self.theme["btn"] if can_buy else self.theme["btn_sec"],
-                    fg=self.theme["btn_fg"] if can_buy else self.theme["btn_sec_fg"],
-                    relief="flat", padx=8, pady=2, cursor="hand2" if can_buy else "arrow",
-                    state="normal" if can_buy else "disabled",
-                    command=lambda cid=c_id: self.buy_cat(cid)
-                )
-                btn.pack(side='right')
-                
-        tk.Label(self.shop_inner, text="🛋️ 家具とおもちゃ", font=FONT_SUB, bg=self.theme["bg"], fg=self.theme["text"]).pack(anchor='w', pady=(12, 2), padx=4)
-        
-        unlocked_items = cafe_data.get("unlocked_items", ["cushion"])
-        for item in AVAILABLE_ITEMS:
-            i_id = item["id"]
-            is_unlocked = i_id in unlocked_items
-            
-            card = tk.Frame(self.shop_inner, bg=self.theme["card"], padx=12, pady=9, relief="solid", bd=0)
-            card.pack(fill='x', pady=3, padx=4)
-            
-            tk.Label(card, text=f"{item['icon']} {item['name']}", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).pack(side='left')
-            tk.Label(card, text=f" - {item['desc']}", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(side='left', padx=5)
-            
-            if is_unlocked:
-                tk.Label(card, text="設置済み ✨", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["break"]).pack(side='right')
-            else:
-                can_buy = treats >= item["cost"]
-                btn = tk.Button(
-                    card, text=f"設置 (🐟 {item['cost']}個)",
-                    font=FONT_TEXT, bg=self.theme["btn"] if can_buy else self.theme["btn_sec"],
-                    fg=self.theme["btn_fg"] if can_buy else self.theme["btn_sec_fg"],
-                    relief="flat", padx=8, pady=2, cursor="hand2" if can_buy else "arrow",
-                    state="normal" if can_buy else "disabled",
-                    command=lambda iid=i_id: self.buy_item(iid)
-                )
-                btn.pack(side='right')
-
-        bind_mousewheel_to_all(self.shop_inner, self.shop_canvas)
-
-    def buy_cat(self, cat_id):
-        success, msg = self.data_mgr.unlock_cat(cat_id)
-        if success:
-            self.sound_mgr.play_se("level_up")
-            messagebox.showinfo("お迎え成功！", msg)
-            self.refresh_shop_view()
-            self.refresh_cafe_elements()
-        else:
-            messagebox.showwarning("購入できません", msg)
-
-    def buy_item(self, item_id):
-        success, msg = self.data_mgr.unlock_item(item_id)
-        if success:
-            self.sound_mgr.play_se("level_up")
-            messagebox.showinfo("設置完了！", msg)
-            self.refresh_shop_view()
-            self.refresh_cafe_elements()
-        else:
-            messagebox.showwarning("購入できません", msg)
-
+        self.shop_tab_obj.refresh_view()
     # --- 4. 統計＆実績タブ ---
     def _build_stats_tab(self):
-        tab = tk.Frame(self.content_frame, bg=self.theme["bg"])
-        self.tabs["stats"] = tab
-        
-        # スクロール対応キャンバス
-        self.stats_canvas = tk.Canvas(tab, bg=self.theme["bg"], highlightthickness=0)
-        self.stats_scrollbar = ttk.Scrollbar(tab, orient="vertical", command=self.stats_canvas.yview)
-        self.stats_scroll_frame = tk.Frame(self.stats_canvas, bg=self.theme["bg"])
-        
-        self.stats_scroll_frame.bind(
-            "<Configure>",
-            lambda e: self.stats_canvas.configure(scrollregion=self.stats_canvas.bbox("all"))
-        )
-        self.stats_canvas_window = self.stats_canvas.create_window((0, 0), window=self.stats_scroll_frame, anchor="nw")
-        self.stats_canvas.bind(
-            "<Configure>",
-            lambda e: self.stats_canvas.itemconfig(self.stats_canvas_window, width=e.width)
-        )
-        self.stats_canvas.configure(yscrollcommand=self.stats_scrollbar.set)
-        
-        self.stats_canvas.pack(side="left", fill="both", expand=True)
-        self.stats_scrollbar.pack(side="right", fill="y")
-        bind_mousewheel_to_all(self.stats_scroll_frame, self.stats_canvas)
-        
-        # 1. サマリーカード (4つの主要KPI)
-        self.stats_kpi_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
-        self.stats_kpi_card.pack(fill="x", padx=6, pady=6)
-        
-        self.kpi_title = tk.Label(self.stats_kpi_card, text="📊 集中パフォーマンス・サマリー", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        self.kpi_title.pack(anchor="w", pady=(0, 8))
-        
-        self.kpi_grid = tk.Frame(self.stats_kpi_card, bg=self.theme["card"])
-        self.kpi_grid.pack(fill="x")
-        
-        self.kpi_labels = {}
-        self.kpi_cells = []
-        self.kpi_cell_titles = []
-        kpi_items = [
-            ("total_pomo", "🍅 累計ポモドーロ", "0 回"),
-            ("total_time", "⏱️ 総集中時間", "0 分"),
-            ("today_pomo", "🎯 本日の達成", "0 / 4"),
-            ("streak", "🔥 連続達成日数", "1 日")
-        ]
-        for idx, (k_id, title, default_val) in enumerate(kpi_items):
-            r, c = idx // 2, idx % 2
-            cell = tk.Frame(self.kpi_grid, bg=self.theme["bg"], padx=10, pady=8, relief="flat")
-            cell.grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
-            self.kpi_grid.grid_columnconfigure(c, weight=1)
-            self.kpi_cells.append(cell)
-            
-            lbl_title = tk.Label(cell, text=title, font=FONT_TEXT, bg=self.theme["bg"], fg=self.theme["sub_text"])
-            lbl_title.pack(anchor="w")
-            self.kpi_cell_titles.append(lbl_title)
-            
-            lbl_val = tk.Label(cell, text=default_val, font=FONT_SUB, bg=self.theme["bg"], fg=self.theme["work"])
-            lbl_val.pack(anchor="w", pady=(2, 0))
-            self.kpi_labels[k_id] = lbl_val
-
-        # 2. 週間推移バーグラフカード
-        self.stats_chart_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
-        self.stats_chart_card.pack(fill="x", padx=6, pady=6)
-        
-        self.chart_title = tk.Label(self.stats_chart_card, text="📈 週間集中レポート (直近7日間)", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        self.chart_title.pack(anchor="w", pady=(0, 6))
-        
-        self.chart_canvas = tk.Canvas(self.stats_chart_card, height=150, bg=self.theme["bg"], highlightthickness=0)
-        self.chart_canvas.pack(fill="x", pady=4)
-
-        # 3. 実績＆トロフィーバッジカード
-        self.stats_ach_card = tk.Frame(self.stats_scroll_frame, bg=self.theme["card"], padx=12, pady=12, relief="flat", bd=0)
-        self.stats_ach_card.pack(fill="x", padx=6, pady=6)
-        
-        self.ach_title = tk.Label(self.stats_ach_card, text="🏆 実績・称号バッジ", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        self.ach_title.pack(anchor="w", pady=(0, 8))
-        
-        self.ach_list_frame = tk.Frame(self.stats_ach_card, bg=self.theme["card"])
-        self.ach_list_frame.pack(fill="x")
-
+        self.stats_tab_obj = StatsTab(self)
     def refresh_stats_view(self):
-        """統計画面のKPI・グラフ・実績リストを最新データで再描画"""
-        if not hasattr(self, 'stats_canvas'):
-            return
-            
-        self.stats_canvas.config(bg=self.theme["bg"])
-        self.stats_scroll_frame.config(bg=self.theme["bg"])
-        self.stats_kpi_card.config(bg=self.theme["card"])
-        self.kpi_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.kpi_grid.config(bg=self.theme["card"])
-        
-        for cell in self.kpi_cells:
-            cell.config(bg=self.theme["bg"])
-        for lbl_t in self.kpi_cell_titles:
-            lbl_t.config(bg=self.theme["bg"], fg=self.theme["sub_text"])
-            
-        self.stats_chart_card.config(bg=self.theme["card"])
-        self.chart_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.chart_canvas.config(bg=self.theme["bg"])
-        self.stats_ach_card.config(bg=self.theme["card"])
-        self.ach_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.ach_list_frame.config(bg=self.theme["card"])
-        
-        stats = self.data_mgr.get_stats_data()
-        cafe = self.data_mgr.get_cafe_data()
-        prof = self.data_mgr.get_profile()
-        
-        total_pomo = cafe["total_pomodoros"]
-        total_mins = stats.get("total_minutes", total_pomo * self.work_mins)
-        streak = stats.get("streak_days", 1)
-        daily_hist = stats.get("daily_history", {})
-        
-        import time, datetime
-        today_str = time.strftime("%Y-%m-%d")
-        today_done = daily_hist.get(today_str, total_pomo)
-        
-        hours = total_mins // 60
-        mins = total_mins % 60
-        time_str = f"{hours}時間 {mins}分" if hours > 0 else f"{mins}分"
-        
-        self.kpi_labels["total_pomo"].config(text=f"{total_pomo} 回", fg=self.theme["work"], bg=self.theme["bg"])
-        self.kpi_labels["total_time"].config(text=time_str, fg=self.theme["work"], bg=self.theme["bg"])
-        self.kpi_labels["today_pomo"].config(text=f"{today_done} / {prof['daily_goal']} 🍅", fg=self.theme["work"], bg=self.theme["bg"])
-        self.kpi_labels["streak"].config(text=f"{streak} 日間連続 🔥", fg=self.theme["accent"], bg=self.theme["bg"])
-        
-        # グラフ描画 (直近7日間)
-        self.chart_canvas.delete("all")
-        cw = self.chart_canvas.winfo_width()
-        if cw < 50:
-            cw = 460
-        ch = 150
-        
-        today_date = datetime.date.today()
-        days_data = []
-        for i in range(6, -1, -1):
-            d = today_date - datetime.timedelta(days=i)
-            d_str = d.strftime("%Y-%m-%d")
-            d_label = d.strftime("%m/%d") if i != 0 else "今日"
-            val = daily_hist.get(d_str, 0)
-            if i == 0 and val == 0 and total_pomo > 0:
-                val = today_done
-            days_data.append((d_label, val))
-            
-        max_val = max(max([v for _, v in days_data]), 4)
-        bar_w = (cw - 60) / 7.0
-        
-        # 目標ライン
-        goal_y = ch - 30 - (float(prof['daily_goal']) / max_val) * (ch - 60)
-        self.chart_canvas.create_line(30, goal_y, cw - 10, goal_y, fill=self.theme["border"], dash=(4, 4))
-        self.chart_canvas.create_text(25, goal_y, text=f"{prof['daily_goal']}", font=("Meiryo", 8), fill=self.theme["sub_text"])
-        
-        for idx, (label, val) in enumerate(days_data):
-            bx = 35 + idx * bar_w
-            bar_height = (float(val) / max_val) * (ch - 60)
-            by1 = ch - 25
-            by0 = by1 - bar_height
-            
-            # バー
-            color = self.theme["work"] if idx == 6 else self.theme["btn"]
-            self.chart_canvas.create_rectangle(bx, by0, bx + bar_w - 12, by1, fill=color, outline="")
-            
-            # 数値
-            if val > 0:
-                self.chart_canvas.create_text(bx + (bar_w - 12)/2, by0 - 8, text=str(val), font=("Meiryo", 8, "bold"), fill=self.theme["text"])
-            # 日付ラベル
-            self.chart_canvas.create_text(bx + (bar_w - 12)/2, ch - 12, text=label, font=("Meiryo", 8), fill=self.theme["sub_text"])
-
-        # 実績バッジ一覧の描画
-        for w in self.ach_list_frame.winfo_children():
-            w.destroy()
-            
-        achievements = self.data_mgr.get_achievements()
-        for ach in achievements:
-            is_unlocked = ach.get("unlocked", False)
-            card_bg = self.theme["header"] if is_unlocked else self.theme["bg"]
-            
-            row = tk.Frame(self.ach_list_frame, bg=card_bg, padx=10, pady=8, relief="flat")
-            row.pack(fill="x", pady=3)
-            
-            icon = "🏆" if is_unlocked else "🔒"
-            status_text = "解除済み ✨" if is_unlocked else "未解除"
-            status_color = self.theme["accent"] if is_unlocked else self.theme["sub_text"]
-            
-            left_box = tk.Frame(row, bg=card_bg)
-            left_box.pack(side="left", fill="x", expand=True)
-            
-            tk.Label(left_box, text=f"{icon} {ach['name']}", font=FONT_BOLD, bg=card_bg, fg=self.theme["text"]).pack(anchor="w")
-            tk.Label(left_box, text=ach['desc'], font=FONT_TEXT, bg=card_bg, fg=self.theme["sub_text"]).pack(anchor="w")
-            
-            tk.Label(row, text=status_text, font=FONT_BOLD, bg=card_bg, fg=status_color).pack(side="right", padx=6)
-
+        self.stats_tab_obj.refresh_view()
     # --- 5. 設定タブ ---
     def _build_settings_tab(self):
-        tab = tk.Frame(self.content_frame, bg=self.theme["bg"])
-        self.tabs["settings"] = tab
-        
-        self.settings_card = tk.Frame(tab, bg=self.theme["card"], padx=15, pady=15, relief="groove", bd=1)
-        self.settings_card.pack(fill='both', expand=True, pady=5)
-        
-        self.settings_title = tk.Label(self.settings_card, text="⚙️ ポモドーロ & サウンド & テーマ設定", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"])
-        self.settings_title.pack(anchor='w', pady=(0, 10))
-        
-        self.settings_theme_lbl = tk.Label(self.settings_card, text="🎨 アプリのテーマカラー", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"])
-        self.settings_theme_lbl.pack(anchor='w', pady=(5, 4))
-        
-        self.theme_frame = tk.Frame(self.settings_card, bg=self.theme["card"])
-        self.theme_frame.pack(fill='x', pady=2)
-        
-        cur_theme_key = self.data_mgr.get_setting("theme")
-        self.theme_var = tk.StringVar(value=cur_theme_key)
-        
-        self.theme_combo = ttk.Combobox(self.theme_frame, textvariable=self.theme_var, values=[f"{k} ({v['name']})" for k, v in THEMES.items()], state="readonly", width=26, font=FONT_TEXT)
-        for opt in self.theme_combo["values"]:
-            if opt.startswith(cur_theme_key):
-                self.theme_combo.set(opt)
-                break
-        self.theme_combo.pack(side='left', padx=(0, 8))
-        
-        def on_theme_change():
-            t_key = self.theme_var.get().split()[0]
-            self.apply_theme(t_key)
-            messagebox.showinfo("テーマ変更", f"テーマを「{THEMES[t_key]['name']}」に変更しました！")
-            
-        self.theme_apply_btn = tk.Button(self.theme_frame, text="適用 🎨", font=FONT_BOLD, bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=8, pady=2, cursor="hand2", command=on_theme_change)
-        self.theme_apply_btn.pack(side='left')
-
-        # 時間設定グリッド
-        self.grid_frame = tk.Frame(self.settings_card, bg=self.theme["card"])
-        self.grid_frame.pack(fill='x', pady=(15, 5))
-        
-        self.lbl_work = tk.Label(self.grid_frame, text="作業時間 (分):", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_work.grid(row=0, column=0, sticky='w', pady=6)
-        self.spin_work = ttk.Spinbox(self.grid_frame, from_=1, to=90, width=5, font=FONT_TEXT)
-        self.spin_work.set(self.data_mgr.get_setting("work_minutes"))
-        self.spin_work.grid(row=0, column=1, sticky='e', padx=10)
-        
-        self.lbl_short = tk.Label(self.grid_frame, text="短い休憩時間 (分):", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_short.grid(row=1, column=0, sticky='w', pady=6)
-        self.spin_short_break = ttk.Spinbox(self.grid_frame, from_=1, to=30, width=5, font=FONT_TEXT)
-        self.spin_short_break.set(self.data_mgr.get_setting("short_break_minutes"))
-        self.spin_short_break.grid(row=1, column=1, sticky='e', padx=10)
-        
-        self.lbl_long = tk.Label(self.grid_frame, text="長い休憩時間 (分):", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_long.grid(row=2, column=0, sticky='w', pady=6)
-        self.spin_long_break = ttk.Spinbox(self.grid_frame, from_=1, to=60, width=5, font=FONT_TEXT)
-        self.spin_long_break.set(self.data_mgr.get_setting("long_break_minutes"))
-        self.spin_long_break.grid(row=2, column=1, sticky='e', padx=10)
-        
-        self.lbl_interval = tk.Label(self.grid_frame, text="長休憩までのサイクル数:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_interval.grid(row=3, column=0, sticky='w', pady=6)
-        self.spin_interval = ttk.Spinbox(self.grid_frame, from_=2, to=8, width=5, font=FONT_TEXT)
-        self.spin_interval.set(self.data_mgr.get_setting("long_break_interval"))
-        self.spin_interval.grid(row=3, column=1, sticky='e', padx=10)
-        
-        # サウンド
-        self.lbl_sound_title = tk.Label(self.settings_card, text="サウンド設定", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_sound_title.pack(anchor='w', pady=(15, 5))
-        
-        self.se_var = tk.BooleanVar(value=self.data_mgr.get_setting("se_enabled"))
-        self.chk_se = tk.Checkbutton(self.settings_card, text="効果音 (SE) を鳴らす (ニャー・チャイム)", variable=self.se_var, font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"], activebackground=self.theme["card"])
-        self.chk_se.pack(anchor='w', pady=2)
-        
-        self.bgm_frame = tk.Frame(self.settings_card, bg=self.theme["card"])
-        self.bgm_frame.pack(fill='x', pady=4)
-        self.lbl_bgm = tk.Label(self.bgm_frame, text="環境音 BGM:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_bgm.pack(side='left')
-        
-        self.bgm_var = tk.StringVar(value=self.data_mgr.get_setting("bgm_type"))
-        self.bgm_combo = ttk.Combobox(self.bgm_frame, textvariable=self.bgm_var, values=["none", "lofi", "fire", "rain", "purr", "forest", "wave"], state="readonly", width=14, font=FONT_TEXT)
-        self.bgm_combo.pack(side='left', padx=10)
-        
-        self.lbl_bgm_hint = tk.Label(self.settings_card, text="※ lofi=チルピアノ / fire=焚き火 / rain=雨 / purr=猫ゴロゴロ / forest=森 / wave=波", font=("Meiryo", 8), bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.lbl_bgm_hint.pack(anchor='w', pady=(0, 6))
-        
-        # 天候・パーティクル演出設定
-        self.weather_frame = tk.Frame(self.settings_card, bg=self.theme["card"])
-        self.weather_frame.pack(fill='x', pady=4)
-        self.lbl_weather = tk.Label(self.weather_frame, text="カフェの天候演出:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_weather.pack(side='left')
-        
-        self.weather_var = tk.StringVar(value=self.data_mgr.get_setting("weather") or "auto")
-        self.weather_combo = ttk.Combobox(self.weather_frame, textvariable=self.weather_var, values=["auto (時間連動)", "sakura (桜吹雪)", "rain (静かな雨)", "stars (星空・流星)", "clear (木漏れ日)"], state="readonly", width=18, font=FONT_TEXT)
-        self.weather_combo.pack(side='left', padx=10)
-        
-        self.save_settings_btn = tk.Button(self.settings_card, text="💾 設定を保存する", font=FONT_SUB, bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=15, pady=6, cursor="hand2", command=self.save_settings)
-        self.save_settings_btn.pack(pady=(16, 0))
-
+        self.settings_tab_obj = SettingsTab(self)
     def refresh_settings_view(self):
-        if not hasattr(self, 'settings_card'):
-            return
-        self.tabs["settings"].config(bg=self.theme["bg"])
-        self.settings_card.config(bg=self.theme["card"])
-        self.settings_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.settings_theme_lbl.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.theme_frame.config(bg=self.theme["card"])
-        self.theme_apply_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-        self.grid_frame.config(bg=self.theme["card"])
-        self.lbl_work.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_short.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_long.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_interval.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_sound_title.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.chk_se.config(bg=self.theme["card"], fg=self.theme["text"], activebackground=self.theme["card"])
-        self.bgm_frame.config(bg=self.theme["card"])
-        self.lbl_bgm.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.lbl_bgm_hint.config(bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.weather_frame.config(bg=self.theme["card"])
-        self.lbl_weather.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.save_settings_btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-
-    def save_settings(self):
-        try:
-            w_m = int(self.spin_work.get())
-            sb_m = int(self.spin_short_break.get())
-            lb_m = int(self.spin_long_break.get())
-            interval = int(self.spin_interval.get())
-        except ValueError:
-            messagebox.showerror("入力エラー", "時間は数値で指定してください。")
-            return
-            
-        self.data_mgr.set_setting("work_minutes", w_m)
-        self.data_mgr.set_setting("short_break_minutes", sb_m)
-        self.data_mgr.set_setting("long_break_minutes", lb_m)
-        self.data_mgr.set_setting("long_break_interval", interval)
-        self.data_mgr.set_setting("se_enabled", self.se_var.get())
-        self.data_mgr.set_setting("bgm_type", self.bgm_var.get())
-        w_val = self.weather_var.get().split()[0]
-        self.data_mgr.set_setting("weather", w_val)
-        
-        self.work_mins = w_m
-        self.short_break_mins = sb_m
-        self.long_break_mins = lb_m
-        self.long_break_interval = interval
-        self.sound_mgr.se_enabled = self.se_var.get()
-        self.sound_mgr.set_bgm(self.bgm_var.get())
-        
-        if not self.is_running:
-            self.reset_timer()
-            
-        messagebox.showinfo("保存完了", "設定を保存しました！🐾")
-
+        self.settings_tab_obj.refresh_view()
     # --- 5. ミニウィジェット ---
     def _build_widget(self):
         self.widget = tk.Toplevel(self.root)
@@ -1619,7 +998,7 @@ class PomodoroApp:
             self.widget_cat = tk.Label(self.widget_bar, text="(=^・^=)", font=("Meiryo", 9), fg=self.theme["accent"], bg=self.theme["bg"])
         self.widget_cat.pack(side='left', padx=(0, 4))
 
-        self.widget_label = tk.Label(self.widget_bar, text=self.format_time(self.time_left), font=("Comic Sans MS", 14, "bold"), fg=self.theme["work"], bg=self.theme["bg"])
+        self.widget_label = tk.Label(self.widget_bar, text=self.format_time(self.timer.time_left), font=("Comic Sans MS", 14, "bold"), fg=self.theme["work"], bg=self.theme["bg"])
         self.widget_label.pack(side='left', padx=(0, 5))
 
         self.widget_center_box = tk.Frame(self.widget_bar, bg=self.theme["bg"])
@@ -1676,7 +1055,7 @@ class PomodoroApp:
 
     def quit_app(self):
         self.is_alive = False
-        self.is_running = False
+        self.timer.is_running = False
         try:
             self.sound_mgr.stop_bgm()
         except Exception:
@@ -1696,164 +1075,98 @@ class PomodoroApp:
             self.widget.withdraw()
 
     # --- タイマーコアロジック ---
-    def format_time(self, seconds):
-        m, s = divmod(seconds, 60)
-        return f"{m:02d}:{s:02d}"
 
-    def toggle_timer(self, event=None):
-        self.is_running = not self.is_running
-        self.start_btn.config(text="⏸ 停止" if self.is_running else "▶ 開始")
-        self.update_status_display()
+    def _on_timer_tick(self, time_left):
+        if not hasattr(self, 'timer_label'): return
+        t_str = self.format_time(time_left)
+        self.timer_label.config(text=t_str)
+        self.widget_label.config(text=t_str)
+        if self.timer.session_mode == "work":
+            self.data_mgr.add_active_task_time(1)
 
-    def reset_timer(self):
-        self.is_running = False
-        self.session_mode = "work"
-        self.time_left = self.work_mins * 60
-        self.start_btn.config(text="▶ 開始")
-        self.timer_label.config(text=self.format_time(self.time_left))
-        self.widget_label.config(text=self.format_time(self.time_left))
+    def _on_timer_state_change(self):
+        if not hasattr(self, 'start_btn'): return
+        self.start_btn.config(text="⏸ 停止" if self.timer.is_running else "▶ 開始")
         self.update_status_display()
+        self.cafe_tab_obj.refresh_cafe_elements()
 
-    def switch_mode(self):
-        if self.session_mode == "work":
-            self.sound_mgr.play_se("work_end")
-            self.data_mgr.add_pomodoro_reward()
-            self.data_mgr.increment_active_task_pomo()
-            
-            if self.cycle_count >= self.long_break_interval:
-                self.session_mode = "long_break"
-                self.time_left = self.long_break_mins * 60
-                self.cycle_count = 1
-            else:
-                self.session_mode = "short_break"
-                self.time_left = self.short_break_mins * 60
-                self.cycle_count += 1
-        else:
-            self.sound_mgr.play_se("break_end")
-            self.session_mode = "work"
-            self.time_left = self.work_mins * 60
-            
-        self.is_running = False
-        self.start_btn.config(text="▶ 開始")
-        self.update_status_display()
-        self.refresh_cafe_elements()
-        
+    def _on_work_end(self):
+        self.sound_mgr.play_se("work_end")
+        self.data_mgr.add_pomodoro_reward()
+        self.data_mgr.increment_active_task_pomo()
         if self.widget.state() == "normal":
             self.widget.lift()
         else:
             self.root.deiconify()
             self.root.lift()
 
+    def _on_break_end(self):
+        self.sound_mgr.play_se("break_end")
+        if self.widget.state() == "normal":
+            self.widget.lift()
+        else:
+            self.root.deiconify()
+            self.root.lift()
+
+
+    def format_time(self, seconds):
+        m, s = divmod(seconds, 60)
+        return f"{m:02d}:{s:02d}"
+
+    def toggle_timer(self, event=None):
+        self.timer.toggle()
+    def reset_timer(self):
+        self.timer.reset()
+    def switch_mode(self):
+        self.timer.switch_mode()
     def update_status_display(self):
         paws = ""
-        for i in range(1, self.long_break_interval + 1):
-            if i < self.cycle_count:
+        for i in range(1, self.timer.long_break_interval + 1):
+            if i < self.timer.cycle_count:
                 paws += "🐾 "
-            elif i == self.cycle_count:
-                paws += "🐾 " if self.session_mode != "work" else "⚪ "
+            elif i == self.timer.cycle_count:
+                paws += "🐾 " if self.timer.session_mode != "work" else "⚪ "
             else:
                 paws += "⚪ "
                 
-        self.cycle_label.config(text=f"セット {self.cycle_count}/{self.long_break_interval} {paws}")
+        self.cycle_label.config(text=f"セット {self.timer.cycle_count}/{self.timer.long_break_interval} {paws}")
         
-        if self.session_mode == "work":
+        if self.timer.session_mode == "work":
             color = self.theme["work"]
-            state = "おしごと中！🔥" if self.is_running else "おしごと (停止中)"
-            short_state = "🔥 おしごと" if self.is_running else "💤 停止中"
-        elif self.session_mode == "short_break":
+            state = "おしごと中！🔥" if self.timer.is_running else "おしごと (停止中)"
+            short_state = "🔥 おしごと" if self.timer.is_running else "💤 停止中"
+        elif self.timer.session_mode == "short_break":
             color = self.theme["break"]
-            state = "短い休憩中 ☕" if self.is_running else "休憩 (停止中)"
-            short_state = "☕ 休憩中" if self.is_running else "☕ 停止中"
+            state = "短い休憩中 ☕" if self.timer.is_running else "休憩 (停止中)"
+            short_state = "☕ 休憩中" if self.timer.is_running else "☕ 停止中"
         else:
             color = self.theme["long_break"]
-            state = "長いご褒美休憩 🍰" if self.is_running else "長休憩 (停止中)"
-            short_state = "🍰 長休憩" if self.is_running else "🍰 停止中"
+            state = "長いご褒美休憩 🍰" if self.timer.is_running else "長休憩 (停止中)"
+            short_state = "🍰 長休憩" if self.timer.is_running else "🍰 停止中"
             
         self.status_label.config(text=state, fg=color)
         self.timer_label.config(fg=color)
         self.widget_label.config(fg=color)
         self.widget_status.config(text=short_state, fg=color)
-        self.widget_play_btn.config(text="⏸" if self.is_running else "▶")
+        self.widget_play_btn.config(text="⏸" if self.timer.is_running else "▶")
         
         active_t = self.data_mgr.get_active_task()
         t_text = active_t["title"][:9] + "..." if active_t and len(active_t["title"]) > 9 else (active_t["title"] if active_t else "タスクなし")
         self.widget_task.config(text=f"📝 {t_text}")
 
     def update_clock(self):
-        if not getattr(self, 'is_alive', True):
-            return
-            
-        if self.is_running:
-            if self.time_left > 0:
-                self.time_left -= 1
-                t_str = self.format_time(self.time_left)
-                self.timer_label.config(text=t_str)
-                self.widget_label.config(text=t_str)
-            else:
-                self.switch_mode()
-
         if getattr(self, 'is_alive', True):
-            try:
-                self.root.after(1000, self.update_clock)
-            except Exception:
-                pass
-
+            self.timer.tick()
+            self.root.after(1000, self.update_clock)
     # --- アニメーション & 猫の自律エコシステムAI ---
     def process_cat_ai(self, cat):
-        # 猫同士のじゃれあい判定 (近くに別の猫がいる場合)
-        for other in self.cats:
-            if other["id"] != cat["id"]:
-                dist = math.hypot(cat["x"] - other["x"], cat["y"] - other["y"])
-                if dist < 34 and cat["state"] in ["walk", "dash"] and random.random() < 0.16:
-                    cat["state"] = random.choice(["play", "groom"])
-                    cat["state_timer"] = random.randint(30, 60)
-                    other["state"] = random.choice(["play", "sit"])
-                    other["state_timer"] = random.randint(30, 60)
-                    # 鼻タッチ・じゃれあいハート
-                    hx = (cat["x"] + other["x"]) / 2
-                    hy = min(cat["y"], other["y"]) - 18
-                    h_id = self.cat_canvas.create_text(hx, hy, text="💖", font=("Segoe UI Emoji", 13), fill=self.theme["work"])
-                    self.floating_effects.append({"id": h_id, "x": hx, "y": hy, "life": 22})
-                    return
-
-        # 家具インタラクション判定
         unlocked_items = self.data_mgr.get_cafe_data().get("unlocked_items", [])
-        if "cushion" in unlocked_items and math.hypot(cat["x"] - 75, cat["y"] - 205) < 32 and random.random() < 0.18:
-            cat["state"] = random.choice(["groom", "stretch", "sit"])
-            cat["state_timer"] = random.randint(40, 90)
-            return
-        if "toy_mouse" in unlocked_items and math.hypot(cat["x"] - 165, cat["y"] - 225) < 32 and random.random() < 0.22:
-            cat["state"] = random.choice(["play", "pounce"])
-            cat["state_timer"] = random.randint(25, 45)
-            return
-        if "scratcher" in unlocked_items and math.hypot(cat["x"] - 395, cat["y"] - 175) < 32 and random.random() < 0.20:
-            cat["state"] = "stretch"
-            cat["state_timer"] = random.randint(30, 60)
-            return
-
-        if cat["state_timer"] <= 0:
-            states = ["walk", "sit", "dash", "groom", "stretch", "play", "pounce"]
-            weights = [28, 22, 10, 15, 10, 10, 5]
-            new_state = random.choices(states, weights=weights)[0]
-            cat["state"] = new_state
-            
-            if new_state == "walk":
-                cat["dx"] = random.choice([-2, -1, 1, 2])
-                cat["dy"] = random.choice([-1, 1])
-                cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(30, 80)
-            elif new_state == "dash":
-                cat["dx"] = random.choice([-4, -3, 3, 4])
-                cat["dy"] = random.choice([-2, 2])
-                cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(15, 30)
-            elif new_state in ["sit", "groom", "stretch", "play", "pounce"]:
-                cat["dx"] = 0
-                cat["dy"] = 0
-                cat["state_timer"] = random.randint(25, 60)
-        else:
-            cat["state_timer"] -= 1
-
+        effects = CatAIEngine.process_ai(cat, self.cats, unlocked_items)
+        
+        for eff in effects:
+            if eff["type"] == "effect":
+                h_id = self.cat_canvas.create_text(eff["x"], eff["y"], text=eff["text"], font=("Segoe UI Emoji", 13), fill=self.theme["work"])
+                self.floating_effects.append({"id": h_id, "x": eff["x"], "y": eff["y"], "life": 22})
     def animate_loop(self):
         if not getattr(self, 'is_alive', True):
             return
@@ -1861,7 +1174,7 @@ class PomodoroApp:
         try:
             if self.has_images:
                 self.anim_tick += 1
-                is_sleep_time = not self.is_running or self.session_mode != "work"
+                is_sleep_time = not self.timer.is_running or self.timer.session_mode != "work"
                 
                 # 時間帯に応じた環境光・ライティング判定
                 cur_hour = time.localtime().tm_hour
@@ -1887,7 +1200,8 @@ class PomodoroApp:
                     
                     if is_sleep_time:
                         sp_type = cat.get("sleep_pose", "sleep_curl")
-                        f_idx = (self.anim_tick // 42) % 2
+                        cfg = self.data_mgr.get_anim_config(sp_type)
+                        f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                         frame_key = f"{sp_type}_{f_idx}"
                         try:
                             if frame_key in tex:
@@ -1923,7 +1237,8 @@ class PomodoroApp:
                                 cat["dy"] = -abs(cat["dy"])
                                 
                             facing = cat["facing"]
-                            f_idx = (self.anim_tick // 18) % 2
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"{state}_{facing}_{f_idx}"
                             y_off = 2 if (self.anim_tick % 12 < 6) and state == "dash" else 0
                             try:
@@ -1947,7 +1262,8 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "groom":
-                            f_idx = (self.anim_tick // 24) % 3
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"groom_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1956,7 +1272,8 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "stretch":
-                            f_idx = (self.anim_tick // 36) % 2
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"stretch_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1965,7 +1282,8 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "play":
-                            f_idx = (self.anim_tick // 18) % 3
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"play_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1974,7 +1292,8 @@ class PomodoroApp:
                                 pass
                                 
                         elif state == "pounce":
-                            f_idx = (self.anim_tick // 24) % 2
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"pounce_{facing}_{f_idx}"
                             try:
                                 if frame_key in tex:
@@ -1983,13 +1302,15 @@ class PomodoroApp:
                                 pass
                             
                 if is_sleep_time:
-                    f_idx = (self.anim_tick // 45) % 2
+                    cfg = self.data_mgr.get_anim_config("sleep")
+                    f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                     try:
                         self.widget_cat.config(image=self.widget_cat_frames["sleep"][f_idx])
                     except Exception:
                         pass
                 else:
-                    f_idx = (self.anim_tick // 45) % 2
+                    cfg = self.data_mgr.get_anim_config("awake")
+                    f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                     try:
                         self.widget_cat.config(image=self.widget_cat_frames["awake"][f_idx])
                     except Exception:

@@ -1,27 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CatCanvas from '@/components/CatCanvas';
+import { useWorkerTimer } from '@/hooks/useWorkerTimer';
 
 export default function Home() {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
+  const { timeLeft, isRunning, toggleTimer, resetTimer } = useWorkerTimer(25 * 60);
   const [theme, setTheme] = useState('light');
 
-  // タイマー機能
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsRunning(false);
-    }
-    return () => clearInterval(timer);
-  }, [isRunning, timeLeft]);
-
-  const toggleTimer = () => setIsRunning(!isRunning);
-  
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -53,7 +38,7 @@ export default function Home() {
           <button onClick={toggleTimer}>
             {isRunning ? '⏸ 一時停止' : '▶ スタート'}
           </button>
-          <button onClick={() => setTimeLeft(25 * 60)} style={{ backgroundColor: 'var(--text-secondary)' }}>
+          <button onClick={resetTimer} style={{ backgroundColor: 'var(--text-secondary)' }}>
             🔄 リセット
           </button>
         </div>

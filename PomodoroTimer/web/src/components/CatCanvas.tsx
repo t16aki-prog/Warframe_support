@@ -1,54 +1,124 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import catConfig from '../shared/cat_config.json';
+import { useEffect, useRef, useState } from 'react';
 
-// 猫の自律AIを簡略化したキャンバス描画コンポーネント
+// AI Workerからのデータ型
+type CatState = 'sit' | 'walk' | 'sleep' | 'stretch' | 'groom' | 'play' | 'dash' | 'pounce';
+type Facing = 'l' | 'r';
+interface CatData {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  state: CatState;
+  facing: Facing;
+}
+
 export default function CatCanvas({ isWorking }: { isWorking: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const [cats, setCats] = useState<CatData[]>([]);
+  const animTickRef = useRef(0);
 
+  useEffect(() => {
+    // AI Workerの初期化
+    workerRef.current = new Worker(new URL('../workers/cat-ai.worker.ts', import.meta.url));
+    workerRef.current.onmessage = (e: MessageEvent) => {
+      if (e.data.type === 'SYNC') {
+        setCats(e.data.cats);
+        animTickRef.current = e.data.animTick;
+      }
+    };
+    workerRef.current.postMessage({ command: 'INIT' });
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
+
+  // 動作状態の同期
+  useEffect(() => {
+    workerRef.current?.postMessage({ command: 'SET_WORK_STATE', workingState: isWorking });
+  }, [isWorking]);
+
+  // 描画ループ (Canvasは描画のみに専念)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // 画像アセットの事前読み込み
-    const img = new Image();
-    img.src = '/sprites/calico_walk_r_0.png'; // 仮のベーススプライト
+    // 必要な全画像をキャッシュするオブジェクト
+    const imgCache: Record<string, HTMLImageElement> = {};
+    const getImg = (src: string) => {
+      if (!imgCache[src]) {
+        const img = new Image();
+        img.src = src;
+        imgCache[src] = img;
+      }
+      return imgCache[src];
+    };
 
     let animFrameId: number;
-    let x = 50;
-    let dx = 1;
-    let tick = 0;
 
     const renderLoop = () => {
-      tick++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const tick = animTickRef.current;
 
-      // 簡単な自律移動AI (60FPS)
-      if (isWorking) {
-        x += dx * 0.5; // 滑らかな移動
-        if (x > canvas.width - 40 || x < 10) dx *= -1;
-      }
+      // Workerから受け取った状態を描画
+      cats.forEach((cat) => {
+        const type = cat.type;
+        const facing = cat.facing;
+        const state = cat.state;
+        let frameSrc = `/sprites//sit_${facing}.png`; // デフォルト
 
-      // 猫の描画 (画像の読み込みが完了している場合)
-      if (img.complete) {
-        // 歩行時の上下バウンド
-        const yOffset = isWorking && tick % 20 < 10 ? -2 : 0;
-        
-        ctx.save();
-        if (dx < 0) {
-          // 反転
-          ctx.translate(x + 32, 50 + yOffset);
-          ctx.scale(-1, 1);
-          ctx.drawImage(img, 0, 0, 32, 32);
-        } else {
-          ctx.drawImage(img, x, 50 + yOffset, 32, 32);
+        if (state === 'walk') {
+          const f = Math.floor(tick / 15) % 2;
+          frameSrc = `/sprites//walk_${facing}_${f}.png`;
+        } else if (state === 'dash') {
+          const cfg = catConfig.animations['dash'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//dash_${facing}_${f}.png`;
+        } else if (state === 'play') {
+          const cfg = catConfig.animations['play'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//play_${facing}_${f}.png`;
+        } else if (state === 'groom') {
+          const cfg = catConfig.animations['groom'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//groom_${facing}_${f}.png`;
+        } else if (state === 'stretch') {
+          const cfg = catConfig.animations['stretch'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//stretch_${facing}_${f}.png`;
+        } else if (state === 'sleep') {
+          const cfg = catConfig.animations['sleep_curl'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//sleep_curl_${f}.png`;
+        } else if (state === 'sit') {
+          frameSrc = `/sprites//sit_${facing}.png`;
+        } else if (state === 'pounce') {
+          const cfg = catConfig.animations['pounce'];
+          const f = Math.floor(tick / cfg.speed) % cfg.frames;
+          frameSrc = `/sprites//pounce_${facing}_${f}.png`;
         }
-        ctx.restore();
-      }
+
+        const img = getImg(frameSrc);
+
+        if (img.complete) {
+          const yOffset = (state === 'walk' || state === 'dash') ? (tick % 12 < 6 ? -2 : 0) : 0;
+          
+          ctx.save();
+          // 反転は画像自体が facing を持っているので、単純にそのまま描画すればOK (生成済み画像に _l, _r がある)
+          ctx.drawImage(img, cat.x, cat.y + yOffset, 32, 32);
+          ctx.restore();
+        }
+      });
 
       // 環境パーティクル
-      if (tick % 30 === 0) {
+      if (tick % 60 === 0 && isWorking) {
         ctx.font = '10px serif';
         ctx.fillStyle = 'rgba(255, 100, 150, 0.5)';
         ctx.fillText('🌸', Math.random() * canvas.width, Math.random() * canvas.height);
@@ -60,7 +130,7 @@ export default function CatCanvas({ isWorking }: { isWorking: boolean }) {
     renderLoop();
 
     return () => cancelAnimationFrame(animFrameId);
-  }, [isWorking]);
+  }, [cats, isWorking]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '150px', background: 'rgba(0,0,0,0.03)', borderRadius: '12px', overflow: 'hidden', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)' }}>
@@ -71,7 +141,7 @@ export default function CatCanvas({ isWorking }: { isWorking: boolean }) {
         style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }}
       />
       {/* 昼夜を表現するオーバーレイ */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.05) 100%)' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', background: !isWorking ? 'rgba(0,0,0,0.4)' : 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.05) 100%)', transition: 'background 1s ease' }} />
     </div>
   );
 }

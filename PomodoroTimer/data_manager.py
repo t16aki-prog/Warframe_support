@@ -230,6 +230,22 @@ class DataManager:
             data_path = os.path.join(base_dir, "pomodoro_data.json")
         self.data_path = data_path
         self.data = self.load_data()
+        self.anim_config = self._load_animation_config()
+
+    def _load_animation_config(self):
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), "web", "src", "shared", "cat_config.json")
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f).get("animations", {})
+        except Exception as e:
+            print(f"Failed to load animation config: {e}")
+        return {}
+
+    def get_anim_config(self, state):
+        # デフォルトのフォールバック値
+        default_config = {"frames": 2, "speed": 18}
+        return self.anim_config.get(state, default_config)
 
     def load_data(self):
         if os.path.exists(self.data_path):
