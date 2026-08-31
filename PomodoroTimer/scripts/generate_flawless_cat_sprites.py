@@ -6,8 +6,10 @@ base_dir = r"e:\Oasobi\PomodoroTimer"
 sprites_dir = os.path.join(base_dir, "sprites")
 os.makedirs(sprites_dir, exist_ok=True)
 
-# 1. 完璧なプロポーションのベースポーズ（48x48〜64x64内に見切れゼロで収まるピクセルアート）
 # 原寸450x450を余裕あるマージン（360x360相当）で縮小配置
+
+def solidify_alpha(img, threshold=60):
+    return img
 
 def create_flawless_base_poses():
     """見切れ・歪みゼロの美しいベースポーズ画像を生成"""
@@ -41,7 +43,7 @@ def create_flawless_base_poses():
             target_h = int(CANVAS_SIZE[1] * scale)
             target_w = int(target_h * (cw / ch))
             
-        resized = cropped.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        resized = cropped.resize((target_w, target_h), Image.Resampling.NEAREST)
         
         canvas = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
         px = (CANVAS_SIZE[0] - target_w) // 2 + offset_x
@@ -86,7 +88,7 @@ def create_flawless_base_poses():
     bases["sleep_belly"] = fit_centered(sb_base, scale=0.70, offset_y=10)
     
     # J. のびのび寝 (sleep_stretch) - 横長に伸びて寝る
-    ss_base = img_sl.resize((int(img_sl.width * 1.15), int(img_sl.height * 0.85)), Image.Resampling.LANCZOS)
+    ss_base = img_sl.resize((int(img_sl.width * 1.15), int(img_sl.height * 0.85)), Image.Resampling.NEAREST)
     bases["sleep_stretch"] = fit_centered(ss_base, scale=0.72, offset_y=10)
     
     # ベース画像をPNGとして保存
@@ -133,11 +135,12 @@ def render_genetically_accurate_cat(rgba_img, cat_type):
     fur_grain = np.sin(nx * 40 + ny * 25) * np.cos(nx * 20 - ny * 35) * 0.12
     dither = ((X % 2) ^ (Y % 2)) * 0.04 - 0.02
     
-    # 立体陰影
+    # 立体陰影と顔のパーツ（目・鼻など）を強く残す
     body_brights = orig_brightness[is_body]
     avg_b = np.mean(body_brights) if len(body_brights) > 0 else 45.0
     shade = np.ones_like(orig_brightness)
-    shade[mask] = np.clip((orig_brightness[mask] - avg_b) * 0.008 + 1.0, 0.80, 1.22)
+    # 明るい部分（目やハイライト）は強く明るく、暗い部分（線や陰）は暗く残す
+    shade[mask] = np.clip((orig_brightness[mask] - avg_b) * 0.025 + 1.0, 0.3, 3.0)
     
     target_r = np.zeros_like(r)
     target_g = np.zeros_like(g)
@@ -347,7 +350,8 @@ def build_flawless_sprites_suite():
         os.makedirs(cat_dir, exist_ok=True)
         
         # 1. 立ち・座り
-        tex_sit = render_genetically_accurate_cat(base_dict["awake"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
+        tex_sit = render_genetically_accurate_cat(base_dict["awake"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        tex_sit = solidify_alpha(tex_sit)
         sit_r = tex_sit.transpose(Image.FLIP_LEFT_RIGHT)
         sit_l = tex_sit
         sit_r.save(os.path.join(cat_dir, f"sit_r.png"))
@@ -357,8 +361,10 @@ def build_flawless_sprites_suite():
         total += 4
         
         # 2. 歩行 0 & 1
-        tex_w0 = render_genetically_accurate_cat(base_dict["walk_0"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        tex_w1 = render_genetically_accurate_cat(base_dict["walk_1"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
+        tex_w0 = render_genetically_accurate_cat(base_dict["walk_0"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        tex_w1 = render_genetically_accurate_cat(base_dict["walk_1"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        tex_w0 = solidify_alpha(tex_w0)
+        tex_w1 = solidify_alpha(tex_w1)
         tex_w0.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"walk_r_0.png"))
         tex_w1.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"walk_r_1.png"))
         tex_w0.save(os.path.join(cat_dir, f"walk_l_0.png"))
@@ -366,9 +372,9 @@ def build_flawless_sprites_suite():
         total += 4
         
         # 3. ダッシュ
-        tex_dash = render_genetically_accurate_cat(base_dict["dash"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        d_f0 = tex_dash
-        d_f1 = tex_dash.rotate(-3, resample=Image.Resampling.BICUBIC, center=(24, 24))
+        tex_dash = render_genetically_accurate_cat(base_dict["dash"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        d_f0 = solidify_alpha(tex_dash)
+        d_f1 = solidify_alpha(tex_dash.rotate(-3, resample=Image.Resampling.BICUBIC, center=(24, 24)))
         d_f0.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"dash_r_0.png"))
         d_f1.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"dash_r_1.png"))
         d_f0.save(os.path.join(cat_dir, f"dash_l_0.png"))
@@ -376,19 +382,19 @@ def build_flawless_sprites_suite():
         total += 4
         
         # 4. 毛づくろい (3フレーム)
-        tex_gr = render_genetically_accurate_cat(base_dict["groom"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        gr_0 = tex_gr
-        gr_1 = tex_gr.rotate(-6, resample=Image.Resampling.BICUBIC, center=(24, 24))
-        gr_2 = tex_gr.rotate(4, resample=Image.Resampling.BICUBIC, center=(24, 24))
+        tex_gr = render_genetically_accurate_cat(base_dict["groom"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        gr_0 = solidify_alpha(tex_gr)
+        gr_1 = solidify_alpha(tex_gr.rotate(-6, resample=Image.Resampling.BICUBIC, center=(24, 24)))
+        gr_2 = solidify_alpha(tex_gr.rotate(4, resample=Image.Resampling.BICUBIC, center=(24, 24)))
         for idx, gr_f in enumerate([gr_0, gr_1, gr_2]):
             gr_f.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"groom_r_{idx}.png"))
             gr_f.save(os.path.join(cat_dir, f"groom_l_{idx}.png"))
             total += 2
             
         # 5. 伸び (2フレーム)
-        tex_st = render_genetically_accurate_cat(base_dict["stretch"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        st_0 = tex_st
-        st_1 = tex_st.rotate(-2, resample=Image.Resampling.BICUBIC, center=(24, 24))
+        tex_st = render_genetically_accurate_cat(base_dict["stretch"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        st_0 = solidify_alpha(tex_st)
+        st_1 = solidify_alpha(tex_st.rotate(-2, resample=Image.Resampling.BICUBIC, center=(24, 24)))
         st_0.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"stretch_r_0.png"))
         st_1.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"stretch_r_1.png"))
         st_0.save(os.path.join(cat_dir, f"stretch_l_0.png"))
@@ -396,19 +402,19 @@ def build_flawless_sprites_suite():
         total += 4
         
         # 6. じゃれる (3フレーム)
-        tex_pl = render_genetically_accurate_cat(base_dict["play"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        pl_0 = tex_pl
-        pl_1 = tex_pl.rotate(5, resample=Image.Resampling.BICUBIC, center=(24, 24))
-        pl_2 = tex_pl.rotate(9, resample=Image.Resampling.BICUBIC, center=(24, 24))
+        tex_pl = render_genetically_accurate_cat(base_dict["play"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        pl_0 = solidify_alpha(tex_pl)
+        pl_1 = solidify_alpha(tex_pl.rotate(4, resample=Image.Resampling.BICUBIC, center=(24, 24)))
+        pl_2 = solidify_alpha(tex_pl.rotate(-4, resample=Image.Resampling.BICUBIC, center=(24, 24)))
         for idx, pl_f in enumerate([pl_0, pl_1, pl_2]):
             pl_f.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"play_r_{idx}.png"))
             pl_f.save(os.path.join(cat_dir, f"play_l_{idx}.png"))
             total += 2
             
         # 7. 飛びつき (2フレーム)
-        tex_po = render_genetically_accurate_cat(base_dict["pounce"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        po_0 = tex_po
-        po_1 = tex_po.rotate(-4, resample=Image.Resampling.BICUBIC, center=(24, 24))
+        tex_po = render_genetically_accurate_cat(base_dict["pounce"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        po_0 = solidify_alpha(tex_po)
+        po_1 = solidify_alpha(tex_po.rotate(-5, resample=Image.Resampling.BICUBIC, center=(24, 24)))
         po_0.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"pounce_r_0.png"))
         po_1.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(cat_dir, f"pounce_r_1.png"))
         po_0.save(os.path.join(cat_dir, f"pounce_l_0.png"))
@@ -416,32 +422,35 @@ def build_flawless_sprites_suite():
         total += 4
         
         # 8. 丸まり寝
-        tex_sl = render_genetically_accurate_cat(base_dict["sleep"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        sl_0 = tex_sl
+        tex_sl = render_genetically_accurate_cat(base_dict["sleep"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        sl_0 = solidify_alpha(tex_sl)
         sl_1 = Image.new("RGBA", SPRITE_SZ, (0, 0, 0, 0))
-        sl_1.paste(tex_sl.resize((48, 44), Image.Resampling.LANCZOS), (0, 4))
-        sl_0.save(os.path.join(cat_dir, f"sleep_curl_0.png"))
-        sl_1.save(os.path.join(cat_dir, f"sleep_curl_1.png"))
+        tex_sl_curl = render_genetically_accurate_cat(base_dict["sleep"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        tex_sl_curl = solidify_alpha(tex_sl_curl)
+        tex_sl_curl.save(os.path.join(cat_dir, f"sleep_curl_0.png"))
+        tex_sl_curl.save(os.path.join(cat_dir, f"sleep_curl_1.png"))
         sl_0.save(os.path.join(cat_dir, f"sleep_0.png"))
         sl_1.save(os.path.join(cat_dir, f"sleep_1.png"))
         total += 4
         
         # 9. 仰向けヘソ天寝
-        tex_sb = render_genetically_accurate_cat(base_dict["sleep_belly"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        sb_0 = tex_sb
+        tex_sb = render_genetically_accurate_cat(base_dict["sleep_belly"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        sb_0 = solidify_alpha(tex_sb)
         sb_1 = Image.new("RGBA", SPRITE_SZ, (0, 0, 0, 0))
-        sb_1.paste(tex_sb.resize((48, 45), Image.Resampling.LANCZOS), (0, 3))
-        sb_0.save(os.path.join(cat_dir, f"sleep_belly_0.png"))
-        sb_1.save(os.path.join(cat_dir, f"sleep_belly_1.png"))
+        tex_sl_belly = render_genetically_accurate_cat(base_dict["sleep_belly"], c_id).resize(SPRITE_SZ, Image.Resampling.NEAREST)
+        tex_sl_belly = solidify_alpha(tex_sl_belly)
+        tex_sl_belly.save(os.path.join(cat_dir, f"sleep_belly_0.png"))
+        tex_sl_belly.save(os.path.join(cat_dir, f"sleep_belly_1.png"))
         total += 2
         
         # 10. のびのび寝
         tex_ss = render_genetically_accurate_cat(base_dict["sleep_stretch"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
-        ss_0 = tex_ss
+        ss_0 = solidify_alpha(tex_ss)
         ss_1 = Image.new("RGBA", SPRITE_SZ, (0, 0, 0, 0))
-        ss_1.paste(tex_ss.resize((48, 45), Image.Resampling.LANCZOS), (0, 3))
-        ss_0.save(os.path.join(cat_dir, f"sleep_stretch_0.png"))
-        ss_1.save(os.path.join(cat_dir, f"sleep_stretch_1.png"))
+        tex_sl_st = render_genetically_accurate_cat(base_dict["sleep_stretch"], c_id).resize(SPRITE_SZ, Image.Resampling.LANCZOS)
+        tex_sl_st = solidify_alpha(tex_sl_st)
+        tex_sl_st.save(os.path.join(cat_dir, f"sleep_stretch_0.png"))
+        tex_sl_st.save(os.path.join(cat_dir, f"sleep_stretch_1.png"))
         total += 2
         
     print(f"Generated {total} flawless, genetically accurate cat sprites in {sprites_dir}!")

@@ -25,6 +25,7 @@ if _cur_dir not in sys.path:
 from scripts.sound_generator import SoundManager
 from data_manager import DataManager, AVAILABLE_CATS, AVAILABLE_ITEMS, THEMES
 from google_sync import GoogleSyncManager
+from core.cat_ai import CatAIEngine
 from scripts.natural_cat_generator import generate_natural_cat, generate_cat_poses
 
 FONT_TITLE = ("Meiryo", 14, "bold")
@@ -161,11 +162,11 @@ class PomodoroApp:
         self.content_frame.pack(expand=True, fill='both', padx=10, pady=5)
         
         self.tabs = {}
-        self._build_cafe_tab()
-        self._build_task_tab()
-        self._build_shop_tab()
-        self._build_stats_tab()
-        self._build_settings_tab()
+        self.cafe_tab_obj = CafeTab(self)
+        self.task_tab_obj = TaskTab(self)
+        self.shop_tab_obj = ShopTab(self)
+        self.stats_tab_obj = StatsTab(self)
+        self.settings_tab_obj = SettingsTab(self)
         
         self.current_tab = "cafe"
         self.show_tab("cafe")
@@ -185,7 +186,7 @@ class PomodoroApp:
         
         # 初回起動時に相棒猫が未選択なら相棒選択モーダルを開く
         if not self.data_mgr.get_profile().get("starter_chosen", False):
-            self.root.after(400, self.open_starter_cat_modal)
+            self.root.after(400, self.task_tab_obj.open_starter_cat_modal)
 
     def _update_ttk_styles(self):
         """TTK ウィジェット（Combobox, Spinbox, Scrollbar）のテーマスタイルを更新"""
@@ -257,10 +258,11 @@ class PomodoroApp:
 
     def _load_images(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        awake_png = os.path.join(base_dir, "cat_awake.png")
-        sleep_png = os.path.join(base_dir, "cat_sleep.png")
-        awake_jpg = os.path.join(base_dir, "cat_awake.jpg")
-        sleep_jpg = os.path.join(base_dir, "cat_sleep.jpg")
+        base_sprites_dir = os.path.join(base_dir, "assets", "base_sprites")
+        awake_png = os.path.join(base_sprites_dir, "cat_awake.png")
+        sleep_png = os.path.join(base_sprites_dir, "cat_sleep.png")
+        awake_jpg = os.path.join(base_sprites_dir, "cat_awake.jpg")
+        sleep_jpg = os.path.join(base_sprites_dir, "cat_sleep.jpg")
         bg_path = os.path.join(base_dir, "assets", "backgrounds", "room_bg.jpg")
         
         self.has_images = False
@@ -280,7 +282,7 @@ class PomodoroApp:
                 
             # 各モーション・寝相専用ベーススプライトのロード
             def load_or_fallback(fname, fallback):
-                fpath = os.path.join(base_dir, fname)
+                fpath = os.path.join(base_sprites_dir, fname)
                 if os.path.exists(fpath):
                     return Image.open(fpath).convert("RGBA")
                 return fallback
@@ -304,12 +306,12 @@ class PomodoroApp:
             for cat_info in AVAILABLE_CATS:
                 c_id = cat_info["id"]
                 tex_dict = {}
-                # 事前生成された個別スプライトがあれば高速ロード
-                if os.path.exists(sprites_dir):
-                    for fname in os.listdir(sprites_dir):
-                        if fname.startswith(f"{c_id}_") and fname.endswith(".png"):
-                            pose_k = fname[len(c_id) + 1:-4]
-                            fpath = os.path.join(sprites_dir, fname)
+                cat_sprites_dir = os.path.join(sprites_dir, c_id)
+                if os.path.exists(cat_sprites_dir):
+                    for fname in os.listdir(cat_sprites_dir):
+                        if fname.endswith(".png"):
+                            pose_k = fname[:-4]
+                            fpath = os.path.join(cat_sprites_dir, fname)
                             tex_dict[pose_k] = ImageTk.PhotoImage(Image.open(fpath).convert("RGBA"))
                 
                 # スプライトが存在しない場合は動的生成
@@ -379,7 +381,7 @@ class PomodoroApp:
         self.account_btn = tk.Button(
             self.right_frame, text=f"{icon} {prof['name'][:8]}", font=FONT_TEXT,
             bg=self.theme["card"], fg=self.theme["text"], relief="flat", padx=8, pady=2,
-            cursor="hand2", command=self.open_account_modal
+            cursor="hand2", command=lambda: self.task_tab_obj.open_account_modal()
         )
         self.account_btn.pack(side='left', padx=4)
 
@@ -416,15 +418,15 @@ class PomodoroApp:
                 self.tab_buttons[t_id].config(bg=self.theme["card"], fg=self.theme["text"])
                 
         if tab_id == "task":
-            self.refresh_task_list()
+            self.task_tab_obj.refresh_task_list()
         elif tab_id == "shop":
-            self.refresh_shop_view()
+            self.shop_tab_obj.refresh_view()
         elif tab_id == "cafe":
             self.cafe_tab_obj.refresh_cafe_elements()
         elif tab_id == "stats":
-            self.refresh_stats_view()
+            self.stats_tab_obj.refresh_view()
         elif tab_id == "settings":
-            self.refresh_settings_view()
+            self.settings_tab_obj.refresh_view()
 
     def apply_theme(self, theme_key):
         """テーマを動的に適用・保存（全タブ・全ウィジェット完全同期）"""
@@ -489,10 +491,10 @@ class PomodoroApp:
         
         # 全タブのUI状態を一括リフレッシュ
         self.cafe_tab_obj.refresh_cafe_elements()
-        self.refresh_task_list()
-        self.refresh_shop_view()
-        self.refresh_stats_view()
-        self.refresh_settings_view()
+        self.task_tab_obj.refresh_task_list()
+        self.shop_tab_obj.refresh_view()
+        self.stats_tab_obj.refresh_view()
+        self.settings_tab_obj.refresh_view()
         
         self.show_tab(self.current_tab)
         self.update_status_display()
@@ -596,387 +598,6 @@ class PomodoroApp:
         self.floating_effects.append({"id": heart_id, "x": target_x, "y": target_y - 22, "life": 25})
 
     # --- 2. タスクタブ ＆ Google 連携 ---
-    def _build_task_tab(self):
-        tab = tk.Frame(self.content_frame, bg=self.theme["bg"])
-        self.tabs["task"] = tab
-        
-        self.task_sync_bar = tk.Frame(tab, bg=self.theme["card"], padx=8, pady=6, relief="groove", bd=1)
-        self.task_sync_bar.pack(fill='x', pady=(0, 4))
-        
-        g_status = "🟢 接続中" if self.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
-        self.sync_status_lbl = tk.Label(self.task_sync_bar, text=f"Google連携: {g_status}", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.sync_status_lbl.pack(side='left', padx=4)
-        
-        self.btn_tasks_sync = tk.Button(
-            self.task_sync_bar, text="🔄 Tasksから同期", font=("Meiryo", 8, "bold"),
-            bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], relief="flat", padx=6, pady=2,
-            cursor="hand2", command=self.sync_google_tasks
-        )
-        self.btn_tasks_sync.pack(side='right', padx=3)
-        
-        self.btn_cal_sync = tk.Button(
-            self.task_sync_bar, text="📅 今日の予定", font=("Meiryo", 8, "bold"),
-            bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], relief="flat", padx=6, pady=2,
-            cursor="hand2", command=self.open_calendar_modal
-        )
-        self.btn_cal_sync.pack(side='right', padx=3)
-        
-        # タスク追加フォーム (拡張版)
-        self.task_add_frame = tk.Frame(tab, bg=self.theme["card"], padx=10, pady=8, relief="flat", bd=0)
-        self.task_add_frame.pack(fill='x', pady=4)
-        
-        self.task_add_title = tk.Label(self.task_add_frame, text="＋ 新しいタスクを追加", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"])
-        self.task_add_title.pack(anchor='w', pady=(0, 4))
-        
-        self.top_input_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
-        self.top_input_row.pack(fill='x', pady=2)
-        
-        self.task_entry = tk.Entry(self.top_input_row, font=FONT_TEXT, bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"], relief="solid", bd=1)
-        self.task_entry.pack(side='left', fill='x', expand=True, padx=(0, 6))
-        self.task_entry.bind("<Return>", lambda e: self.add_new_task())
-        
-        self.task_target_lbl = tk.Label(self.top_input_row, text="目標🍅:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"])
-        self.task_target_lbl.pack(side='left', padx=2)
-        self.task_target_spin = ttk.Spinbox(self.top_input_row, from_=1, to=12, width=3, font=FONT_TEXT)
-        self.task_target_spin.set(2)
-        self.task_target_spin.pack(side='left', padx=(0, 6))
-        
-        self.bottom_opts_row = tk.Frame(self.task_add_frame, bg=self.theme["card"])
-        self.bottom_opts_row.pack(fill='x', pady=2)
-        
-        self.task_tag_lbl = tk.Label(self.bottom_opts_row, text="タグ:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.task_tag_lbl.pack(side='left', padx=(0, 2))
-        self.task_tag_var = tk.StringVar(value="💼 仕事")
-        self.task_tag_combo = ttk.Combobox(self.bottom_opts_row, textvariable=self.task_tag_var, values=["💼 仕事", "📚 勉強", "🎨 創作", "🏠 その他"], state="readonly", width=8, font=FONT_TEXT)
-        self.task_tag_combo.pack(side='left', padx=(0, 8))
-        
-        self.task_prio_lbl = tk.Label(self.bottom_opts_row, text="優先度:", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"])
-        self.task_prio_lbl.pack(side='left', padx=(0, 2))
-        self.task_prio_var = tk.StringVar(value="⚡ 中")
-        self.task_prio_combo = ttk.Combobox(self.bottom_opts_row, textvariable=self.task_prio_var, values=["🔥 高", "⚡ 中", "☕ 低"], state="readonly", width=6, font=FONT_TEXT)
-        self.task_prio_combo.pack(side='left', padx=(0, 8))
-        
-        self.task_add_btn = tk.Button(self.bottom_opts_row, text="追加 ＋", command=self.add_new_task, bg=self.theme["btn"], fg=self.theme["btn_fg"], font=FONT_BOLD, relief="flat", padx=12, pady=1, cursor="hand2")
-        self.task_add_btn.pack(side='right')
-
-        # フィルターバー
-        self.filter_frame = tk.Frame(tab, bg=self.theme["bg"])
-        self.filter_frame.pack(fill='x', pady=(4, 2))
-        self.task_filter = "all"
-        
-        self.filter_btns = {}
-        filters = [("all", "すべて"), ("active", "未完了"), ("done", "完了済")]
-        for f_key, f_text in filters:
-            f_btn = tk.Button(
-                self.filter_frame, text=f_text, font=("Meiryo", 8),
-                bg=self.theme["btn"] if f_key == "all" else self.theme["card"],
-                fg=self.theme["btn_fg"] if f_key == "all" else self.theme["text"],
-                relief="flat", padx=8, pady=2, cursor="hand2",
-                command=lambda k=f_key: self.set_task_filter(k)
-            )
-            f_btn.pack(side='left', padx=2)
-            self.filter_btns[f_key] = f_btn
-        
-        list_container = tk.Frame(tab, bg=self.theme["bg"])
-        list_container.pack(fill='both', expand=True, pady=4)
-        
-        self.task_canvas = tk.Canvas(list_container, bg=self.theme["bg"], highlightthickness=0)
-        self.task_scrollbar = ttk.Scrollbar(list_container, orient="vertical", command=self.task_canvas.yview)
-        self.task_inner_frame = tk.Frame(self.task_canvas, bg=self.theme["bg"])
-        
-        self.task_inner_frame.bind("<Configure>", lambda e: self.task_canvas.configure(scrollregion=self.task_canvas.bbox("all")))
-        self.task_canvas_window = self.task_canvas.create_window((0, 0), window=self.task_inner_frame, anchor="nw")
-        self.task_canvas.bind("<Configure>", lambda e: self.task_canvas.itemconfig(self.task_canvas_window, width=e.width))
-        
-        self.task_canvas.configure(yscrollcommand=self.task_scrollbar.set)
-        self.task_canvas.pack(side="left", fill="both", expand=True)
-        self.task_scrollbar.pack(side="right", fill="y")
-        
-        bind_mousewheel_to_all(self.task_inner_frame, self.task_canvas)
-
-    def set_task_filter(self, f_key):
-        self.task_filter = f_key
-        for k, btn in self.filter_btns.items():
-            if k == f_key:
-                btn.config(bg=self.theme["btn"], fg=self.theme["btn_fg"])
-            else:
-                btn.config(bg=self.theme["card"], fg=self.theme["text"])
-        self.refresh_task_list()
-
-    def add_new_task(self):
-        title = self.task_entry.get().strip()
-        if not title:
-            return
-        try:
-            target = int(self.task_target_spin.get())
-        except ValueError:
-            target = 1
-        tag = self.task_tag_var.get()
-        prio = self.task_prio_var.get()
-        self.data_mgr.add_task(title, target, tag=tag, priority=prio)
-        self.task_entry.delete(0, 'end')
-        self.refresh_task_list()
-        self.cafe_tab_obj.refresh_cafe_elements()
-
-    def select_task(self, task_id):
-        self.data_mgr.set_active_task(task_id)
-        self.refresh_task_list()
-        self.cafe_tab_obj.refresh_cafe_elements()
-
-    def sync_google_tasks(self):
-        tasks = self.google_sync.fetch_tasks()
-        existing_google_ids = {t.get("google_id") for t in self.data_mgr.get_tasks() if t.get("google_id")}
-        
-        added_count = 0
-        for g_task in tasks:
-            if g_task["id"] not in existing_google_ids:
-                self.data_mgr.add_task(g_task["title"], target_pomo=g_task.get("target_pomo", 2), google_id=g_task["id"])
-                added_count += 1
-                
-        self.refresh_task_list()
-        self.cafe_tab_obj.refresh_cafe_elements()
-        self.sound_mgr.play_se("level_up")
-        
-        mode_str = "Google Tasks" if self.google_sync.is_authenticated() else "Google Tasks (サンプルデモ)"
-        messagebox.showinfo("同期完了", f"{mode_str} から {added_count} 件のタスクを取り込みました！📝")
-
-    def open_calendar_modal(self):
-        modal = tk.Toplevel(self.root)
-        modal.title("📅 今日のGoogleカレンダー予定")
-        modal.geometry("420x450")
-        modal.configure(bg=self.theme["bg"])
-        modal.transient(self.root)
-        modal.grab_set()
-
-        tk.Label(modal, text="📅 今日のGoogleカレンダー予定", font=FONT_TITLE, bg=self.theme["bg"], fg=self.theme["text"]).pack(pady=10)
-        
-        events = self.google_sync.fetch_today_events()
-        container = tk.Frame(modal, bg=self.theme["card"], padx=10, pady=10, relief="groove", bd=1)
-        container.pack(fill='both', expand=True, padx=15, pady=5)
-        
-        if not events:
-            tk.Label(container, text="今日の予定はありません ✨", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(pady=30)
-        else:
-            for ev in events:
-                row = tk.Frame(container, bg=self.theme["card"], pady=4)
-                row.pack(fill='x')
-                time_str = f"[{ev['start']}]" if ev['start'] else ""
-                tk.Label(row, text=f"{time_str} {ev['summary']}", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["text"], anchor='w').pack(side='left', fill='x', expand=True)
-                add_btn = tk.Button(
-                    row, text="タスク化 ＋", font=("Meiryo", 8), bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=6, cursor="hand2",
-                    command=lambda s=ev['summary']: self.add_event_as_task(s, modal)
-                )
-                add_btn.pack(side='right')
-
-        close_btn = tk.Button(modal, text="閉じる", font=FONT_TEXT, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], relief="flat", padx=15, pady=4, command=modal.destroy)
-        close_btn.pack(pady=10)
-
-    def add_event_as_task(self, summary, modal):
-        self.data_mgr.add_task(summary, target_pomo=2)
-        self.sound_mgr.play_se("level_up")
-        self.refresh_task_list()
-        self.cafe_tab_obj.refresh_cafe_elements()
-        messagebox.showinfo("タスク追加", f"「{summary}」をタスクに追加しました！")
-
-    # --- 最初の相棒猫選択モーダル ---
-    def open_starter_cat_modal(self):
-        """最初の一匹を15種類の中から自由に選ぶモーダル"""
-        modal = tk.Toplevel(self.root)
-        modal.title("🐾 最初の相棒猫を選ぼう！")
-        modal.geometry("460x580")
-        modal.configure(bg=self.theme["bg"])
-        modal.transient(self.root)
-        modal.grab_set()
-
-        tk.Label(modal, text="🐾 最初の相棒猫を選んでね！", font=FONT_TITLE, bg=self.theme["bg"], fg=self.theme["text"]).pack(pady=(12, 4))
-        tk.Label(modal, text="15種類の中からお好きな猫を【無料】で最初の相棒にできます！\n選んだ猫はすぐにカフェに登場します ✨", font=FONT_TEXT, bg=self.theme["bg"], fg=self.theme["sub_text"], justify='center').pack(pady=(0, 8))
-
-        container = tk.Frame(modal, bg=self.theme["bg"])
-        container.pack(fill='both', expand=True, padx=10, pady=5)
-
-        c_canvas = tk.Canvas(container, bg=self.theme["bg"], highlightthickness=0)
-        s_bar = ttk.Scrollbar(container, orient="vertical", command=c_canvas.yview)
-        c_inner = tk.Frame(c_canvas, bg=self.theme["bg"])
-
-        c_inner.bind("<Configure>", lambda e: c_canvas.configure(scrollregion=c_canvas.bbox("all")))
-        win = c_canvas.create_window((0, 0), window=c_inner, anchor="nw")
-        c_canvas.bind("<Configure>", lambda e: c_canvas.itemconfig(win, width=e.width))
-
-        c_canvas.configure(yscrollcommand=s_bar.set)
-        c_canvas.pack(side="left", fill="both", expand=True)
-        s_bar.pack(side="right", fill="y")
-
-        def choose_starter(cid):
-            self.data_mgr.set_starter_cat(cid)
-            self._update_widget_cat_frames()
-            self.sound_mgr.play_se("level_up")
-            messagebox.showinfo("相棒決定！", "最初の相棒猫を設定しました！🐾")
-            modal.destroy()
-            self.cafe_tab_obj.refresh_cafe_elements()
-            self.refresh_shop_view()
-
-        cur_avatar = self.data_mgr.get_profile().get("avatar", "black")
-        for cat in AVAILABLE_CATS:
-            cid = cat["id"]
-            card = tk.Frame(c_inner, bg=self.theme["card"], padx=10, pady=8, relief="solid", bd=1 if cid == cur_avatar else 0)
-            card.pack(fill='x', pady=3, padx=4)
-
-            tk.Label(card, text=cat["name"], font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).pack(side='left')
-            tk.Label(card, text=f" - {cat['desc']}", font=FONT_TEXT, bg=self.theme["card"], fg=self.theme["sub_text"]).pack(side='left', padx=4)
-
-            btn_text = "相棒中 🌟" if cid == cur_avatar else "この子にする！🐾"
-            btn = tk.Button(
-                card, text=btn_text, font=FONT_TEXT,
-                bg=self.theme["btn"] if cid != cur_avatar else self.theme["btn_sec"],
-                fg=self.theme["btn_fg"] if cid != cur_avatar else self.theme["btn_sec_fg"],
-                relief="flat", padx=8, pady=2, cursor="hand2",
-                command=lambda c=cid: choose_starter(c)
-            )
-            btn.pack(side='right')
-
-        bind_mousewheel_to_all(c_inner, c_canvas)
-
-    # --- アカウント設定モーダル ---
-    def open_account_modal(self):
-        modal = tk.Toplevel(self.root)
-        modal.title("👤 アカウント設定 & Google連携")
-        modal.geometry("460x580")
-        modal.configure(bg=self.theme["bg"])
-        modal.transient(self.root)
-        modal.grab_set()
-
-        prof = self.data_mgr.get_profile()
-
-        tk.Label(modal, text="👤 ユーザープロフィール & 連携設定", font=FONT_TITLE, bg=self.theme["bg"], fg=self.theme["text"]).pack(pady=(12, 6))
-
-        p_card = tk.Frame(modal, bg=self.theme["card"], padx=15, pady=12, relief="groove", bd=1)
-        p_card.pack(fill='x', padx=15, pady=5)
-
-        tk.Label(p_card, text="ユーザー名:", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).grid(row=0, column=0, sticky='w', pady=6)
-        name_entry = tk.Entry(p_card, font=FONT_TEXT, width=18, bg=self.theme["input_bg"], fg=self.theme["input_fg"], insertbackground=self.theme["text"])
-        name_entry.insert(0, prof.get("name", "にゃんこマスター"))
-        name_entry.grid(row=0, column=1, sticky='e', padx=5)
-
-        tk.Label(p_card, text="相棒アバター猫:", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).grid(row=1, column=0, sticky='w', pady=6)
-        avatar_var = tk.StringVar(value=prof.get("avatar", "black"))
-        avatar_choices = [f"{c['id']} ({c['name']})" for c in AVAILABLE_CATS]
-        avatar_combo = ttk.Combobox(p_card, textvariable=avatar_var, values=avatar_choices, state="readonly", width=18, font=FONT_TEXT)
-        for opt in avatar_choices:
-            if opt.startswith(prof.get("avatar", "black")):
-                avatar_combo.set(opt)
-                break
-        avatar_combo.grid(row=1, column=1, sticky='e', padx=5)
-
-        tk.Label(p_card, text="1日の目標ポモドーロ:", font=FONT_BOLD, bg=self.theme["card"], fg=self.theme["text"]).grid(row=2, column=0, sticky='w', pady=6)
-        goal_spin = ttk.Spinbox(p_card, from_=1, to=20, width=5, font=FONT_TEXT)
-        goal_spin.set(prof.get("daily_goal", 4))
-        goal_spin.grid(row=2, column=1, sticky='e', padx=5)
-
-        g_card = tk.Frame(modal, bg=self.theme["card"], padx=15, pady=12, relief="groove", bd=1)
-        g_card.pack(fill='x', padx=15, pady=8)
-
-        tk.Label(g_card, text="🌐 Google アカウント連携", font=FONT_SUB, bg=self.theme["card"], fg=self.theme["text"]).pack(anchor='w')
-        
-        is_auth = self.google_sync.is_authenticated()
-        status_text = f"連携中: {self.google_sync.get_user_email() or '接続済み'}" if is_auth else "未接続 (Google Tasks / Calendar)"
-        status_color = self.theme["break"] if is_auth else self.theme["sub_text"]
-        
-        status_lbl = tk.Label(g_card, text=status_text, font=FONT_TEXT, bg=self.theme["card"], fg=status_color)
-        status_lbl.pack(anchor='w', pady=(2, 6))
-
-        btn_g_frame = tk.Frame(g_card, bg=self.theme["card"])
-        btn_g_frame.pack(fill='x', pady=4)
-
-        if not is_auth:
-            login_btn = tk.Button(
-                btn_g_frame, text="Google アカウントと連携する 🌐",
-                font=FONT_BOLD, bg=GOOGLE_BLUE, fg="#fff", relief="flat", padx=10, pady=5, cursor="hand2",
-                command=lambda: self.start_google_login(modal)
-            )
-            login_btn.pack(side='left', fill='x', expand=True, padx=2)
-        else:
-            logout_btn = tk.Button(
-                btn_g_frame, text="連携を解除する",
-                font=FONT_TEXT, bg=self.theme["btn_sec"], fg=self.theme["btn_sec_fg"], relief="flat", padx=10, pady=4, cursor="hand2",
-                command=lambda: self.disconnect_google(modal)
-            )
-            logout_btn.pack(side='left', padx=2)
-
-        help_btn = tk.Button(
-            g_card, text="ℹ️ credentials.json の配置方法ガイド",
-            font=("Meiryo", 8), bg=self.theme["card"], fg=GOOGLE_BLUE, relief="flat", cursor="hand2",
-            command=self.show_google_guide
-        )
-        help_btn.pack(anchor='w', pady=(4, 0))
-
-        def save_profile():
-            raw_av = avatar_var.get().split()[0]
-            new_name = name_entry.get().strip() or "にゃんこマスター"
-            try:
-                new_goal = int(goal_spin.get())
-            except ValueError:
-                new_goal = 4
-            self.data_mgr.update_profile(name=new_name, avatar=raw_av, daily_goal=new_goal)
-            self._update_widget_cat_frames()
-            self.cafe_tab_obj.refresh_cafe_elements()
-            self.refresh_task_list()
-            messagebox.showinfo("更新完了", "プロフィールを更新しました！🐾")
-            modal.destroy()
-
-        save_btn = tk.Button(modal, text="💾 プロフィールを保存", font=FONT_SUB, bg=self.theme["btn"], fg=self.theme["btn_fg"], relief="flat", padx=15, pady=6, cursor="hand2", command=save_profile)
-        save_btn.pack(pady=10)
-
-    def start_google_login(self, modal):
-        if not self.google_sync.has_credentials_file():
-            self.show_google_guide()
-            return
-            
-        success, msg = self.google_sync.login()
-        if success:
-            self.data_mgr.update_profile(google_connected=True, email=self.google_sync.get_user_email() or "")
-            self.sound_mgr.play_se("level_up")
-            messagebox.showinfo("連携成功", msg)
-            modal.destroy()
-            self.refresh_task_list()
-        else:
-            messagebox.showerror("連携失敗", msg)
-
-    def disconnect_google(self, modal):
-        self.google_sync.logout()
-        self.data_mgr.update_profile(google_connected=False, email="")
-        messagebox.showinfo("解除完了", "Googleアカウントとの連携を解除しました。")
-        modal.destroy()
-        self.refresh_task_list()
-
-    def show_google_guide(self):
-        guide = (
-            "【Google 連携のセットアップ方法】\n\n"
-            "1. Google Cloud Console (https://console.cloud.google.com/) にアクセス\n"
-            "2. 新規プロジェクトを作成し、「Google Tasks API」と「Google Calendar API」を有効化\n"
-            "3. 「OAuth 同意画面」を設定（ユーザータイプ：外部、テストユーザーにご自身のGmailを追加）\n"
-            "4. 「認証情報」➔「OAuth クライアント IDの作成」➔ アプリケーションの種類：「デスクトップ アプリ」\n"
-            "5. ダウンロードした JSON ファイルを「credentials.json」という名前に変更して\n"
-            "   PomodoroTimer フォルダ直下に配置してください。\n\n"
-            "※ credentials.json が無い状態でも、デモモードでGoogle連携の動作をそのまま体験いただけます！"
-        )
-        messagebox.showinfo("Google 連携ガイド", guide)
-
-    # --- 3. ショップ & 育成タブ ---
-    def _build_shop_tab(self):
-        self.shop_tab_obj = ShopTab(self)
-    def refresh_shop_view(self):
-        self.shop_tab_obj.refresh_view()
-    # --- 4. 統計＆実績タブ ---
-    def _build_stats_tab(self):
-        self.stats_tab_obj = StatsTab(self)
-    def refresh_stats_view(self):
-        self.stats_tab_obj.refresh_view()
-    # --- 5. 設定タブ ---
-    def _build_settings_tab(self):
-        self.settings_tab_obj = SettingsTab(self)
-    def refresh_settings_view(self):
-        self.settings_tab_obj.refresh_view()
-    # --- 5. ミニウィジェット ---
     def _build_widget(self):
         self.widget = tk.Toplevel(self.root)
         self.widget.overrideredirect(True)

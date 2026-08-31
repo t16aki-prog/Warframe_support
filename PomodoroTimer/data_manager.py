@@ -357,6 +357,16 @@ class DataManager:
             return task
         return None
 
+    def add_active_task_time(self, seconds):
+        task = self.get_active_task()
+        if task:
+            if "time_spent" not in task:
+                task["time_spent"] = 0
+            task["time_spent"] += seconds
+            self.save_data()
+            return task
+        return None
+
     # --- カフェ・ショップ育成管理 ---
     def get_cafe_data(self):
         if "cat_affection" not in self.data["cafe"]:

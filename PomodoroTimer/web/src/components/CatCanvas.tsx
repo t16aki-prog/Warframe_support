@@ -72,37 +72,37 @@ export default function CatCanvas({ isWorking }: { isWorking: boolean }) {
         const type = cat.type;
         const facing = cat.facing;
         const state = cat.state;
-        let frameSrc = `/sprites//sit_${facing}.png`; // デフォルト
+        let frameSrc = `/sprites/${type}/sit_${facing}.png`; // デフォルト
 
         if (state === 'walk') {
           const f = Math.floor(tick / 15) % 2;
-          frameSrc = `/sprites//walk_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/walk_${facing}_${f}.png`;
         } else if (state === 'dash') {
           const cfg = catConfig.animations['dash'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//dash_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/dash_${facing}_${f}.png`;
         } else if (state === 'play') {
           const cfg = catConfig.animations['play'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//play_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/play_${facing}_${f}.png`;
         } else if (state === 'groom') {
           const cfg = catConfig.animations['groom'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//groom_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/groom_${facing}_${f}.png`;
         } else if (state === 'stretch') {
           const cfg = catConfig.animations['stretch'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//stretch_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/stretch_${facing}_${f}.png`;
         } else if (state === 'sleep') {
           const cfg = catConfig.animations['sleep_curl'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//sleep_curl_${f}.png`;
+          frameSrc = `/sprites/${type}/sleep_curl_${f}.png`;
         } else if (state === 'sit') {
-          frameSrc = `/sprites//sit_${facing}.png`;
+          frameSrc = `/sprites/${type}/sit_${facing}.png`;
         } else if (state === 'pounce') {
           const cfg = catConfig.animations['pounce'];
           const f = Math.floor(tick / cfg.speed) % cfg.frames;
-          frameSrc = `/sprites//pounce_${facing}_${f}.png`;
+          frameSrc = `/sprites/${type}/pounce_${facing}_${f}.png`;
         }
 
         const img = getImg(frameSrc);
@@ -133,7 +133,7 @@ export default function CatCanvas({ isWorking }: { isWorking: boolean }) {
   }, [cats, isWorking]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '150px', background: 'rgba(0,0,0,0.03)', borderRadius: '12px', overflow: 'hidden', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)' }}>
+    <div style={{ position: 'relative', width: '100%', height: '150px', backgroundImage: 'url(/backgrounds/room_bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '12px', overflow: 'hidden', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)' }}>
       <canvas
         ref={canvasRef}
         width={400}

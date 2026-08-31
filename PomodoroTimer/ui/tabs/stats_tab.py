@@ -111,7 +111,7 @@ class StatsTab:
         prof = self.app.data_mgr.get_profile()
         
         total_pomo = cafe["total_pomodoros"]
-        total_mins = stats.get("total_minutes", total_pomo * self.app.work_mins)
+        total_mins = stats.get("total_minutes", total_pomo * self.app.data_mgr.get_setting('work_minutes'))
         streak = stats.get("streak_days", 1)
         daily_hist = stats.get("daily_history", {})
         

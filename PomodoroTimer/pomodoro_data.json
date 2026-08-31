@@ -26,7 +26,8 @@
       "title": "今日のタスクを計画する 📝",
       "target_pomo": 1,
       "completed_pomo": 46,
-      "is_done": true
+      "is_done": true,
+      "time_spent": 28
     },
     {
       "id": 438860,

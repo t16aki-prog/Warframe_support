@@ -109,7 +109,7 @@ class CafeTab:
         sleep_pose_types = ["sleep_curl", "sleep_belly", "sleep_stretch"]
         
         for idx, cat_id in enumerate(unlocked_cats):
-            if cat_id in self.cat_textures:
+            if cat_id in self.app.cat_textures:
                 if idx < len(spawn_slots):
                     x, y = spawn_slots[idx]
                 else:
@@ -117,7 +117,7 @@ class CafeTab:
                     y = random.randint(145, 225)
                     
                 sp_type = random.choice(sleep_pose_types)
-                canvas_id = self.app.cat_canvas.create_image(x, y, image=self.cat_textures[cat_id][f"{sp_type}_0"], tags="cat")
+                canvas_id = self.app.cat_canvas.create_image(x, y, image=self.app.cat_textures[cat_id][f"{sp_type}_0"], tags="cat")
                 self.app.cats.append({
                     "type": cat_id,
                     "id": canvas_id,

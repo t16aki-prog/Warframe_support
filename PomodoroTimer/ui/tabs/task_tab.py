@@ -15,7 +15,7 @@ class TaskTab:
         self.task_sync_bar = tk.Frame(tab, bg=self.app.theme["card"], padx=8, pady=6, relief="groove", bd=1)
         self.task_sync_bar.pack(fill='x', pady=(0, 4))
         
-        g_status = "🟢 接続中" if self.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
+        g_status = "🟢 接続中" if self.app.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
         self.sync_status_lbl = tk.Label(self.task_sync_bar, text=f"Google連携: {g_status}", font=FONT_TEXT, bg=self.app.theme["card"], fg=self.app.theme["text"])
         self.sync_status_lbl.pack(side='left', padx=4)
         
@@ -119,7 +119,7 @@ class TaskTab:
         for widget in self.task_inner_frame.winfo_children():
             widget.destroy()
             
-        g_status = "🟢 接続中" if self.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
+        g_status = "🟢 接続中" if self.app.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
         self.sync_status_lbl.config(text=f"Google連携: {g_status}", bg=self.app.theme["card"], fg=self.app.theme["text"])
         self.task_sync_bar.config(bg=self.app.theme["card"])
         self.btn_tasks_sync.config(bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])
@@ -228,29 +228,29 @@ class TaskTab:
         self.app.data_mgr.add_task(title, target, tag=tag, priority=prio)
         self.task_entry.delete(0, 'end')
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def toggle_task(self, task_id):
         t = self.app.data_mgr.toggle_task_done(task_id)
         if t and t["is_done"]:
             self.app.sound_mgr.play_se("level_up")
             if t.get("google_id"):
-                threading.Thread(target=lambda: self.google_sync.complete_task(t["google_id"]), daemon=True).start()
+                threading.Thread(target=lambda: self.app.google_sync.complete_task(t["google_id"]), daemon=True).start()
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def select_task(self, task_id):
         self.app.data_mgr.set_active_task(task_id)
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def delete_task(self, task_id):
         self.app.data_mgr.delete_task(task_id)
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def sync_google_tasks(self):
-        tasks = self.google_sync.fetch_tasks()
+        tasks = self.app.google_sync.fetch_tasks()
         existing_google_ids = {t.get("google_id") for t in self.app.data_mgr.get_tasks() if t.get("google_id")}
         
         added_count = 0
@@ -260,23 +260,23 @@ class TaskTab:
                 added_count += 1
                 
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
         self.app.sound_mgr.play_se("level_up")
         
-        mode_str = "Google Tasks" if self.google_sync.is_authenticated() else "Google Tasks (サンプルデモ)"
+        mode_str = "Google Tasks" if self.app.google_sync.is_authenticated() else "Google Tasks (サンプルデモ)"
         messagebox.showinfo("同期完了", f"{mode_str} から {added_count} 件のタスクを取り込みました！📝")
 
     def open_calendar_modal(self):
-        modal = tk.Toplevel(self.root)
+        modal = tk.Toplevel(self.app.root)
         modal.title("📅 今日のGoogleカレンダー予定")
         modal.geometry("420x450")
         modal.configure(bg=self.app.theme["bg"])
-        modal.transient(self.root)
+        modal.transient(self.app.root)
         modal.grab_set()
 
         tk.Label(modal, text="📅 今日のGoogleカレンダー予定", font=FONT_TITLE, bg=self.app.theme["bg"], fg=self.app.theme["text"]).pack(pady=10)
         
-        events = self.google_sync.fetch_today_events()
+        events = self.app.google_sync.fetch_today_events()
         container = tk.Frame(modal, bg=self.app.theme["card"], padx=10, pady=10, relief="groove", bd=1)
         container.pack(fill='both', expand=True, padx=15, pady=5)
         
@@ -301,17 +301,17 @@ class TaskTab:
         self.app.data_mgr.add_task(summary, target_pomo=2)
         self.app.sound_mgr.play_se("level_up")
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
         messagebox.showinfo("タスク追加", f"「{summary}」をタスクに追加しました！")
 
     # --- 最初の相棒猫選択モーダル ---
     def open_starter_cat_modal(self):
         """最初の一匹を15種類の中から自由に選ぶモーダル"""
-        modal = tk.Toplevel(self.root)
+        modal = tk.Toplevel(self.app.root)
         modal.title("🐾 最初の相棒猫を選ぼう！")
         modal.geometry("460x580")
         modal.configure(bg=self.app.theme["bg"])
-        modal.transient(self.root)
+        modal.transient(self.app.root)
         modal.grab_set()
 
         tk.Label(modal, text="🐾 最初の相棒猫を選んでね！", font=FONT_TITLE, bg=self.app.theme["bg"], fg=self.app.theme["text"]).pack(pady=(12, 4))
@@ -334,12 +334,12 @@ class TaskTab:
 
         def choose_starter(cid):
             self.app.data_mgr.set_starter_cat(cid)
-            self._update_widget_cat_frames()
+            self.app._update_widget_cat_frames()
             self.app.sound_mgr.play_se("level_up")
             messagebox.showinfo("相棒決定！", "最初の相棒猫を設定しました！🐾")
             modal.destroy()
-            self.refresh_cafe_elements()
-            self.refresh_shop_view()
+            self.app.cafe_tab_obj.refresh_cafe_elements()
+            self.app.shop_tab_obj.refresh_view()
 
         cur_avatar = self.app.data_mgr.get_profile().get("avatar", "black")
         for cat in AVAILABLE_CATS:
@@ -364,11 +364,11 @@ class TaskTab:
 
     # --- アカウント設定モーダル ---
     def open_account_modal(self):
-        modal = tk.Toplevel(self.root)
+        modal = tk.Toplevel(self.app.root)
         modal.title("👤 アカウント設定 & Google連携")
         modal.geometry("460x580")
         modal.configure(bg=self.app.theme["bg"])
-        modal.transient(self.root)
+        modal.transient(self.app.root)
         modal.grab_set()
 
         prof = self.app.data_mgr.get_profile()
@@ -403,8 +403,8 @@ class TaskTab:
 
         tk.Label(g_card, text="🌐 Google アカウント連携", font=FONT_SUB, bg=self.app.theme["card"], fg=self.app.theme["text"]).pack(anchor='w')
         
-        is_auth = self.google_sync.is_authenticated()
-        status_text = f"連携中: {self.google_sync.get_user_email() or '接続済み'}" if is_auth else "未接続 (Google Tasks / Calendar)"
+        is_auth = self.app.google_sync.is_authenticated()
+        status_text = f"連携中: {self.app.google_sync.get_user_email() or '接続済み'}" if is_auth else "未接続 (Google Tasks / Calendar)"
         status_color = self.app.theme["break"] if is_auth else self.app.theme["sub_text"]
         
         status_lbl = tk.Label(g_card, text=status_text, font=FONT_TEXT, bg=self.app.theme["card"], fg=status_color)
@@ -443,8 +443,8 @@ class TaskTab:
             except ValueError:
                 new_goal = 4
             self.app.data_mgr.update_profile(name=new_name, avatar=raw_av, daily_goal=new_goal)
-            self._update_widget_cat_frames()
-            self.refresh_cafe_elements()
+            self.app._update_widget_cat_frames()
+            self.app.cafe_tab_obj.refresh_cafe_elements()
             self.refresh_task_list()
             messagebox.showinfo("更新完了", "プロフィールを更新しました！🐾")
             modal.destroy()
@@ -453,13 +453,13 @@ class TaskTab:
         save_btn.pack(pady=10)
 
     def start_google_login(self, modal):
-        if not self.google_sync.has_credentials_file():
+        if not self.app.google_sync.has_credentials_file():
             self.show_google_guide()
             return
             
-        success, msg = self.google_sync.login()
+        success, msg = self.app.google_sync.login()
         if success:
-            self.app.data_mgr.update_profile(google_connected=True, email=self.google_sync.get_user_email() or "")
+            self.app.data_mgr.update_profile(google_connected=True, email=self.app.google_sync.get_user_email() or "")
             self.app.sound_mgr.play_se("level_up")
             messagebox.showinfo("連携成功", msg)
             modal.destroy()
@@ -468,7 +468,7 @@ class TaskTab:
             messagebox.showerror("連携失敗", msg)
 
     def disconnect_google(self, modal):
-        self.google_sync.logout()
+        self.app.google_sync.logout()
         self.app.data_mgr.update_profile(google_connected=False, email="")
         messagebox.showinfo("解除完了", "Googleアカウントとの連携を解除しました。")
         modal.destroy()
@@ -492,20 +492,20 @@ class TaskTab:
         if t and t["is_done"]:
             self.app.sound_mgr.play_se("level_up")
             if t.get("google_id"):
-                threading.Thread(target=lambda: self.google_sync.complete_task(t["google_id"]), daemon=True).start()
+                threading.Thread(target=lambda: self.app.google_sync.complete_task(t["google_id"]), daemon=True).start()
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def delete_task(self, task_id):
         self.app.data_mgr.delete_task(task_id)
         self.refresh_task_list()
-        self.refresh_cafe_elements()
+        self.app.cafe_tab_obj.refresh_cafe_elements()
 
     def refresh_task_list(self):
         for widget in self.task_inner_frame.winfo_children():
             widget.destroy()
             
-        g_status = "🟢 接続中" if self.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
+        g_status = "🟢 接続中" if self.app.google_sync.is_authenticated() else "⚪ 未連携 (デモ利用可)"
         self.sync_status_lbl.config(text=f"Google連携: {g_status}", bg=self.app.theme["card"], fg=self.app.theme["text"])
         self.task_sync_bar.config(bg=self.app.theme["card"])
         self.btn_tasks_sync.config(bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])

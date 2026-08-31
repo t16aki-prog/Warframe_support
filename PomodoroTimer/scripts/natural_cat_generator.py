@@ -13,12 +13,15 @@ def generate_natural_cat(rgba_img, cat_type):
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
     orig_brightness = (0.299 * r + 0.587 * g + 0.114 * b)
     
-    # 輪郭線
-    is_outline = mask & (orig_brightness < 22)
-    # 耳の内側
-    is_inner_ear = mask & (r > 70) & (r > g + 6) & (r > b - 12)
-    # 目のハイライト
-    is_eye_white = mask & (r > 120) & (g > 120) & (b > 120)
+    min_b = orig_brightness[mask].min() if np.any(mask) else 0
+    max_b = orig_brightness[mask].max() if np.any(mask) else 255
+    norm_b = (orig_brightness - min_b) / max(1.0, (max_b - min_b))
+    
+    # 動的閾値による特徴抽出
+    is_outline = mask & (norm_b < 0.15)
+    is_inner_ear = mask & (r > g + 2) & (r > b + 2) & (norm_b > 0.4) & (norm_b < 0.8)
+    is_eye_white = mask & (norm_b > 0.85)
+    
     # ボディ
     is_body = mask & ~is_outline & ~is_inner_ear & ~is_eye_white
     
@@ -36,11 +39,11 @@ def generate_natural_cat(rgba_img, cat_type):
     fur_grain = np.sin(nx * 40 + ny * 25) * np.cos(nx * 20 - ny * 35) * 0.12
     dither = ((X % 2) ^ (Y % 2)) * 0.04 - 0.02
     
-    # 立体陰影
-    body_brights = orig_brightness[is_body]
-    avg_b = np.mean(body_brights) if len(body_brights) > 0 else 45.0
+    # 立体陰影 (動的に強調)
+    body_norm = norm_b[is_body]
+    avg_norm = np.mean(body_norm) if len(body_norm) > 0 else 0.5
     shade = np.ones_like(orig_brightness)
-    shade[mask] = np.clip((orig_brightness[mask] - avg_b) * 0.008 + 1.0, 0.80, 1.22)
+    shade[mask] = np.clip((norm_b[mask] - avg_norm) * 0.6 + 1.0, 0.6, 1.4)
     
     target_r = np.zeros_like(r)
     target_g = np.zeros_like(g)
