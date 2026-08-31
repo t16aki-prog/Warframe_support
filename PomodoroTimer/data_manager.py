@@ -248,21 +248,21 @@ class DataManager:
         return self.anim_config.get(state, default_config)
 
     def load_data(self):
+        import copy
         if os.path.exists(self.data_path):
             try:
                 with open(self.data_path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
-                    merged = DEFAULT_DATA.copy()
-                    merged.update(loaded)
-                    for k in ["profile", "settings", "cafe"]:
-                        if k in loaded:
-                            d = DEFAULT_DATA[k].copy()
-                            d.update(loaded[k])
-                            merged[k] = d
+                    merged = copy.deepcopy(DEFAULT_DATA)
+                    for k, v in loaded.items():
+                        if isinstance(v, dict) and k in merged and isinstance(merged[k], dict):
+                            merged[k].update(v)
+                        else:
+                            merged[k] = copy.deepcopy(v)
                     return merged
             except Exception as e:
                 print("Error loading data:", e)
-        return json.loads(json.dumps(DEFAULT_DATA))
+        return copy.deepcopy(DEFAULT_DATA)
 
     def save_data(self):
         try:

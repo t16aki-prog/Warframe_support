@@ -179,29 +179,3 @@ class CafeTab:
         heart_id = self.app.cat_canvas.create_text(target_x, target_y - 22, text=cat_msg, font=("Meiryo", 9, "bold"), fill=self.app.theme["work"])
         self.app.floating_effects.append({"id": heart_id, "x": target_x, "y": target_y - 22, "life": 25})
 
-    def refresh_cafe_elements(self):
-        self.app.treat_label.config(text=f"🐟 {self.app.data_mgr.get_cafe_data()['treats']}個", fg=self.app.theme["accent"])
-        prof = self.app.data_mgr.get_profile()
-        done_pomo = self.app.data_mgr.get_cafe_data()['total_pomodoros']
-        
-        if hasattr(self, 'info_card'):
-            self.app.info_card.config(bg=self.app.theme["card"])
-            self.app.cycle_label.config(fg=self.app.theme["text"], bg=self.app.theme["card"])
-            self.app.total_pomo_label.config(text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", fg=self.app.theme["work"], bg=self.app.theme["card"])
-            self.app.active_task_banner.config(bg=self.app.theme["card"], fg=self.app.theme["text"])
-            self.app.btn_frame.config(bg=self.app.theme["bg"])
-            self.app.start_btn.config(bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"])
-            self.app.feed_btn.config(bg=self.app.theme["card"], fg=self.app.theme["accent"])
-            self.app.reset_btn.config(bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])
-            
-        icon = AVATAR_ICONS.get(prof.get("avatar", "black"), "🐾")
-        self.app.account_btn.config(text=f"{icon} {prof['name'][:8]}")
-        
-        active_t = self.app.data_mgr.get_active_task()
-        if active_t:
-            done_mark = " (完了)" if active_t["is_done"] else ""
-            self.app.active_task_banner.config(text=f"作業中: {active_t['title']}{done_mark}")
-        else:
-            self.app.active_task_banner.config(text="作業中タスクなし 📝")
-        self.spawn_cats_and_items()
-
