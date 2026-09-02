@@ -43,22 +43,22 @@ class CatAIEngine:
             return effects
 
         # ランダムな状態遷移
-        if cat["state_timer"] <= 0:
-            states = ["walk", "sit", "dash", "groom", "stretch", "play"]
-            weights = [28, 22, 10, 15, 10, 15]
+        if cat.get("state_timer", 0) <= 0 or cat.get("state") == "sleep":
+            states = ["walk", "walk", "dash", "groom", "stretch", "play", "sit"]
+            weights = [40, 20, 15, 10, 8, 12, 5]
             new_state = random.choices(states, weights=weights)[0]
             cat["state"] = new_state
             
             if new_state == "walk":
-                cat["dx"] = random.choice([-2, -1, 1, 2])
-                cat["dy"] = random.choice([-1, 1])
+                cat["dx"] = random.choice([-1.8, -1.2, 1.2, 1.8])
+                cat["dy"] = random.choice([-0.8, -0.4, 0.4, 0.8])
                 cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(30, 80)
+                cat["state_timer"] = random.randint(35, 90)
             elif new_state == "dash":
-                cat["dx"] = random.choice([-4, -3, 3, 4])
-                cat["dy"] = random.choice([-2, 2])
+                cat["dx"] = random.choice([-3.5, -2.8, 2.8, 3.5])
+                cat["dy"] = random.choice([-1.2, 1.2])
                 cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(15, 30)
+                cat["state_timer"] = random.randint(20, 45)
             elif new_state in ["sit", "groom", "stretch", "play"]:
                 cat["dx"] = 0
                 cat["dy"] = 0

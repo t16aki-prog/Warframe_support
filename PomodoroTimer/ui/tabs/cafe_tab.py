@@ -124,9 +124,26 @@ class CafeTab:
                 if is_sleep_time:
                     initial_state = "sleep"
                     initial_img = self.app.cat_textures[cat_id].get(f"{sp_type}_0")
+                    dx, dy = 0, 0
                 else:
-                    initial_state = "sit"
-                    initial_img = self.app.cat_textures[cat_id].get(f"sit_{facing}")
+                    initial_state = random.choice(["walk", "walk", "dash", "groom", "play", "sit"])
+                    if initial_state == "walk":
+                        dx = random.choice([-1.5, 1.5])
+                        dy = random.choice([-0.5, 0.5])
+                        initial_img = self.app.cat_textures[cat_id].get(f"walk_{facing}_0")
+                    elif initial_state == "dash":
+                        dx = random.choice([-3.0, 3.0])
+                        dy = random.choice([-1.0, 1.0])
+                        initial_img = self.app.cat_textures[cat_id].get(f"dash_{facing}_0")
+                    elif initial_state == "groom":
+                        dx, dy = 0, 0
+                        initial_img = self.app.cat_textures[cat_id].get(f"groom_{facing}_0")
+                    elif initial_state == "play":
+                        dx, dy = 0, 0
+                        initial_img = self.app.cat_textures[cat_id].get(f"play_{facing}_0")
+                    else:
+                        dx, dy = 0, 0
+                        initial_img = self.app.cat_textures[cat_id].get(f"sit_{facing}")
                     
                 if not initial_img:
                     # フォールバック
@@ -140,9 +157,9 @@ class CafeTab:
                     "y": y,
                     "state": initial_state,
                     "sleep_pose": sp_type,
-                    "state_timer": random.randint(20, 80),
-                    "dx": 0,
-                    "dy": 0,
+                    "state_timer": random.randint(20, 60),
+                    "dx": dx,
+                    "dy": dy,
                     "facing": facing
                 })
 

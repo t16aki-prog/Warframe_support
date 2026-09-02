@@ -748,8 +748,8 @@ class PomodoroApp:
                         
                         if state in ["walk", "dash"]:
                             # 60FPSでの滑らかな移動
-                            cat["x"] += cat["dx"] * 0.33
-                            cat["y"] += cat["dy"] * 0.33
+                            cat["x"] += cat["dx"] * 0.9
+                            cat["y"] += cat["dy"] * 0.9
                             
                             if cat["x"] < 60:
                                 cat["x"] = 60
@@ -780,13 +780,14 @@ class PomodoroApp:
                                 pass
                                 
                             # 肉球足跡エフェクト
-                            if self.anim_tick % 42 == 0 and len(self.floating_effects) < 20:
+                            if self.anim_tick % 36 == 0 and len(self.floating_effects) < 20:
                                 paw_id = self.cat_canvas.create_text(cat["x"], cat["y"] + 14, text="🐾", font=("Segoe UI Emoji", 7), fill=self.theme["border"])
                                 self.floating_effects.append({"id": paw_id, "x": cat["x"], "y": cat["y"] + 14, "life": 48})
                                 
                         elif state == "sit":
                             frame_key = f"sit_{facing}"
                             try:
+                                self.cat_canvas.coords(cat["id"], cat["x"], cat["y"])
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                             except Exception:
