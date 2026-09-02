@@ -1,8 +1,8 @@
 {
   "animations": {
     "sit": {
-      "frames": 1,
-      "speed": 1
+      "frames": 2,
+      "speed": 60
     },
     "walk": {
       "frames": 2,

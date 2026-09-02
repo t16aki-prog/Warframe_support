@@ -95,7 +95,8 @@ class CatDebugViewer:
         # Cat type
         tk.Label(ctrl_frame, text="Cat Type:").grid(row=0, column=0, padx=5, pady=2)
         self.cat_var = tk.StringVar(value=self.cat_type)
-        cat_combo = ttk.Combobox(ctrl_frame, textvariable=self.cat_var, values=list(AVAILABLE_CATS.keys()), state="readonly", width=12)
+        cat_ids = [c["id"] for c in AVAILABLE_CATS]
+        cat_combo = ttk.Combobox(ctrl_frame, textvariable=self.cat_var, values=cat_ids, state="readonly", width=12)
         cat_combo.grid(row=0, column=1, padx=5, pady=2)
         cat_combo.bind("<<ComboboxSelected>>", self.on_cat_change)
 
