@@ -33,7 +33,7 @@ class CatAIEngine:
             return effects
             
         if "toy_mouse" in unlocked_items and math.hypot(cat["x"] - 165, cat["y"] - 225) < 32 and random.random() < 0.22:
-            cat["state"] = random.choice(["play", "pounce"])
+            cat["state"] = "play"
             cat["state_timer"] = random.randint(25, 45)
             return effects
             
@@ -44,8 +44,8 @@ class CatAIEngine:
 
         # ランダムな状態遷移
         if cat["state_timer"] <= 0:
-            states = ["walk", "sit", "dash", "groom", "stretch", "play", "pounce"]
-            weights = [28, 22, 10, 15, 10, 10, 5]
+            states = ["walk", "sit", "dash", "groom", "stretch", "play"]
+            weights = [28, 22, 10, 15, 10, 15]
             new_state = random.choices(states, weights=weights)[0]
             cat["state"] = new_state
             
@@ -59,7 +59,7 @@ class CatAIEngine:
                 cat["dy"] = random.choice([-2, 2])
                 cat["facing"] = "r" if cat["dx"] > 0 else "l"
                 cat["state_timer"] = random.randint(15, 30)
-            elif new_state in ["sit", "groom", "stretch", "play", "pounce"]:
+            elif new_state in ["sit", "groom", "stretch", "play"]:
                 cat["dx"] = 0
                 cat["dy"] = 0
                 cat["state_timer"] = random.randint(25, 60)

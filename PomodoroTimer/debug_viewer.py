@@ -69,9 +69,11 @@ class CatDebugViewer:
             "sleep": base_sleep,
             "walk_0": load_or_fallback("cat_walk_0.png", base_awake),
             "walk_1": load_or_fallback("cat_walk_1.png", base_awake),
-            "dash": load_or_fallback("cat_dash.png", base_awake),
+            "dash_0": load_or_fallback("cat_dash_0.png", base_awake),
+            "dash_1": load_or_fallback("cat_dash_1.png", base_awake),
             "groom": load_or_fallback("cat_groom.png", base_awake),
-            "stretch": load_or_fallback("cat_stretch.png", base_awake),
+            "stretch_0": load_or_fallback("cat_stretch_0.png", base_awake),
+            "stretch_1": load_or_fallback("cat_stretch_1.png", base_awake),
             "play": load_or_fallback("cat_play.png", base_awake),
             "pounce": load_or_fallback("cat_pounce.png", base_awake),
             "sleep_belly": load_or_fallback("cat_sleep_belly.png", base_sleep),
@@ -116,7 +118,7 @@ class CatDebugViewer:
         states_frame = tk.LabelFrame(self.root, text="Select Animation State", padx=10, pady=10)
         states_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        states = ["sit", "walk", "dash", "groom", "stretch", "play", "pounce", "sleep_curl", "sleep_belly", "sleep_stretch"]
+        states = ["sit", "walk", "dash", "groom", "stretch", "play", "sleep_curl", "sleep_belly", "sleep_stretch"]
         
         r, c = 0, 0
         for s in states:

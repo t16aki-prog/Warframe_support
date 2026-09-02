@@ -1,6 +1,10 @@
 import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from core.data_manager import AVAILABLE_CATS
+from scripts.natural_cat_generator import generate_natural_cat
 
 base_dir = r"e:\Oasobi\PomodoroTimer"
 sprites_dir = os.path.join(base_dir, "sprites")
