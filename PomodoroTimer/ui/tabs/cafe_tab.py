@@ -75,6 +75,7 @@ class CafeTab:
             messagebox.showwarning("🐟 おやつ", msg)
 
     def spawn_cats_and_items(self):
+        """家具と猫の初期スポーン。同一柄の猫は重複させず1匹のみ生成"""
         self.app.cat_canvas.delete("cat")
         self.app.cat_canvas.delete("item")
         self.app.cats.clear()
@@ -96,7 +97,9 @@ class CafeTab:
                 x, y, icon = item_positions[item_id]
                 self.app.cat_canvas.create_text(x, y, text=icon, font=("Segoe UI Emoji", 22), tags="item")
                 
-        unlocked_cats = self.app.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
+        # 同一柄の猫は1匹のみ (重複排除)
+        raw_unlocked = self.app.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
+        unlocked_cats = list(dict.fromkeys(raw_unlocked))
         
         # 床面の自然なスポーン位置候補 (重なり防止グリッド)
         spawn_slots = [
@@ -107,68 +110,148 @@ class CafeTab:
         random.shuffle(spawn_slots)
         
         sleep_pose_types = ["sleep_curl", "sleep_belly", "sleep_stretch"]
-        
         is_sleep_time = not self.app.timer.is_running or self.app.timer.session_mode != "work"
         
         for idx, cat_id in enumerate(unlocked_cats):
-            if cat_id in self.app.cat_textures:
-                if idx < len(spawn_slots):
-                    x, y = spawn_slots[idx]
+            # 必要に応じてテクスチャをオンデマンドロード
+            tex_dict = self.app.get_cat_texture(cat_id)
+            if not tex_dict:
+                continue
+                
+            if idx < len(spawn_slots):
+                x, y = spawn_slots[idx]
+            else:
+                x = random.randint(70, 410)
+                y = random.randint(145, 225)
+                
+            sp_type = random.choice(sleep_pose_types)
+            facing = random.choice(["r", "l"])
+            
+            if is_sleep_time:
+                initial_state = "sleep"
+                initial_img = tex_dict.get(f"{sp_type}_0", list(tex_dict.values())[0])
+                dx, dy = 0, 0
+            else:
+                initial_state = random.choice(["walk", "dash", "groom", "play", "sit"])
+                if initial_state == "walk":
+                    dx = random.choice([-1.5, 1.5])
+                    dy = random.choice([-0.5, 0.5])
+                    initial_img = tex_dict.get(f"walk_{facing}_0")
+                elif initial_state == "dash":
+                    dx = random.choice([-3.0, 3.0])
+                    dy = random.choice([-1.0, 1.0])
+                    initial_img = tex_dict.get(f"dash_{facing}_0")
+                elif initial_state == "groom":
+                    dx, dy = 0, 0
+                    initial_img = tex_dict.get(f"groom_{facing}_0")
+                elif initial_state == "play":
+                    dx, dy = 0, 0
+                    initial_img = tex_dict.get(f"play_{facing}_0")
                 else:
-                    x = random.randint(70, 410)
-                    y = random.randint(145, 225)
-                    
-                sp_type = random.choice(sleep_pose_types)
+                    dx, dy = 0, 0
+                    initial_img = tex_dict.get(f"sit_{facing}")
+                
+            if not initial_img:
+                initial_img = list(tex_dict.values())[0]
+
+            canvas_id = self.app.cat_canvas.create_image(x, y, image=initial_img, tags="cat")
+            self.app.cats.append({
+                "type": cat_id,
+                "id": canvas_id,
+                "x": x,
+                "y": y,
+                "state": initial_state,
+                "sleep_pose": sp_type,
+                "state_timer": random.randint(50, 70),
+                "dx": dx,
+                "dy": dy,
+                "facing": facing
+            })
+
+    def update_cat_sleep_mode(self, is_sleep):
+        """タイマーの開始・停止に合わせて、既存の猫たちの状態（睡眠/活動）をその場で切り替える"""
+        for cat in self.app.cats:
+            if is_sleep:
+                cat["state"] = "sleep"
+                cat["dx"] = 0
+                cat["dy"] = 0
+                if "sleep_pose" not in cat:
+                    cat["sleep_pose"] = random.choice(["sleep_curl", "sleep_belly", "sleep_stretch"])
+            else:
+                if cat.get("state") == "sleep":
+                    # 目覚めてお座りまたは歩行へ
+                    cat["state"] = random.choice(["sit", "walk"])
+                    cat["state_timer"] = random.randint(40, 60)
+                    if cat["state"] == "walk":
+                        cat["dx"] = random.choice([-1.5, 1.5])
+                        cat["dy"] = random.choice([-0.5, 0.5])
+                        cat["facing"] = "r" if cat["dx"] > 0 else "l"
+                    else:
+                        cat["dx"] = 0
+                        cat["dy"] = 0
+
+    def sync_unlocked_entities(self):
+        """ショップで新しい猫や家具が購入された際に同期"""
+        raw_unlocked = self.app.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
+        unlocked_cats = list(dict.fromkeys(raw_unlocked))
+        existing_types = {c["type"] for c in self.app.cats}
+        
+        # 新しい猫がいれば追加
+        for cat_id in unlocked_cats:
+            if cat_id not in existing_types:
+                tex_dict = self.app.get_cat_texture(cat_id)
+                if not tex_dict:
+                    continue
+                x = random.randint(90, 390)
+                y = random.randint(150, 220)
                 facing = random.choice(["r", "l"])
+                sp_type = random.choice(["sleep_curl", "sleep_belly", "sleep_stretch"])
+                is_sleep_time = not self.app.timer.is_running or self.app.timer.session_mode != "work"
                 
                 if is_sleep_time:
-                    initial_state = "sleep"
-                    initial_img = self.app.cat_textures[cat_id].get(f"{sp_type}_0")
+                    state = "sleep"
+                    img = tex_dict.get(f"{sp_type}_0", list(tex_dict.values())[0])
                     dx, dy = 0, 0
                 else:
-                    initial_state = random.choice(["walk", "walk", "dash", "groom", "play", "sit"])
-                    if initial_state == "walk":
-                        dx = random.choice([-1.5, 1.5])
-                        dy = random.choice([-0.5, 0.5])
-                        initial_img = self.app.cat_textures[cat_id].get(f"walk_{facing}_0")
-                    elif initial_state == "dash":
-                        dx = random.choice([-3.0, 3.0])
-                        dy = random.choice([-1.0, 1.0])
-                        initial_img = self.app.cat_textures[cat_id].get(f"dash_{facing}_0")
-                    elif initial_state == "groom":
-                        dx, dy = 0, 0
-                        initial_img = self.app.cat_textures[cat_id].get(f"groom_{facing}_0")
-                    elif initial_state == "play":
-                        dx, dy = 0, 0
-                        initial_img = self.app.cat_textures[cat_id].get(f"play_{facing}_0")
-                    else:
-                        dx, dy = 0, 0
-                        initial_img = self.app.cat_textures[cat_id].get(f"sit_{facing}")
+                    state = "sit"
+                    img = tex_dict.get(f"sit_{facing}", list(tex_dict.values())[0])
+                    dx, dy = 0, 0
                     
-                if not initial_img:
-                    # フォールバック
-                    initial_img = self.app.cat_textures[cat_id].get(f"{sp_type}_0", list(self.app.cat_textures[cat_id].values())[0])
-
-                canvas_id = self.app.cat_canvas.create_image(x, y, image=initial_img, tags="cat")
+                canvas_id = self.app.cat_canvas.create_image(x, y, image=img, tags="cat")
                 self.app.cats.append({
                     "type": cat_id,
                     "id": canvas_id,
                     "x": x,
                     "y": y,
-                    "state": initial_state,
+                    "state": state,
                     "sleep_pose": sp_type,
-                    "state_timer": random.randint(20, 60),
+                    "state_timer": random.randint(50, 70),
                     "dx": dx,
                     "dy": dy,
                     "facing": facing
                 })
+                
+        # 家具の再描画
+        self.app.cat_canvas.delete("item")
+        unlocked_items = self.app.data_mgr.get_cafe_data().get("unlocked_items", ["cushion"])
+        item_positions = {
+            "cushion": (75, 205, "🛋️"),
+            "toy_mouse": (165, 225, "🐭"),
+            "scratcher": (395, 175, "🪵"),
+            "treat_bowl": (240, 225, "🥣"),
+            "cat_tree": (390, 105, "🏰")
+        }
+        for item_id in unlocked_items:
+            if item_id in item_positions:
+                x, y, icon = item_positions[item_id]
+                self.app.cat_canvas.create_text(x, y, text=icon, font=("Segoe UI Emoji", 22), tags="item")
 
     def refresh_cafe_elements(self):
         self.app.treat_label.config(text=f"🐟 {self.app.data_mgr.get_cafe_data()['treats']}個", fg=self.app.theme["accent"])
         prof = self.app.data_mgr.get_profile()
         done_pomo = self.app.data_mgr.get_cafe_data()['total_pomodoros']
         
-        if hasattr(self, 'info_card'):
+        if hasattr(self.app, 'info_card'):
             self.app.info_card.config(bg=self.app.theme["card"])
             self.app.cycle_label.config(fg=self.app.theme["text"], bg=self.app.theme["card"])
             self.app.total_pomo_label.config(text=f"本日: {done_pomo}/{prof['daily_goal']} 🍅", fg=self.app.theme["work"], bg=self.app.theme["card"])
@@ -187,7 +270,7 @@ class CafeTab:
             self.app.active_task_banner.config(text=f"作業中: {active_t['title']}{done_mark}")
         else:
             self.app.active_task_banner.config(text="作業中タスクなし 📝")
-        self.spawn_cats_and_items()
+        self.sync_unlocked_entities()
 
     def on_canvas_click(self, event):
         clicked_cat = None
@@ -208,6 +291,9 @@ class CafeTab:
             cat_msg = f"{cat_msg} (親愛度 Lv.{aff})"
             
         self.app.sound_mgr.play_se("meow")
-        heart_id = self.app.cat_canvas.create_text(target_x, target_y - 22, text=cat_msg, font=("Meiryo", 9, "bold"), fill=self.app.theme["work"])
-        self.app.floating_effects.append({"id": heart_id, "x": target_x, "y": target_y - 22, "life": 25})
-
+        self.app.floating_effects.append({
+            "id": self.app.cat_canvas.create_text(target_x, target_y - 20, text=cat_msg, font=("Meiryo", 10, "bold"), fill=self.app.theme["work"]),
+            "x": target_x,
+            "y": target_y - 20,
+            "life": 35
+        })

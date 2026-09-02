@@ -266,6 +266,7 @@ class PomodoroApp:
         bg_path = os.path.join(base_dir, "assets", "backgrounds", "room_bg.jpg")
         
         self.has_images = False
+        self.cat_textures = {}
         try:
             raw_bg = Image.open(bg_path).convert("RGB").resize((480, 270), Image.Resampling.LANCZOS)
             white_layer = Image.new("RGB", (480, 270), (255, 255, 255))
@@ -283,55 +284,36 @@ class PomodoroApp:
             else:
                 self.base_sleep = make_transparent(Image.open(sleep_jpg))
                 
-            # 各モーション・寝相専用ベーススプライトのロード
-            def load_or_fallback(fname, fallback):
-                fpath = os.path.join(base_sprites_dir, fname)
-                if os.path.exists(fpath):
-                    return Image.open(fpath).convert("RGBA")
-                return fallback
-                
-            base_pose_images = {
-                "awake": self.base_awake,
-                "sleep": self.base_sleep,
-                "walk_0": load_or_fallback("cat_walk_0.png", self.base_awake),
-                "walk_1": load_or_fallback("cat_walk_1.png", self.base_awake),
-                "sit": load_or_fallback("cat_sit.png", self.base_awake),
-                "dash_0": load_or_fallback("cat_dash_0.png", self.base_awake),
-                "dash_1": load_or_fallback("cat_dash_1.png", self.base_awake),
-                "groom": load_or_fallback("cat_groom.png", self.base_awake),
-                "stretch_0": load_or_fallback("cat_stretch_0.png", self.base_awake),
-                "stretch_1": load_or_fallback("cat_stretch_1.png", self.base_awake),
-                "play": load_or_fallback("cat_play.png", self.base_awake),
-                "pounce": load_or_fallback("cat_pounce.png", self.base_awake),
-                "sleep_belly": load_or_fallback("cat_sleep_belly.png", self.base_sleep),
-                "sleep_stretch": load_or_fallback("cat_sleep_stretch.png", self.base_sleep)
-            }
-                
-            sprites_dir = os.path.join(base_dir, "sprites")
-            self.cat_textures = {}
-            for cat_info in AVAILABLE_CATS:
-                c_id = cat_info["id"]
-                tex_dict = {}
-                cat_sprites_dir = os.path.join(sprites_dir, c_id)
-                if os.path.exists(cat_sprites_dir):
-                    for fname in os.listdir(cat_sprites_dir):
-                        if fname.endswith(".png"):
-                            pose_k = fname[:-4]
-                            fpath = os.path.join(cat_sprites_dir, fname)
-                            tex_dict[pose_k] = ImageTk.PhotoImage(Image.open(fpath).convert("RGBA"))
-                
-                # スプライトが存在しない場合は動的生成
-                if not tex_dict:
-                    raw_poses = generate_cat_poses(base_pose_images, None, c_id)
-                    tex_dict = {k: ImageTk.PhotoImage(v) for k, v in raw_poses.items()}
-                    
-                self.cat_textures[c_id] = tex_dict
+            # 起動時は解放済みの猫のみを初期ロード (高速起動)
+            unlocked_cats = self.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
+            for c_id in unlocked_cats:
+                self.get_cat_texture(c_id)
                 
             self._update_widget_cat_frames()
             self.has_images = True
         except Exception as e:
             print("画像読み込みエラー:", e)
             self.has_images = False
+
+    def get_cat_texture(self, cat_id):
+        """猫スプライトのオンデマンド読み込み＆キャッシュ (高速化)"""
+        if cat_id in self.cat_textures:
+            return self.cat_textures[cat_id]
+            
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        sprites_dir = os.path.join(base_dir, "sprites")
+        cat_sprites_dir = os.path.join(sprites_dir, cat_id)
+        
+        tex_dict = {}
+        if os.path.exists(cat_sprites_dir):
+            for fname in os.listdir(cat_sprites_dir):
+                if fname.endswith(".png"):
+                    pose_k = fname[:-4]
+                    fpath = os.path.join(cat_sprites_dir, fname)
+                    tex_dict[pose_k] = ImageTk.PhotoImage(Image.open(fpath).convert("RGBA"))
+                    
+        self.cat_textures[cat_id] = tex_dict
+        return tex_dict
 
     def _update_widget_cat_frames(self):
         """現在のテーマの背景色に合わせてウィジェット用猫フレームを再合成"""
@@ -617,7 +599,10 @@ class PomodoroApp:
         if not hasattr(self, 'start_btn'): return
         self.start_btn.config(text="⏸ 停止" if self.timer.is_running else "▶ 開始")
         self.update_status_display()
-        self.cafe_tab_obj.refresh_cafe_elements()
+        is_sleep = not self.timer.is_running or self.timer.session_mode != "work"
+        if hasattr(self, 'cafe_tab_obj'):
+            self.cafe_tab_obj.update_cat_sleep_mode(is_sleep)
+            self.cafe_tab_obj.refresh_cafe_elements()
 
     def _on_work_end(self):
         self.sound_mgr.play_se("work_end")
@@ -723,7 +708,9 @@ class PomodoroApp:
                 # スプライト切り替え速度を60FPSに合わせて調整 (元の3倍のtickが必要)
                 for cat in self.cats:
                     c_id = cat["type"]
-                    tex = self.cat_textures[c_id]
+                    tex = self.get_cat_texture(c_id)
+                    if not tex:
+                        continue
                     facing = cat.get("facing", "r")
                     state = cat.get("state", "sit")
                     
@@ -848,7 +835,7 @@ class PomodoroApp:
                             
                 if self.cats:
                     cat = self.cats[0]
-                    tex = self.cat_textures.get(cat.get("type", "black"), {})
+                    tex = self.get_cat_texture(cat.get("type", "black"))
                     
                     if is_sleep_time:
                         sp_type = cat.get("sleep_pose", "sleep_curl")
