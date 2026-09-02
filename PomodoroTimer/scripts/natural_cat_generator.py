@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+from scripts.chibi_cat_generator import generate_chibi_cat
 
 def generate_natural_cat(rgba_img, cat_type):
     """猫学・遺伝学的特徴に厳格に基づいた本物の毛柄・毛並みレンダリング"""
@@ -237,9 +238,11 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
             "sleep": sl,
             "walk_0": aw,
             "walk_1": aw,
-            "dash": aw,
+            "dash_0": aw,
+            "dash_1": aw,
             "groom": aw,
-            "stretch": aw,
+            "stretch_0": aw,
+            "stretch_1": aw,
             "play": aw,
             "pounce": aw,
             "sleep_belly": sl,
@@ -263,24 +266,21 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["walk_l_0"] = tex_w0
     poses["walk_l_1"] = tex_w1
     
-    # 3. ダッシュ (dash) - 専用疾走ベース画像
-    tex_dash = generate_natural_cat(base_dict["dash"], cat_type).resize((50, 46), Image.Resampling.LANCZOS)
-    d_f0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    d_f0.paste(tex_dash, (-1, 2))
-    d_f1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    d_f1.paste(tex_dash.resize((50, 44), Image.Resampling.LANCZOS), (-1, 4))
+    # 3. ダッシュ (dash) - 専用AI画像
+    d_f0 = generate_chibi_cat(base_dict["dash_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    d_f1 = generate_chibi_cat(base_dict["dash_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     poses["dash_r_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["dash_l_0"] = d_f0
     poses["dash_l_1"] = d_f1
     
-    # 4. 毛づくろい (groom / 顔洗い) - 専用前足持ち上げベース画像
-    tex_gr = generate_natural_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    gr_0 = tex_gr.copy()
+    # 4. 毛づくろい (groom) - 専用AI画像
+    gr_0 = generate_chibi_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    # AI画像が1枚しかない場合は揺らす
     gr_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    gr_1.paste(tex_gr.rotate(-8, resample=Image.Resampling.BICUBIC), (0, 0))
+    gr_1.paste(gr_0.rotate(-4, resample=Image.Resampling.BICUBIC), (0, 0))
     gr_2 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    gr_2.paste(tex_gr.rotate(6, resample=Image.Resampling.BICUBIC), (0, 0))
+    gr_2.paste(gr_0.rotate(4, resample=Image.Resampling.BICUBIC), (0, 0))
     poses["groom_r_0"] = gr_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["groom_r_1"] = gr_1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["groom_r_2"] = gr_2.transpose(Image.FLIP_LEFT_RIGHT)
@@ -288,24 +288,20 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["groom_l_1"] = gr_1
     poses["groom_l_2"] = gr_2
     
-    # 5. 猫の伸びポーズ (stretch) - 専用背伸びベース画像
-    tex_st = generate_natural_cat(base_dict["stretch"], cat_type).resize((52, 42), Image.Resampling.LANCZOS)
-    st_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    st_0.paste(tex_st, (-2, 6))
-    st_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    st_1.paste(tex_st.resize((54, 40), Image.Resampling.LANCZOS), (-3, 8))
+    # 5. 背のびポーズ (stretch) - 専用AI画像
+    st_0 = generate_chibi_cat(base_dict["stretch_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    st_1 = generate_chibi_cat(base_dict["stretch_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     poses["stretch_r_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["stretch_r_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["stretch_l_0"] = st_0
     poses["stretch_l_1"] = st_1
     
-    # 6. じゃれる・チョイチョイ (play) - 専用前足浮かしベース画像
-    tex_pl = generate_natural_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    pl_0 = tex_pl.copy()
+    # 6. オモチャ遊び (play) - 専用AI画像
+    pl_0 = generate_chibi_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     pl_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    pl_1.paste(tex_pl.rotate(8, resample=Image.Resampling.BICUBIC), (2, -2))
+    pl_1.paste(pl_0.rotate(6, resample=Image.Resampling.BICUBIC), (1, -1))
     pl_2 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
-    pl_2.paste(tex_pl.rotate(14, resample=Image.Resampling.BICUBIC), (3, -3))
+    pl_2.paste(pl_0.rotate(10, resample=Image.Resampling.BICUBIC), (2, -2))
     poses["play_r_0"] = pl_0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["play_r_1"] = pl_1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["play_r_2"] = pl_2.transpose(Image.FLIP_LEFT_RIGHT)
