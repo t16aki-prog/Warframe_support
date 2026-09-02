@@ -42,27 +42,39 @@ class CatAIEngine:
             cat["state_timer"] = random.randint(30, 60)
             return effects
 
-        # ランダムな状態遷移
-        if cat.get("state_timer", 0) <= 0 or cat.get("state") == "sleep":
-            states = ["walk", "walk", "dash", "groom", "stretch", "play", "sit"]
-            weights = [40, 20, 15, 10, 8, 12, 5]
-            new_state = random.choices(states, weights=weights)[0]
+        # ランダムな状態遷移 (約3秒 = 60カウントごとに必ず別の動作・位置へ切り替え)
+        cur_state = cat.get("state", "sit")
+        if cat.get("state_timer", 0) <= 0 or cur_state == "sleep":
+            # 直前の状態とは必ず異なる動作を選択
+            if cur_state in ["walk", "dash"]:
+                # 移動後はその場所でアクション（毛づくろい、背伸び、オモチャ、お座り）を行う
+                candidate_states = ["groom", "stretch", "play", "sit", "sit"]
+                weights = [25, 20, 25, 15, 15]
+            else:
+                # 静止アクション後は別の場所へ移動する（歩く、ダッシュ）
+                candidate_states = ["walk", "walk", "dash", "play", "groom"]
+                weights = [50, 30, 10, 5, 5]
+                
+            new_state = random.choices(candidate_states, weights=weights)[0]
             cat["state"] = new_state
             
+            # 約3秒間持続 (20回/秒判定 × 3秒 = 約60カウント)
+            cat["state_timer"] = random.randint(50, 70)
+            
             if new_state == "walk":
-                cat["dx"] = random.choice([-1.8, -1.2, 1.2, 1.8])
+                cat["dx"] = random.choice([-1.6, -1.2, 1.2, 1.6])
                 cat["dy"] = random.choice([-0.8, -0.4, 0.4, 0.8])
                 cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(35, 90)
             elif new_state == "dash":
-                cat["dx"] = random.choice([-3.5, -2.8, 2.8, 3.5])
-                cat["dy"] = random.choice([-1.2, 1.2])
+                cat["dx"] = random.choice([-3.2, -2.4, 2.4, 3.2])
+                cat["dy"] = random.choice([-1.0, 1.0])
                 cat["facing"] = "r" if cat["dx"] > 0 else "l"
-                cat["state_timer"] = random.randint(20, 45)
             elif new_state in ["sit", "groom", "stretch", "play"]:
                 cat["dx"] = 0
                 cat["dy"] = 0
-                cat["state_timer"] = random.randint(25, 60)
+                # 向きを時々反転させて自然に見せる
+                if random.random() < 0.5:
+                    cat["facing"] = "r" if cat.get("facing") == "l" else "l"
         else:
             cat["state_timer"] -= 1
             

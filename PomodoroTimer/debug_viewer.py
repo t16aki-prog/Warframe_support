@@ -69,6 +69,7 @@ class CatDebugViewer:
             "sleep": base_sleep,
             "walk_0": load_or_fallback("cat_walk_0.png", base_awake),
             "walk_1": load_or_fallback("cat_walk_1.png", base_awake),
+            "sit": load_or_fallback("cat_sit.png", base_awake),
             "dash_0": load_or_fallback("cat_dash_0.png", base_awake),
             "dash_1": load_or_fallback("cat_dash_1.png", base_awake),
             "groom": load_or_fallback("cat_groom.png", base_awake),

@@ -292,6 +292,7 @@ class PomodoroApp:
                 "sleep": self.base_sleep,
                 "walk_0": load_or_fallback("cat_walk_0.png", self.base_awake),
                 "walk_1": load_or_fallback("cat_walk_1.png", self.base_awake),
+                "sit": load_or_fallback("cat_sit.png", self.base_awake),
                 "dash_0": load_or_fallback("cat_dash_0.png", self.base_awake),
                 "dash_1": load_or_fallback("cat_dash_1.png", self.base_awake),
                 "groom": load_or_fallback("cat_groom.png", self.base_awake),

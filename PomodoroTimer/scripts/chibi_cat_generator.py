@@ -37,65 +37,68 @@ def generate_chibi_cat(base_img, cat_type):
     fur_grain = np.sin(x_idx * 0.5) * np.cos(y_idx * 0.5) + np.sin(y_idx * 1.5)
     
     if cat_type == "black":
-        base_color = (32, 32, 34)
+        base_color = (35, 34, 42)
     elif cat_type == "gray":
-        base_color = (120, 124, 130)
-        pattern_color = (100, 104, 110)
-        pattern_mask = fur_grain > 0
+        base_color = (130, 134, 142)
+        pattern_color = (95, 98, 105)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 6 == 0))
     elif cat_type == "calico":
         base_color = (255, 255, 255)
-        # 三毛の模様: ランダムなオレンジと黒の斑点
-        pattern_mask = is_body & (np.sin(x_idx * 0.2 + y_idx * 0.3) > 0.6)
-        pattern_color = (235, 122, 45) # orange
-        
-        pattern_mask2 = is_body & (np.cos(x_idx * 0.3 - y_idx * 0.2) > 0.6)
-        pattern_color2 = (42, 42, 42) # black
+        # 三毛の模様: 頭部のオレンジ斑点 + 背中の黒斑点
+        spot_orange = ((x_idx - 32)**2 + (y_idx - 9)**2 < 36) | (((x_idx - 16)**2 + (y_idx - 38)**2 < 30))
+        spot_black = (((x_idx - 18)**2 + (y_idx - 25)**2 < 42)) | ((x_idx - 38)**2 + (y_idx - 40)**2 < 20)
+        pattern_mask = is_body & spot_orange
+        pattern_color = (235, 125, 45) # orange
+        pattern_mask2 = is_body & spot_black & (~spot_orange)
+        pattern_color2 = (42, 38, 48) # black
     elif cat_type == "siamese":
-        base_color = (250, 240, 230)
-        # シャムの模様: 端の方（x < 10 or x > 38 or y > 38）を焦げ茶に
-        pattern_mask = is_body & ((x_idx < 12) | (x_idx > 36) | (y_idx > 36) | (y_idx < 12))
-        pattern_color = (70, 50, 40)
+        base_color = (248, 242, 234)
+        # シャム: 顔の中心と耳・尾のポイントカラー
+        face_point = ((x_idx - 34)**2 + (y_idx - 13)**2 < 28) | (y_idx < 6) | (x_idx < 10)
+        pattern_mask = is_body & face_point
+        pattern_color = (65, 48, 38)
     elif cat_type == "orange":
-        base_color = (235, 122, 45)
-        pattern_mask = is_body & (fur_grain > 0.2)
-        pattern_color = (200, 100, 30)
+        base_color = (242, 138, 52)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
+        pattern_color = (205, 95, 25)
     elif cat_type == "tuxedo":
-        base_color = (28, 32, 42)
-        # タキシード: お腹周りを白に
-        pattern_mask = is_body & (y_idx > 24) & (x_idx > 12) & (x_idx < 36)
+        base_color = (32, 35, 45)
+        # タキシード: 胸元・お腹・足元の白
+        white_tux = ((x_idx - 28)**2 + (y_idx - 26)**2 < 35) | (y_idx > 33) & (x_idx > 22) & (x_idx < 35)
+        pattern_mask = is_body & white_tux
         pattern_color = (255, 255, 255)
     elif cat_type == "cream":
-        base_color = (250, 242, 226)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (222, 192, 146)
+        base_color = (252, 244, 230)
+        pattern_mask = is_body & ((x_idx % 5 == 0) | (y_idx < 12))
+        pattern_color = (226, 198, 156)
     elif cat_type == "ginger":
-        base_color = (218, 62, 22)
-        pattern_mask = is_body & (fur_grain > 0.2)
-        pattern_color = (180, 50, 18)
+        base_color = (218, 68, 26)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
+        pattern_color = (175, 45, 15)
     elif cat_type == "tortoiseshell":
-        base_color = (38, 38, 38)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (180, 80, 30)
+        base_color = (42, 38, 45)
+        pattern_mask = is_body & (((x_idx * 3 + y_idx * 5) % 7) < 3)
+        pattern_color = (195, 95, 35)
     elif cat_type == "sakura":
-        base_color = (255, 226, 238)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (255, 114, 170)
+        base_color = (255, 230, 240)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
+        pattern_color = (255, 125, 175)
     elif cat_type == "mint":
-        base_color = (202, 248, 222)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (54, 186, 128)
+        base_color = (210, 248, 226)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
+        pattern_color = (60, 192, 135)
     elif cat_type == "sky":
-        base_color = (180, 224, 255)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (30, 118, 216)
+        base_color = (190, 228, 255)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
+        pattern_color = (35, 125, 225)
     elif cat_type == "lavender":
-        base_color = (228, 206, 252)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (138, 68, 224)
+        base_color = (232, 212, 255)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
+        pattern_color = (145, 75, 230)
     elif cat_type == "golden":
-        base_color = (255, 216, 76)
-        pattern_mask = is_body & (fur_grain > 0)
-        pattern_color = (236, 118, 24)
+        base_color = (255, 218, 80)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
+        pattern_color = (235, 125, 25)
     elif cat_type == "white":
         base_color = (255, 255, 255)
     

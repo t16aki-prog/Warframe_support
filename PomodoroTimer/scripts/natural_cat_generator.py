@@ -251,10 +251,11 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
         
     poses = {}
     
-    # 1. 立ち・座り (sit)
-    tex_sit = generate_natural_cat(base_dict["awake"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["sit_r"] = tex_sit.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["sit_l"] = tex_sit
+    # 1. 優雅なお座り (sit) - ふわふわの巻き尻尾ポーズ
+    sit_base = base_dict.get("sit", base_dict["awake"])
+    tex_sit = generate_chibi_cat(sit_base, cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    poses["sit_r"] = tex_sit
+    poses["sit_l"] = tex_sit.transpose(Image.FLIP_LEFT_RIGHT)
     poses["awake_r"] = poses["sit_r"]
     poses["awake_l"] = poses["sit_l"]
     
