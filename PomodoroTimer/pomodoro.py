@@ -267,7 +267,10 @@ class PomodoroApp:
         
         self.has_images = False
         try:
-            img_bg = Image.open(bg_path).resize((480, 270), Image.Resampling.LANCZOS)
+            raw_bg = Image.open(bg_path).convert("RGB").resize((480, 270), Image.Resampling.LANCZOS)
+            white_layer = Image.new("RGB", (480, 270), (255, 255, 255))
+            # 背景色を50%薄く（白とブレンド）
+            img_bg = Image.blend(raw_bg, white_layer, 0.50)
             self.bg_photo = ImageTk.PhotoImage(img_bg)
             
             if os.path.exists(awake_png):
@@ -833,6 +836,15 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                             except Exception:
                                 pass
+                                
+                # 手前の猫（画面下側・Y座標が大きい）が奥の猫（画面上側・Y座標が小さい）の上に重なるようにZソート
+                try:
+                    for c in sorted(self.cats, key=lambda cat: cat.get("y", 0)):
+                        self.cat_canvas.tag_raise(c["id"])
+                    # エフェクトを猫の手前に表示
+                    self.cat_canvas.tag_raise("effect")
+                except Exception:
+                    pass
                             
                 if self.cats:
                     cat = self.cats[0]
