@@ -830,20 +830,30 @@ class PomodoroApp:
                             except Exception:
                                 pass
                             
-                if is_sleep_time:
-                    cfg = self.data_mgr.get_anim_config("sleep")
-                    f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
-                    try:
-                        self.widget_cat.config(image=self.widget_cat_frames["sleep"][f_idx])
-                    except Exception:
-                        pass
-                else:
-                    cfg = self.data_mgr.get_anim_config("awake")
-                    f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
-                    try:
-                        self.widget_cat.config(image=self.widget_cat_frames["awake"][f_idx])
-                    except Exception:
-                        pass
+                if self.cats:
+                    cat = self.cats[0]
+                    tex = self.cat_textures.get(cat.get("type", "black"), {})
+                    
+                    if is_sleep_time:
+                        sp_type = cat.get("sleep_pose", "sleep_curl")
+                        cfg = self.data_mgr.get_anim_config("sleep")
+                        f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
+                        frame_key = f"{sp_type}_{f_idx}"
+                    else:
+                        state = cat.get("state", "sit")
+                        facing = cat.get("facing", "r")
+                        if state == "sit":
+                            frame_key = f"sit_{facing}"
+                        else:
+                            cfg = self.data_mgr.get_anim_config(state)
+                            f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
+                            frame_key = f"{state}_{facing}_{f_idx}"
+                            
+                    if frame_key in tex:
+                        try:
+                            self.widget_cat.config(image=tex[frame_key])
+                        except Exception:
+                            pass
                     
                 # 環境パーティクル
                 if self.anim_tick % 48 == 0 and len(self.floating_effects) < 18:
