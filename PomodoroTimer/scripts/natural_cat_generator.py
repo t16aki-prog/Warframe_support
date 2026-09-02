@@ -263,13 +263,16 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["walk_l_0"] = tex_w0
     poses["walk_l_1"] = tex_w1
     
-    # 3. ダッシュ (dash) - 専用ベース画像 0 & 1
-    tex_d0 = generate_natural_cat(base_dict["dash_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    tex_d1 = generate_natural_cat(base_dict["dash_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["dash_r_0"] = tex_d0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_r_1"] = tex_d1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_l_0"] = tex_d0
-    poses["dash_l_1"] = tex_d1
+    # 3. ダッシュ (dash) - 専用疾走ベース画像
+    tex_dash = generate_natural_cat(base_dict["dash"], cat_type).resize((50, 46), Image.Resampling.LANCZOS)
+    d_f0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d_f0.paste(tex_dash, (-1, 2))
+    d_f1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d_f1.paste(tex_dash.resize((50, 44), Image.Resampling.LANCZOS), (-1, 4))
+    poses["dash_r_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_l_0"] = d_f0
+    poses["dash_l_1"] = d_f1
     
     # 4. 毛づくろい (groom / 顔洗い) - 専用前足持ち上げベース画像
     tex_gr = generate_natural_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
@@ -285,13 +288,16 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["groom_l_1"] = gr_1
     poses["groom_l_2"] = gr_2
     
-    # 5. 伸び (stretch) - 専用背伸びベース画像 0 & 1
-    tex_st0 = generate_natural_cat(base_dict["stretch_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    tex_st1 = generate_natural_cat(base_dict["stretch_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["stretch_r_0"] = tex_st0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["stretch_r_1"] = tex_st1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["stretch_l_0"] = tex_st0
-    poses["stretch_l_1"] = tex_st1
+    # 5. 猫の伸びポーズ (stretch) - 専用背伸びベース画像
+    tex_st = generate_natural_cat(base_dict["stretch"], cat_type).resize((52, 42), Image.Resampling.LANCZOS)
+    st_0 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    st_0.paste(tex_st, (-2, 6))
+    st_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    st_1.paste(tex_st.resize((54, 40), Image.Resampling.LANCZOS), (-3, 8))
+    poses["stretch_r_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_r_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_l_0"] = st_0
+    poses["stretch_l_1"] = st_1
     
     # 6. じゃれる・チョイチョイ (play) - 専用前足浮かしベース画像
     tex_pl = generate_natural_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
