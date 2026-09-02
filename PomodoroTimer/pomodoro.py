@@ -723,6 +723,12 @@ class PomodoroApp:
                     
                     if is_sleep_time:
                         sp_type = cat.get("sleep_pose", "sleep_curl")
+                        
+                        # 時々寝相を変える (1秒に1回判定し、10%の確率で変更)
+                        if self.anim_tick % 60 == 0 and random.random() < 0.1:
+                            sp_type = random.choice(["sleep_curl", "sleep_belly", "sleep_stretch"])
+                            cat["sleep_pose"] = sp_type
+                            
                         cfg = self.data_mgr.get_anim_config(sp_type)
                         f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                         frame_key = f"{sp_type}_{f_idx}"

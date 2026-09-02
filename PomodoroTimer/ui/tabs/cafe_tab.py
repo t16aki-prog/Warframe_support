@@ -108,6 +108,8 @@ class CafeTab:
         
         sleep_pose_types = ["sleep_curl", "sleep_belly", "sleep_stretch"]
         
+        is_sleep_time = not self.app.timer.is_running or self.app.timer.session_mode != "work"
+        
         for idx, cat_id in enumerate(unlocked_cats):
             if cat_id in self.app.cat_textures:
                 if idx < len(spawn_slots):
@@ -117,18 +119,31 @@ class CafeTab:
                     y = random.randint(145, 225)
                     
                 sp_type = random.choice(sleep_pose_types)
-                canvas_id = self.app.cat_canvas.create_image(x, y, image=self.app.cat_textures[cat_id][f"{sp_type}_0"], tags="cat")
+                facing = random.choice(["r", "l"])
+                
+                if is_sleep_time:
+                    initial_state = "sleep"
+                    initial_img = self.app.cat_textures[cat_id].get(f"{sp_type}_0")
+                else:
+                    initial_state = "sit"
+                    initial_img = self.app.cat_textures[cat_id].get(f"sit_{facing}")
+                    
+                if not initial_img:
+                    # フォールバック
+                    initial_img = self.app.cat_textures[cat_id].get(f"{sp_type}_0", list(self.app.cat_textures[cat_id].values())[0])
+
+                canvas_id = self.app.cat_canvas.create_image(x, y, image=initial_img, tags="cat")
                 self.app.cats.append({
                     "type": cat_id,
                     "id": canvas_id,
                     "x": x,
                     "y": y,
-                    "state": "sleep",
+                    "state": initial_state,
                     "sleep_pose": sp_type,
                     "state_timer": random.randint(20, 80),
                     "dx": 0,
                     "dy": 0,
-                    "facing": random.choice(["r", "l"])
+                    "facing": facing
                 })
 
     def refresh_cafe_elements(self):
