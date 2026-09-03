@@ -259,57 +259,59 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["awake_r"] = poses["sit_r"]
     poses["awake_l"] = poses["sit_l"]
     
-    # 2. 歩行 (walk) - 専用歩行ベース画像 0 & 1
+    # 2. 歩行 (walk) - 専用歩行ベース画像 0 & 1 (ベース画像は右向き)
     tex_w0 = generate_natural_cat(base_dict["walk_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     tex_w1 = generate_natural_cat(base_dict["walk_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["walk_r_0"] = tex_w0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["walk_r_1"] = tex_w1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["walk_l_0"] = tex_w0
-    poses["walk_l_1"] = tex_w1
+    poses["walk_r_0"] = tex_w0
+    poses["walk_r_1"] = tex_w1
+    poses["walk_l_0"] = tex_w0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["walk_l_1"] = tex_w1.transpose(Image.FLIP_LEFT_RIGHT)
     
-    # 3. ダッシュ (dash) - 専用AI画像
+    # 3. ダッシュ (dash) - 専用AI画像 (ベース画像は右向き)
     d_f0 = generate_chibi_cat(base_dict["dash_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     d_f1 = generate_chibi_cat(base_dict["dash_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["dash_r_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_l_0"] = d_f0
-    poses["dash_l_1"] = d_f1
+    poses["dash_r_0"] = d_f0
+    poses["dash_r_1"] = d_f1
+    poses["dash_l_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_l_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
     
-    # 4. 毛づくろい (groom) - 専用AI画像 (変形なし)
+    # 4. 毛づくろい (groom) - 専用AI画像 (ベース画像は右向き)
     gr_0 = generate_chibi_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["groom_r_0"] = gr_0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["groom_r_1"] = poses["groom_r_0"]
-    poses["groom_r_2"] = poses["groom_r_0"]
-    poses["groom_l_0"] = gr_0
-    poses["groom_l_1"] = gr_0
-    poses["groom_l_2"] = gr_0
+    gr_0_flip = gr_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["groom_r_0"] = gr_0
+    poses["groom_r_1"] = gr_0
+    poses["groom_r_2"] = gr_0
+    poses["groom_l_0"] = gr_0_flip
+    poses["groom_l_1"] = gr_0_flip
+    poses["groom_l_2"] = gr_0_flip
     
-    # 5. 背のびポーズ (stretch) - 専用AI画像 (2コマ)
+    # 5. 背のびポーズ (stretch) - 専用AI画像 (2コマ, ベース画像は右向き)
     st_0 = generate_chibi_cat(base_dict["stretch_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     st_1 = generate_chibi_cat(base_dict["stretch_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["stretch_r_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["stretch_r_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["stretch_l_0"] = st_0
-    poses["stretch_l_1"] = st_1
+    poses["stretch_r_0"] = st_0
+    poses["stretch_r_1"] = st_1
+    poses["stretch_l_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_l_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
     
-    # 6. オモチャ遊び (play) - 専用AI画像 (変形なし)
+    # 6. オモチャ遊び (play) - 専用AI画像 (ベース画像は右向き)
     pl_0 = generate_chibi_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["play_r_0"] = pl_0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["play_r_1"] = poses["play_r_0"]
-    poses["play_r_2"] = poses["play_r_0"]
-    poses["play_l_0"] = pl_0
-    poses["play_l_1"] = pl_0
-    poses["play_l_2"] = pl_0
+    pl_0_flip = pl_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["play_r_0"] = pl_0
+    poses["play_r_1"] = pl_0
+    poses["play_r_2"] = pl_0
+    poses["play_l_0"] = pl_0_flip
+    poses["play_l_1"] = pl_0_flip
+    poses["play_l_2"] = pl_0_flip
     
-    # 7. 飛びつき・跳ねる (pounce) - 専用ジャンプベース画像 (変形なし・位置オフセットのみ)
+    # 7. 飛びつき・跳ねる (pounce) - 専用ジャンプベース画像 (ベース画像は右向き)
     tex_po = generate_natural_cat(base_dict["pounce"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     po_0 = tex_po.copy()
     po_1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
     po_1.paste(tex_po, (0, -2))
-    poses["pounce_r_0"] = po_0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["pounce_r_1"] = po_1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["pounce_l_0"] = po_0
-    poses["pounce_l_1"] = po_1
+    poses["pounce_r_0"] = po_0
+    poses["pounce_r_1"] = po_1
+    poses["pounce_l_0"] = po_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["pounce_l_1"] = po_1.transpose(Image.FLIP_LEFT_RIGHT)
     
     # --- 寝姿レパートリー (Sleep Poses) ---
     
