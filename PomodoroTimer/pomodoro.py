@@ -150,6 +150,8 @@ class PomodoroApp:
         self.timer.reset()
         self.anim_tick = 0
         self.floating_effects = []
+        self.canvas_w = 480
+        self.canvas_h = 270
         
         # --- 画像リソースのロード ---
         self._load_images()
@@ -711,10 +713,13 @@ class PomodoroApp:
                     tex = self.get_cat_texture(c_id)
                     if not tex:
                         continue
-                    facing = cat.get("facing", "r")
-                    state = cat.get("state", "sit")
                     
                     if is_sleep_time:
+                        if cat.get("state") != "sleep":
+                            cat["state"] = "sleep"
+                            cat["dx"] = 0
+                            cat["dy"] = 0
+                            
                         sp_type = cat.get("sleep_pose", "sleep_curl")
                         
                         # 時々寝相を変える (1秒に1回判定し、10%の確率で変更)
@@ -728,14 +733,31 @@ class PomodoroApp:
                         try:
                             if frame_key in tex:
                                 self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                            else:
+                            elif f"{sp_type}_0" in tex:
+                                self.cat_canvas.itemconfig(cat["id"], image=tex[f"{sp_type}_0"])
+                            elif "sleep_0" in tex:
                                 self.cat_canvas.itemconfig(cat["id"], image=tex["sleep_0"])
                         except Exception:
                             pass
                     else:
+                        # 睡眠状態から活動状態への復帰保証
+                        if cat.get("state") == "sleep":
+                            cat["state"] = random.choice(["sit", "walk"])
+                            cat["state_timer"] = random.randint(40, 60)
+                            if cat["state"] == "walk":
+                                cat["dx"] = random.choice([-1.5, 1.5])
+                                cat["dy"] = random.choice([-0.5, 0.5])
+                                cat["facing"] = "r" if cat["dx"] > 0 else "l"
+                            else:
+                                cat["dx"] = 0
+                                cat["dy"] = 0
+                                
                         # AI処理の頻度調整 (元の3倍遅く判定)
                         if self.anim_tick % 3 == 0:
                             self.process_cat_ai(cat)
+                            
+                        state = cat.get("state", "sit")
+                        facing = cat.get("facing", "r")
                         
                         if state in ["walk", "dash"]:
                             # 60FPSでの滑らかな移動
@@ -781,6 +803,8 @@ class PomodoroApp:
                                 self.cat_canvas.coords(cat["id"], cat["x"], cat["y"])
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                                elif f"sit_r" in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex["sit_r"])
                             except Exception:
                                 pass
                                 
@@ -791,6 +815,8 @@ class PomodoroApp:
                             try:
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                                elif f"sit_{facing}" in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
                             except Exception:
                                 pass
                                 
@@ -801,6 +827,8 @@ class PomodoroApp:
                             try:
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                                elif f"sit_{facing}" in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
                             except Exception:
                                 pass
                                 
@@ -811,6 +839,8 @@ class PomodoroApp:
                             try:
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                                elif f"sit_{facing}" in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
                             except Exception:
                                 pass
                                 
@@ -821,6 +851,8 @@ class PomodoroApp:
                             try:
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
+                                elif f"sit_{facing}" in tex:
+                                    self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
                             except Exception:
                                 pass
                                 
@@ -852,7 +884,7 @@ class PomodoroApp:
                             f_idx = (self.anim_tick // cfg["speed"]) % cfg["frames"]
                             frame_key = f"{state}_{facing}_{f_idx}"
                             
-                    if frame_key in tex:
+                    if tex and frame_key in tex:
                         try:
                             self.widget_cat.config(image=tex[frame_key])
                         except Exception:
@@ -879,14 +911,17 @@ class PomodoroApp:
                             self.floating_effects.remove(effect)
                     except Exception:
                         pass
-                        
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        finally:
             if getattr(self, 'is_alive', True):
                 try:
                     self.root.after(16, self.animate_loop)
                 except Exception:
                     pass
-        except (KeyboardInterrupt, Exception):
-            pass
 
 
 if __name__ == "__main__":
