@@ -426,6 +426,11 @@ class PomodoroApp:
         if hasattr(self, 'task_tab_obj'):
             self.task_tab_obj.open_account_modal()
 
+    def refresh_cafe_elements(self):
+        if hasattr(self, 'cafe_tab_obj'):
+            self.cafe_tab_obj.sync_unlocked_entities()
+            self.cafe_tab_obj.refresh_cafe_elements()
+
     def apply_theme(self, theme_key):
         """テーマを動的に適用・保存（全タブ・全ウィジェット完全同期）"""
         self.data_mgr.set_setting("theme", theme_key)

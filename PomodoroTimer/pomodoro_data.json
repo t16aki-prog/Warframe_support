@@ -9,7 +9,7 @@
     "google_connected": false
   },
   "settings": {
-    "theme": "dark",
+    "theme": "mint",
     "work_minutes": 30,
     "short_break_minutes": 7,
     "long_break_minutes": 15,
@@ -22,31 +22,7 @@
   },
   "tasks": [
     {
-      "id": 438860,
-      "title": "【サンプル】企画書の作成 📑",
-      "target_pomo": 2,
-      "completed_pomo": 1,
-      "is_done": false,
-      "google_id": "demo_task_1"
-    },
-    {
-      "id": 438927,
-      "title": "【サンプル】メール返信とスケジュール確認 ✉️",
-      "target_pomo": 1,
-      "completed_pomo": 0,
-      "is_done": false,
-      "google_id": "demo_task_2"
-    },
-    {
-      "id": 438928,
-      "title": "【サンプル】コードレビュー 💻",
-      "target_pomo": 2,
-      "completed_pomo": 0,
-      "is_done": false,
-      "google_id": "demo_task_3"
-    },
-    {
-      "id": 724903,
+      "id": 10942,
       "title": "文化会発表会　資料作成",
       "target_pomo": 2,
       "completed_pomo": 0,
@@ -54,11 +30,41 @@
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": null
+    },
+    {
+      "id": 87430,
+      "title": "【サンプル】企画書の作成 📑",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": "demo_task_1"
+    },
+    {
+      "id": 87440,
+      "title": "【サンプル】メール返信とスケジュール確認 ✉️",
+      "target_pomo": 1,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": "demo_task_2"
+    },
+    {
+      "id": 87446,
+      "title": "【サンプル】コードレビュー 💻",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": "demo_task_3"
     }
   ],
-  "active_task_id": 438860,
+  "active_task_id": 10942,
   "cafe": {
-    "treats": 303,
+    "treats": 282,
     "total_pomodoros": 47,
     "unlocked_cats": [
       "black",
@@ -74,7 +80,10 @@
     ],
     "unlocked_items": [
       "cushion",
-      "toy_mouse"
+      "toy_mouse",
+      "scratcher",
+      "treat_bowl",
+      "cat_tree"
     ],
     "cat_affection": {
       "black": 1,
@@ -107,7 +116,7 @@
       "id": "master_cafe",
       "name": "猫屋敷の主 🏰",
       "desc": "家具やおもちゃを3個以上設置する",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "streak_5",
