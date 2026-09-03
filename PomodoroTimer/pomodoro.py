@@ -418,6 +418,14 @@ class PomodoroApp:
         elif tab_id == "settings":
             self.settings_tab_obj.refresh_view()
 
+    def open_starter_cat_modal(self):
+        if hasattr(self, 'task_tab_obj'):
+            self.task_tab_obj.open_starter_cat_modal()
+
+    def open_account_modal(self):
+        if hasattr(self, 'task_tab_obj'):
+            self.task_tab_obj.open_account_modal()
+
     def apply_theme(self, theme_key):
         """テーマを動的に適用・保存（全タブ・全ウィジェット完全同期）"""
         self.data_mgr.set_setting("theme", theme_key)

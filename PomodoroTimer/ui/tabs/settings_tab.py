@@ -3,18 +3,7 @@ from tkinter import ttk, messagebox
 import json
 
 from ui.utils import FONT_MAIN, FONT_BOLD, FONT_SUB, FONT_TEXT
-
-# テーマ情報を読み込む
-THEMES = {
-    "sakura": {"name": "桜 (Sakura)", "bg": "#ffe6ea", "card": "#fff0f3", "btn": "#ff8fa3", "btn_fg": "#ffffff", "border": "#ffb3c1", "text": "#5c3a41", "sub_text": "#907077", "work": "#e63946", "break": "#457b9d", "long_break": "#2a9d8f"},
-    "matcha": {"name": "抹茶 (Matcha)", "bg": "#e9f5e9", "card": "#f2f8f2", "btn": "#6b9080", "btn_fg": "#ffffff", "border": "#a4c3b2", "text": "#3a4a40", "sub_text": "#6f8275", "work": "#e07a5f", "break": "#3d405b", "long_break": "#81b29a"},
-    "night": {"name": "夜空 (Night)", "bg": "#1a1a2e", "card": "#16213e", "btn": "#0f3460", "btn_fg": "#e94560", "border": "#53354a", "text": "#f7f7f7", "sub_text": "#a0a0a0", "work": "#e94560", "break": "#438a5e", "long_break": "#f0a500"},
-    "coffee": {"name": "珈琲 (Coffee)", "bg": "#f4e1d2", "card": "#fdf7f2", "btn": "#8b5a2b", "btn_fg": "#ffffff", "border": "#d2a679", "text": "#4a3b32", "sub_text": "#826b5d", "work": "#c24b3b", "break": "#457b9d", "long_break": "#2a9d8f"},
-    "monochrome": {"name": "白黒 (Mono)", "bg": "#f0f0f0", "card": "#ffffff", "btn": "#333333", "btn_fg": "#ffffff", "border": "#cccccc", "text": "#222222", "sub_text": "#666666", "work": "#000000", "break": "#555555", "long_break": "#888888"},
-    "lavender": {"name": "ラベンダー", "bg": "#f3e8ff", "card": "#faf5ff", "btn": "#9333ea", "btn_fg": "#ffffff", "border": "#d8b4fe", "text": "#4c1d95", "sub_text": "#7c3aed", "work": "#e11d48", "break": "#0284c7", "long_break": "#059669"},
-    "ocean": {"name": "海 (Ocean)", "bg": "#e0f2fe", "card": "#f0f9ff", "btn": "#0284c7", "btn_fg": "#ffffff", "border": "#7dd3fc", "text": "#0c4a6e", "sub_text": "#0284c7", "work": "#ea580c", "break": "#4338ca", "long_break": "#059669"},
-    "sunset": {"name": "夕焼け (Sunset)", "bg": "#ffedd5", "card": "#fff7ed", "btn": "#ea580c", "btn_fg": "#ffffff", "border": "#fdba74", "text": "#7c2d12", "sub_text": "#c2410c", "work": "#be123c", "break": "#1d4ed8", "long_break": "#15803d"},
-}
+from data_manager import THEMES
 
 class SettingsTab:
     def __init__(self, app):

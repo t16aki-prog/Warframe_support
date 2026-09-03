@@ -1,9 +1,9 @@
-import tkinter as tk
-
 FONT_MAIN = ("Meiryo", 14)
+FONT_TITLE = ("Meiryo", 14, "bold")
 FONT_BOLD = ("Meiryo", 12, "bold")
 FONT_SUB = ("Meiryo", 11, "bold")
 FONT_TEXT = ("Meiryo", 10)
+GOOGLE_BLUE = "#4285f4"
 
 def bind_mousewheel_to_all(widget, canvas):
     def _on_mousewheel(event):

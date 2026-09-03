@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import datetime
-from ui.utils import FONT_MAIN, FONT_BOLD, FONT_SUB, FONT_TEXT, bind_mousewheel_to_all
+from ui.utils import FONT_MAIN, FONT_TITLE, FONT_BOLD, FONT_SUB, FONT_TEXT, GOOGLE_BLUE, AVATAR_ICONS, bind_mousewheel_to_all
+from data_manager import AVAILABLE_CATS
 
 class TaskTab:
     def __init__(self, app):

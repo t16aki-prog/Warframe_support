@@ -22,14 +22,6 @@
   },
   "tasks": [
     {
-      "id": 1,
-      "title": "今日のタスクを計画する 📝",
-      "target_pomo": 1,
-      "completed_pomo": 46,
-      "is_done": true,
-      "time_spent": 482
-    },
-    {
       "id": 438860,
       "title": "【サンプル】企画書の作成 📑",
       "target_pomo": 2,
@@ -52,9 +44,19 @@
       "completed_pomo": 0,
       "is_done": false,
       "google_id": "demo_task_3"
+    },
+    {
+      "id": 724903,
+      "title": "文化会発表会　資料作成",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": null
     }
   ],
-  "active_task_id": 1,
+  "active_task_id": 438860,
   "cafe": {
     "treats": 303,
     "total_pomodoros": 47,

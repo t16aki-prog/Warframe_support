@@ -1,24 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from ui.utils import FONT_MAIN, FONT_BOLD, FONT_SUB, FONT_TEXT, bind_mousewheel_to_all
-
-# カタログデータ（pomodoro.pyから移行するか、ここで再定義）
-AVAILABLE_CATS = [
-    {"id": "black", "name": "クロ", "cost": 0, "desc": "好奇心旺盛な黒猫"},
-    {"id": "white", "name": "シロ", "cost": 0, "desc": "おっとりした白猫"},
-    {"id": "mike", "name": "ミケ", "cost": 0, "desc": "気まぐれな三毛猫"},
-    {"id": "chatora", "name": "チャトラ", "cost": 5, "desc": "食いしん坊な茶トラ"},
-    {"id": "sabatora", "name": "サバトラ", "cost": 5, "desc": "賢いサバトラ"},
-    {"id": "kurobuchi", "name": "ハチワレ", "cost": 8, "desc": "元気なハチワレ"},
-    {"id": "siamese", "name": "シャム", "cost": 12, "desc": "優雅なシャム猫"},
-    {"id": "persian", "name": "ペルシャ", "cost": 15, "desc": "もふもふのペルシャ"}
-]
-
-AVAILABLE_ITEMS = [
-    {"id": "cushion", "name": "ふかふかクッション", "cost": 3, "desc": "猫がお昼寝するのにぴったり", "icon": "🛋️"},
-    {"id": "toy_mouse", "name": "ネズミのおもちゃ", "cost": 5, "desc": "猫が元気に飛びついて遊ぶ", "icon": "🐁"},
-    {"id": "scratcher", "name": "爪とぎタワー", "cost": 8, "desc": "ストレス解消の必需品", "icon": "🗼"}
-]
+from data_manager import AVAILABLE_CATS, AVAILABLE_ITEMS
 
 class ShopTab:
     def __init__(self, app):
