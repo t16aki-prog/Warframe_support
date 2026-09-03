@@ -29,6 +29,7 @@ def regenerate():
         "walk_0": load_img("cat_walk_0.png"),
         "walk_1": load_img("cat_walk_1.png"),
         "sit": load_img("cat_sit.png"),
+        "dash": load_img("cat_dash.png"),
         "dash_0": load_img("cat_dash_0.png"),
         "dash_1": load_img("cat_dash_1.png"),
         "groom": load_img("cat_groom.png"),

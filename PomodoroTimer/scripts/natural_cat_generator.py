@@ -267,12 +267,15 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["walk_l_0"] = tex_w0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["walk_l_1"] = tex_w1.transpose(Image.FLIP_LEFT_RIGHT)
     
-    # 3. ダッシュ (dash) - 専用AI画像 (dash_0は右向き、dash_1は左向きベース)
-    d_f0 = generate_chibi_cat(base_dict["dash_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    d_f1 = generate_chibi_cat(base_dict["dash_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["dash_r_0"] = d_f0
+    # 3. ダッシュ (dash) - 手描きダッシュベース画像 (cat_dash.png は左向き)
+    dash_base = base_dict.get("dash", base_dict.get("dash_0"))
+    tex_dash = generate_natural_cat(dash_base, cat_type).resize((48, 48), Image.Resampling.LANCZOS)
+    d_f0 = tex_dash.copy()
+    d_f1 = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d_f1.paste(tex_dash, (0, -2))
+    poses["dash_r_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_l_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_l_0"] = d_f0
     poses["dash_l_1"] = d_f1
     
     # 4. 毛づくろい (groom) - 専用AI画像 (ベース画像は右向き)
