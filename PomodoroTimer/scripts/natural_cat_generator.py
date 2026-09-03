@@ -267,13 +267,13 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["walk_l_0"] = tex_w0.transpose(Image.FLIP_LEFT_RIGHT)
     poses["walk_l_1"] = tex_w1.transpose(Image.FLIP_LEFT_RIGHT)
     
-    # 3. ダッシュ (dash) - 専用AI画像 (ベース画像は右向き)
+    # 3. ダッシュ (dash) - 専用AI画像 (dash_0は右向き、dash_1は左向きベース)
     d_f0 = generate_chibi_cat(base_dict["dash_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     d_f1 = generate_chibi_cat(base_dict["dash_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     poses["dash_r_0"] = d_f0
-    poses["dash_r_1"] = d_f1
+    poses["dash_r_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
     poses["dash_l_0"] = d_f0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["dash_l_1"] = d_f1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["dash_l_1"] = d_f1
     
     # 4. 毛づくろい (groom) - 専用AI画像 (ベース画像は右向き)
     gr_0 = generate_chibi_cat(base_dict["groom"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
@@ -285,13 +285,13 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["groom_l_1"] = gr_0_flip
     poses["groom_l_2"] = gr_0_flip
     
-    # 5. 背のびポーズ (stretch) - 専用AI画像 (2コマ, ベース画像は右向き)
+    # 5. 背のびポーズ (stretch) - 専用AI画像 (2コマ, ベース画像は左向きに伸び)
     st_0 = generate_chibi_cat(base_dict["stretch_0"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
     st_1 = generate_chibi_cat(base_dict["stretch_1"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
-    poses["stretch_r_0"] = st_0
-    poses["stretch_r_1"] = st_1
-    poses["stretch_l_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
-    poses["stretch_l_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_r_0"] = st_0.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_r_1"] = st_1.transpose(Image.FLIP_LEFT_RIGHT)
+    poses["stretch_l_0"] = st_0
+    poses["stretch_l_1"] = st_1
     
     # 6. オモチャ遊び (play) - 専用AI画像 (ベース画像は右向き)
     pl_0 = generate_chibi_cat(base_dict["play"], cat_type).resize((48, 48), Image.Resampling.LANCZOS)
