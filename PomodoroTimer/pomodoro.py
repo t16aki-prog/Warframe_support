@@ -135,6 +135,9 @@ class PomodoroApp:
         self.is_alive = True
         self.root.protocol("WM_DELETE_WINDOW", self.quit_app)
         
+        # 強制終了・クラッシュ時の中断セッション検知
+        self.data_mgr.check_and_resolve_interrupted_session()
+        
         self.timer = PomodoroTimer(callbacks={
             'on_tick': self._on_timer_tick,
             'on_state_change': self._on_timer_state_change,
@@ -615,12 +618,20 @@ class PomodoroApp:
         self.start_btn.config(text="⏸ 停止" if self.timer.is_running else "▶ 開始")
         self.update_status_display()
         is_sleep = not self.timer.is_running or self.timer.session_mode != "work"
+        
+        # セッション状態の追跡
+        if self.timer.is_running:
+            self.data_mgr.start_session(self.timer.session_mode)
+        else:
+            self.data_mgr.cancel_session(was_user_reset=False)
+            
         if hasattr(self, 'cafe_tab_obj'):
             self.cafe_tab_obj.update_cat_sleep_mode(is_sleep)
             self.cafe_tab_obj.refresh_cafe_elements()
 
     def _on_work_end(self):
         self.sound_mgr.play_se("work_end")
+        self.data_mgr.finish_session()
         self.data_mgr.add_pomodoro_reward()
         self.data_mgr.increment_active_task_pomo()
         if self.widget.state() == "normal":
@@ -637,7 +648,6 @@ class PomodoroApp:
             self.root.deiconify()
             self.root.lift()
 
-
     def format_time(self, seconds):
         m, s = divmod(seconds, 60)
         return f"{m:02d}:{s:02d}"
@@ -645,8 +655,10 @@ class PomodoroApp:
     def toggle_timer(self, event=None):
         self.timer.toggle()
     def reset_timer(self):
+        self.data_mgr.cancel_session(was_user_reset=True)
         self.timer.reset()
     def switch_mode(self):
+        self.data_mgr.cancel_session(was_user_reset=True)
         self.timer.switch_mode()
     def update_status_display(self):
         paws = ""

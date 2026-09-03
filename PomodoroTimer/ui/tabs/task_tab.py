@@ -72,19 +72,18 @@ class TaskTab:
         self.task_add_btn = tk.Button(self.bottom_opts_row, text="追加 ＋", command=self.add_new_task, bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"], font=FONT_BOLD, relief="flat", padx=12, pady=1, cursor="hand2")
         self.task_add_btn.pack(side='right')
 
-        # フィルターバー
+        # フィルターバー (未完了 / 完了済み / すべて)
         self.filter_frame = tk.Frame(tab, bg=self.app.theme["bg"])
         self.filter_frame.pack(fill='x', pady=(4, 2))
-        self.task_filter = "all"
-        
+        self.task_filter = "active"
         self.filter_btns = {}
-        filters = [("all", "すべて"), ("active", "未完了"), ("done", "完了済")]
+        filters = [("active", "未完了"), ("done", "完了済み"), ("all", "すべて")]
         for f_key, f_text in filters:
             f_btn = tk.Button(
-                self.filter_frame, text=f_text, font=("Meiryo", 8),
-                bg=self.app.theme["btn"] if f_key == "all" else self.app.theme["card"],
-                fg=self.app.theme["btn_fg"] if f_key == "all" else self.app.theme["text"],
-                relief="flat", padx=8, pady=2, cursor="hand2",
+                self.filter_frame, text=f_text, font=("Meiryo", 8, "bold"),
+                bg=self.app.theme["btn"] if f_key == self.task_filter else self.app.theme["card"],
+                fg=self.app.theme["btn_fg"] if f_key == self.task_filter else self.app.theme["text"],
+                relief="flat", padx=10, pady=2, cursor="hand2",
                 command=lambda k=f_key: self.set_task_filter(k)
             )
             f_btn.pack(side='left', padx=2)
@@ -154,19 +153,32 @@ class TaskTab:
         
         # フィルター適用
         if self.task_filter == "active":
-            tasks = [t for t in tasks if not t["is_done"]]
+            tasks = [t for t in tasks if not t.get("is_done", False)]
         elif self.task_filter == "done":
-            tasks = [t for t in tasks if t["is_done"]]
+            tasks = [t for t in tasks if t.get("is_done", False)]
+        elif self.task_filter == "all":
+            # 「すべて」の時は、未完了タスクを上、完了済みタスクを下（一番下）にソート
+            tasks = sorted(tasks, key=lambda t: 1 if t.get("is_done", False) else 0)
             
         if not tasks:
             empty_lbl = tk.Label(self.task_inner_frame, text="該当するタスクはありません 🐾", font=FONT_TEXT, fg=self.app.theme["sub_text"], bg=self.app.theme["bg"], pady=20)
             empty_lbl.pack()
             return
             
+        is_dark_theme = self.app.theme["bg"] in ["#1a1a2e", "#222222"]
+        grayed_bg = "#252535" if is_dark_theme else "#f0eef0"
+        
         for t in tasks:
             t_id = t["id"]
             is_active = (t_id == active_id)
-            card_bg = self.app.theme["header"] if is_active else self.app.theme["card"]
+            is_done = t.get("is_done", False)
+            
+            if is_active:
+                card_bg = self.app.theme["header"]
+            elif is_done:
+                card_bg = grayed_bg  # 完了タスクはグレーアウト
+            else:
+                card_bg = self.app.theme["card"]
             
             card = tk.Frame(self.task_inner_frame, bg=card_bg, padx=10, pady=7, relief="flat", bd=0)
             card.pack(fill='x', pady=3, padx=2)
@@ -174,30 +186,37 @@ class TaskTab:
             top_line = tk.Frame(card, bg=card_bg)
             top_line.pack(fill='x')
             
-            chk_var = tk.BooleanVar(value=t["is_done"])
+            chk_var = tk.BooleanVar(value=is_done)
             chk = tk.Checkbutton(top_line, variable=chk_var, bg=card_bg, activebackground=card_bg, command=lambda tid=t_id: self.toggle_task(tid))
             chk.pack(side='left')
             
-            # タグと優先度バッジ
+            # タグと優先度バッジ (完了時はトーンダウン)
             tag_text = t.get("tag", "💼 仕事")
             prio_text = t.get("priority", "⚡ 中")
-            tk.Label(top_line, text=tag_text, font=("Meiryo", 8), bg=self.app.theme["bg"], fg=self.app.theme["text"], padx=4).pack(side='left', padx=2)
-            tk.Label(top_line, text=prio_text, font=("Meiryo", 8), bg=self.app.theme["bg"], fg=self.app.theme["accent"], padx=4).pack(side='left', padx=2)
+            badge_bg = card_bg if is_done else self.app.theme["bg"]
+            badge_fg = self.app.theme["sub_text"] if is_done else self.app.theme["text"]
+            prio_fg = self.app.theme["sub_text"] if is_done else self.app.theme["accent"]
+            
+            tk.Label(top_line, text=tag_text, font=("Meiryo", 8), bg=badge_bg, fg=badge_fg, padx=4).pack(side='left', padx=2)
+            tk.Label(top_line, text=prio_text, font=("Meiryo", 8), bg=badge_bg, fg=prio_fg, padx=4).pack(side='left', padx=2)
             
             if t.get("google_id"):
-                g_badge = tk.Label(top_line, text="G", font=("Segoe UI", 8, "bold"), bg=self.app.theme["btn_sec"], fg=GOOGLE_BLUE, padx=4)
+                g_badge_fg = self.app.theme["sub_text"] if is_done else GOOGLE_BLUE
+                g_badge = tk.Label(top_line, text="G", font=("Segoe UI", 8, "bold"), bg=badge_bg, fg=g_badge_fg, padx=4)
                 g_badge.pack(side='left', padx=(0, 4))
                 
-            strike = " (済)" if t["is_done"] else ""
+            strike = " (完了)" if is_done else ""
             t_title = t["title"] + strike
-            lbl_title = tk.Label(top_line, text=t_title, font=FONT_BOLD if is_active else FONT_TEXT, bg=card_bg, fg=self.app.theme["sub_text"] if t["is_done"] else self.app.theme["text"], anchor='w')
+            title_fg = self.app.theme["sub_text"] if is_done else self.app.theme["text"]
+            lbl_title = tk.Label(top_line, text=t_title, font=FONT_BOLD if is_active else FONT_TEXT, bg=card_bg, fg=title_fg, anchor='w')
             lbl_title.pack(side='left', fill='x', expand=True, padx=4)
             
             pomo_str = f"🍅 {t['completed_pomo']}/{t['target_pomo']}"
-            lbl_pomo = tk.Label(top_line, text=pomo_str, font=FONT_TEXT, bg=card_bg, fg=self.app.theme["work"])
+            pomo_fg = self.app.theme["sub_text"] if is_done else self.app.theme["work"]
+            lbl_pomo = tk.Label(top_line, text=pomo_str, font=FONT_TEXT, bg=card_bg, fg=pomo_fg)
             lbl_pomo.pack(side='left', padx=4)
             
-            if not is_active and not t["is_done"]:
+            if not is_active and not is_done:
                 select_btn = tk.Button(top_line, text="選択", font=("Meiryo", 8), bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"], relief="flat", padx=6, cursor="hand2", command=lambda tid=t_id: self.select_task(tid))
                 select_btn.pack(side='left', padx=2)
             elif is_active:
@@ -211,9 +230,9 @@ class TaskTab:
             prog_ratio = min(1.0, float(t['completed_pomo']) / max(1, t['target_pomo']))
             prog_frame = tk.Frame(card, bg=self.app.theme["border"], height=4)
             prog_frame.pack(fill='x', pady=(4, 1))
-            prog_fill = tk.Frame(prog_frame, bg=self.app.theme["work"], height=4)
+            prog_fill_color = self.app.theme["sub_text"] if is_done else self.app.theme["work"]
+            prog_fill = tk.Frame(prog_frame, bg=prog_fill_color, height=4)
             prog_fill.place(relx=0, rely=0, relwidth=prog_ratio, relheight=1.0)
-
         bind_mousewheel_to_all(self.task_inner_frame, self.task_canvas)
 
     def add_new_task(self):
@@ -416,11 +435,31 @@ class TaskTab:
 
         if not is_auth:
             login_btn = tk.Button(
-                btn_g_frame, text="Google アカウントと連携する 🌐",
-                font=FONT_BOLD, bg=GOOGLE_BLUE, fg="#fff", relief="flat", padx=10, pady=5, cursor="hand2",
+                btn_g_frame, text="Google アカウントと連携 🌐",
+                font=FONT_BOLD, bg=GOOGLE_BLUE, fg="#fff", relief="flat", padx=8, pady=4, cursor="hand2",
                 command=lambda: self.start_google_login(modal)
             )
-            login_btn.pack(side='left', fill='x', expand=True, padx=2)
+            login_btn.pack(side='left', padx=2)
+            
+            def import_file():
+                from tkinter import filedialog
+                fpath = filedialog.askopenfilename(
+                    title="Google Cloudの credentials.json を選択",
+                    filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+                )
+                if fpath:
+                    ok, msg = self.app.google_sync.import_credentials_file(fpath)
+                    if ok:
+                        messagebox.showinfo("インポート成功", f"{msg}\n「Google アカウントと連携」をクリックして認証を完了してください。")
+                    else:
+                        messagebox.showwarning("インポート失敗", msg)
+                        
+            import_btn = tk.Button(
+                btn_g_frame, text="📂 JSON選択",
+                font=FONT_TEXT, bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"], relief="flat", padx=6, pady=4, cursor="hand2",
+                command=import_file
+            )
+            import_btn.pack(side='left', padx=2)
         else:
             logout_btn = tk.Button(
                 btn_g_frame, text="連携を解除する",
@@ -429,12 +468,23 @@ class TaskTab:
             )
             logout_btn.pack(side='left', padx=2)
 
+        help_row = tk.Frame(g_card, bg=self.app.theme["card"])
+        help_row.pack(fill='x', pady=(4, 0))
+        
         help_btn = tk.Button(
-            g_card, text="ℹ️ credentials.json の配置方法ガイド",
+            help_row, text="ℹ️ 連携ガイド",
             font=("Meiryo", 8), bg=self.app.theme["card"], fg=GOOGLE_BLUE, relief="flat", cursor="hand2",
             command=self.show_google_guide
         )
-        help_btn.pack(anchor='w', pady=(4, 0))
+        help_btn.pack(side='left')
+        
+        import webbrowser
+        console_btn = tk.Button(
+            help_row, text="🚀 Google Cloud Consoleを開く",
+            font=("Meiryo", 8), bg=self.app.theme["card"], fg=GOOGLE_BLUE, relief="flat", cursor="hand2",
+            command=lambda: webbrowser.open("https://console.cloud.google.com/apis/credentials")
+        )
+        console_btn.pack(side='left', padx=8)
 
         def save_profile():
             raw_av = avatar_var.get().split()[0]

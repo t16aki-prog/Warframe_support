@@ -1,5 +1,6 @@
 import tkinter as tk
 import random
+import os
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from ui.utils import FONT_MAIN, FONT_BOLD, FONT_SUB, FONT_TEXT, AVATAR_ICONS
@@ -7,7 +8,24 @@ from ui.utils import FONT_MAIN, FONT_BOLD, FONT_SUB, FONT_TEXT, AVATAR_ICONS
 class CafeTab:
     def __init__(self, app):
         self.app = app
+        self.furniture_photos = {}
+        self.is_edit_mode = False
+        self.dragged_canvas_id = None
+        self.dragged_item_key = None
+        self._load_furniture_sprites()
         self._build_cafe_tab()
+
+    def _load_furniture_sprites(self):
+        base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "assets", "furniture_sprites")
+        items = ["cushion", "toy_mouse", "scratcher", "treat_bowl", "cat_tree"]
+        for item_id in items:
+            p = os.path.join(base_dir, f"{item_id}.png")
+            if os.path.exists(p):
+                try:
+                    img = Image.open(p).convert("RGBA")
+                    self.furniture_photos[item_id] = ImageTk.PhotoImage(img)
+                except Exception as e:
+                    print(f"Failed to load furniture sprite {item_id}:", e)
 
     def _build_cafe_tab(self):
         tab = tk.Frame(self.app.content_frame, bg=self.app.theme["bg"])
@@ -17,7 +35,11 @@ class CafeTab:
         self.canvas_h = 270
         self.app.cat_canvas = tk.Canvas(tab, width=self.canvas_w, height=self.canvas_h, bg=self.app.theme["bg"], highlightthickness=0, cursor="hand2")
         self.app.cat_canvas.pack(pady=(0, 5))
-        self.app.cat_canvas.bind("<Button-1>", self.on_canvas_click)
+        
+        # キャンバスのイベントバインド（クリック・ドラッグ＆ドロップ）
+        self.app.cat_canvas.bind("<Button-1>", self.on_canvas_press)
+        self.app.cat_canvas.bind("<B1-Motion>", self.on_canvas_motion)
+        self.app.cat_canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
         
         if self.app.has_images:
             self.app.cat_canvas.create_image(self.canvas_w/2, self.canvas_h/2, image=self.app.bg_photo)
@@ -50,14 +72,55 @@ class CafeTab:
         self.app.btn_frame = tk.Frame(tab, bg=self.app.theme["bg"])
         self.app.btn_frame.pack(pady=6)
         
-        self.app.start_btn = tk.Button(self.app.btn_frame, text="▶ 開始", command=self.app.toggle_timer, bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=18, pady=5, cursor="hand2")
-        self.app.start_btn.pack(side="left", padx=5)
+        self.app.start_btn = tk.Button(self.app.btn_frame, text="▶ 開始", command=self.app.toggle_timer, bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"], font=FONT_SUB, relief="flat", padx=16, pady=5, cursor="hand2")
+        self.app.start_btn.pack(side="left", padx=3)
         
-        self.app.feed_btn = tk.Button(self.app.btn_frame, text="🐟 おやつをあげる", command=self.feed_active_cat, bg=self.app.theme["card"], fg=self.app.theme["accent"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
-        self.app.feed_btn.pack(side="left", padx=5)
+        self.app.feed_btn = tk.Button(self.app.btn_frame, text="🐟 おやつ", command=self.feed_active_cat, bg=self.app.theme["card"], fg=self.app.theme["accent"], font=FONT_SUB, relief="flat", padx=12, pady=5, cursor="hand2")
+        self.app.feed_btn.pack(side="left", padx=3)
         
-        self.app.reset_btn = tk.Button(self.app.btn_frame, text="↺ リセット", command=self.app.reset_timer, bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=14, pady=5, cursor="hand2")
-        self.app.reset_btn.pack(side="left", padx=5)
+        self.app.layout_edit_btn = tk.Button(self.app.btn_frame, text="🛠️ もようがえ", command=self.toggle_layout_edit_mode, bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=12, pady=5, cursor="hand2")
+        self.app.layout_edit_btn.pack(side="left", padx=3)
+        
+        self.app.reset_btn = tk.Button(self.app.btn_frame, text="↺ リセット", command=self.app.reset_timer, bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"], font=FONT_SUB, relief="flat", padx=12, pady=5, cursor="hand2")
+        self.app.reset_btn.pack(side="left", padx=3)
+
+    def on_canvas_press(self, event):
+        if not self.is_edit_mode:
+            self.on_canvas_click(event)
+            return
+            
+        items = self.app.cat_canvas.find_overlapping(event.x-18, event.y-18, event.x+18, event.y+18)
+        for itm in reversed(items):
+            tags = self.app.cat_canvas.gettags(itm)
+            if "item" in tags:
+                for t in tags:
+                    if t.startswith("item_") and t != "item":
+                        self.dragged_item_key = t.replace("item_", "")
+                        self.dragged_canvas_id = itm
+                        return
+
+    def on_canvas_motion(self, event):
+        if self.is_edit_mode and hasattr(self, 'dragged_canvas_id') and self.dragged_canvas_id:
+            nx = max(30, min(450, event.x))
+            ny = max(70, min(245, event.y))
+            self.app.cat_canvas.coords(self.dragged_canvas_id, nx, ny)
+
+    def on_canvas_release(self, event):
+        if self.is_edit_mode and hasattr(self, 'dragged_item_key') and self.dragged_item_key:
+            nx = max(30, min(450, event.x))
+            ny = max(70, min(245, event.y))
+            self.app.data_mgr.set_item_position(self.dragged_item_key, nx, ny)
+            self.dragged_canvas_id = None
+            self.dragged_item_key = None
+
+    def toggle_layout_edit_mode(self):
+        self.is_edit_mode = not self.is_edit_mode
+        if self.is_edit_mode:
+            self.app.layout_edit_btn.config(text="💾 完了", bg=self.app.theme["work"], fg="#ffffff")
+            self.app.active_task_banner.config(text="🛠️ もようがえ中: 家具をドラッグして好きな場所に移動できます（完了で保存）")
+        else:
+            self.app.layout_edit_btn.config(text="🛠️ もようがえ", bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])
+            self.refresh_cafe_elements()
 
     def feed_active_cat(self):
         """相棒猫またはカフェの猫におやつをあげる"""
@@ -75,7 +138,7 @@ class CafeTab:
             messagebox.showwarning("🐟 おやつ", msg)
 
     def spawn_cats_and_items(self):
-        """家具と猫の初期スポーン。同一柄の猫は重複させず1匹のみ生成"""
+        """家具と猫の初期スポーン。専用スプライトと保存済み座標を適用"""
         self.app.cat_canvas.delete("cat")
         self.app.cat_canvas.delete("item")
         self.app.cats.clear()
@@ -85,17 +148,17 @@ class CafeTab:
             return
             
         unlocked_items = self.app.data_mgr.get_cafe_data().get("unlocked_items", ["cushion"])
-        item_positions = {
-            "cushion": (75, 205, "🛋️"),
-            "toy_mouse": (165, 225, "🐭"),
-            "scratcher": (395, 175, "🪵"),
-            "treat_bowl": (240, 225, "🥣"),
-            "cat_tree": (390, 105, "🏰")
-        }
+        item_positions = self.app.data_mgr.get_item_positions()
+        
         for item_id in unlocked_items:
-            if item_id in item_positions:
-                x, y, icon = item_positions[item_id]
-                self.app.cat_canvas.create_text(x, y, text=icon, font=("Segoe UI Emoji", 22), tags="item")
+            pos = item_positions.get(item_id, [200, 200])
+            x, y = pos[0], pos[1]
+            photo = self.furniture_photos.get(item_id)
+            if photo:
+                self.app.cat_canvas.create_image(x, y, image=photo, tags=("item", f"item_{item_id}"))
+            else:
+                emoji_map = {"cushion": "🛋️", "toy_mouse": "🐭", "scratcher": "🪵", "treat_bowl": "🥣", "cat_tree": "🏰"}
+                self.app.cat_canvas.create_text(x, y, text=emoji_map.get(item_id, "🛋️"), font=("Segoe UI Emoji", 22), tags=("item", f"item_{item_id}"))
                 
         # 同一柄の猫は1匹のみ (重複排除)
         raw_unlocked = self.app.data_mgr.get_cafe_data().get("unlocked_cats", ["black"])
@@ -113,7 +176,6 @@ class CafeTab:
         is_sleep_time = not self.app.timer.is_running or self.app.timer.session_mode != "work"
         
         for idx, cat_id in enumerate(unlocked_cats):
-            # 必要に応じてテクスチャをオンデマンドロード
             tex_dict = self.app.get_cat_texture(cat_id)
             if not tex_dict:
                 continue
@@ -179,7 +241,6 @@ class CafeTab:
                     cat["sleep_pose"] = random.choice(["sleep_curl", "sleep_belly", "sleep_stretch"])
             else:
                 if cat.get("state") == "sleep":
-                    # 目覚めてお座りまたは歩行へ
                     cat["state"] = random.choice(["sit", "walk"])
                     cat["state_timer"] = random.randint(40, 60)
                     if cat["state"] == "walk":
@@ -196,7 +257,6 @@ class CafeTab:
         unlocked_cats = list(dict.fromkeys(raw_unlocked))
         existing_types = {c["type"] for c in self.app.cats}
         
-        # 新しい猫がいれば追加
         for cat_id in unlocked_cats:
             if cat_id not in existing_types:
                 tex_dict = self.app.get_cat_texture(cat_id)
@@ -231,20 +291,20 @@ class CafeTab:
                     "facing": facing
                 })
                 
-        # 家具の再描画
+        # 家具の再描画 (専用スプライト)
         self.app.cat_canvas.delete("item")
         unlocked_items = self.app.data_mgr.get_cafe_data().get("unlocked_items", ["cushion"])
-        item_positions = {
-            "cushion": (75, 205, "🛋️"),
-            "toy_mouse": (165, 225, "🐭"),
-            "scratcher": (395, 175, "🪵"),
-            "treat_bowl": (240, 225, "🥣"),
-            "cat_tree": (390, 105, "🏰")
-        }
+        item_positions = self.app.data_mgr.get_item_positions()
+        
         for item_id in unlocked_items:
-            if item_id in item_positions:
-                x, y, icon = item_positions[item_id]
-                self.app.cat_canvas.create_text(x, y, text=icon, font=("Segoe UI Emoji", 22), tags="item")
+            pos = item_positions.get(item_id, [200, 200])
+            x, y = pos[0], pos[1]
+            photo = self.furniture_photos.get(item_id)
+            if photo:
+                self.app.cat_canvas.create_image(x, y, image=photo, tags=("item", f"item_{item_id}"))
+            else:
+                emoji_map = {"cushion": "🛋️", "toy_mouse": "🐭", "scratcher": "🪵", "treat_bowl": "🥣", "cat_tree": "🏰"}
+                self.app.cat_canvas.create_text(x, y, text=emoji_map.get(item_id, "🛋️"), font=("Segoe UI Emoji", 22), tags=("item", f"item_{item_id}"))
 
     def refresh_cafe_elements(self):
         self.app.treat_label.config(text=f"🐟 {self.app.data_mgr.get_cafe_data()['treats']}個", fg=self.app.theme["accent"])
@@ -260,16 +320,19 @@ class CafeTab:
             self.app.start_btn.config(bg=self.app.theme["btn"], fg=self.app.theme["btn_fg"])
             self.app.feed_btn.config(bg=self.app.theme["card"], fg=self.app.theme["accent"])
             self.app.reset_btn.config(bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])
+            if hasattr(self.app, 'layout_edit_btn') and not self.is_edit_mode:
+                self.app.layout_edit_btn.config(bg=self.app.theme["btn_sec"], fg=self.app.theme["btn_sec_fg"])
             
         icon = AVATAR_ICONS.get(prof.get("avatar", "black"), "🐾")
         self.app.account_btn.config(text=f"{icon} {prof['name'][:8]}")
         
         active_t = self.app.data_mgr.get_active_task()
-        if active_t:
-            done_mark = " (完了)" if active_t["is_done"] else ""
-            self.app.active_task_banner.config(text=f"作業中: {active_t['title']}{done_mark}")
-        else:
-            self.app.active_task_banner.config(text="作業中タスクなし 📝")
+        if not self.is_edit_mode:
+            if active_t:
+                done_mark = " (完了)" if active_t.get("is_done") else ""
+                self.app.active_task_banner.config(text=f"作業中: {active_t['title']}{done_mark}")
+            else:
+                self.app.active_task_banner.config(text="作業中タスクなし 📝")
         self.sync_unlocked_entities()
 
     def on_canvas_click(self, event):

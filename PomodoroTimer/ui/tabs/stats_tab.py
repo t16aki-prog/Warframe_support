@@ -46,12 +46,18 @@ class StatsTab:
             ("total_pomo", "🍅 累計ポモドーロ", "0 回"),
             ("total_time", "⏱️ 総集中時間", "0 分"),
             ("today_pomo", "🎯 本日の達成", "0 / 4"),
-            ("streak", "🔥 連続達成日数", "1 日")
+            ("streak", "🔥 連続達成日数", "1 日"),
+            ("interrupted", "⚠️ 中断・未達成", "0 回")
         ]
         for idx, (k_id, title, default_val) in enumerate(kpi_items):
-            r, c = idx // 2, idx % 2
-            cell = tk.Frame(self.kpi_grid, bg=self.app.theme["bg"], padx=10, pady=8, relief="flat")
-            cell.grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
+            if idx < 4:
+                r, c = idx // 2, idx % 2
+                span = 1
+            else:
+                r, c = 2, 0
+                span = 2
+            cell = tk.Frame(self.kpi_grid, bg=self.app.theme["bg"], padx=10, pady=7, relief="flat")
+            cell.grid(row=r, column=c, columnspan=span, padx=4, pady=3, sticky="nsew")
             self.kpi_grid.grid_columnconfigure(c, weight=1)
             self.kpi_cells.append(cell)
             
@@ -122,10 +128,13 @@ class StatsTab:
         mins = total_mins % 60
         time_str = f"{hours}時間 {mins}分" if hours > 0 else f"{mins}分"
         
+        interrupted = stats.get("interrupted_sessions", 0)
+        
         self.kpi_labels["total_pomo"].config(text=f"{total_pomo} 回", fg=self.app.theme["work"], bg=self.app.theme["bg"])
         self.kpi_labels["total_time"].config(text=time_str, fg=self.app.theme["work"], bg=self.app.theme["bg"])
         self.kpi_labels["today_pomo"].config(text=f"{today_done} / {prof['daily_goal']} 🍅", fg=self.app.theme["work"], bg=self.app.theme["bg"])
         self.kpi_labels["streak"].config(text=f"{streak} 日間連続 🔥", fg=self.app.theme["accent"], bg=self.app.theme["bg"])
+        self.kpi_labels["interrupted"].config(text=f"{interrupted} 回", fg=self.app.theme["sub_text"] if interrupted == 0 else self.app.theme["accent"], bg=self.app.theme["bg"])
         
         # グラフ描画 (直近7日間)
         self.chart_canvas.delete("all")

@@ -26,10 +26,11 @@
       "title": "文化会発表会　資料作成",
       "target_pomo": 2,
       "completed_pomo": 0,
-      "is_done": false,
+      "is_done": true,
       "tag": "💼 仕事",
       "priority": "⚡ 中",
-      "google_id": null
+      "google_id": null,
+      "time_spent": 2
     },
     {
       "id": 87430,
@@ -64,7 +65,7 @@
   ],
   "active_task_id": 10942,
   "cafe": {
-    "treats": 282,
+    "treats": 281,
     "total_pomodoros": 47,
     "unlocked_cats": [
       "black",
@@ -87,7 +88,7 @@
     ],
     "cat_affection": {
       "black": 1,
-      "siamese": 1
+      "siamese": 2
     }
   },
   "stats": {

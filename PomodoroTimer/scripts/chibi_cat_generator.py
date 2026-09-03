@@ -98,22 +98,48 @@ def generate_chibi_cat(base_img, cat_type):
         base_color = (255, 230, 240)
         pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
         pattern_color = (255, 125, 175)
+    elif isinstance(cat_type, dict):
+        base_color = cat_type.get("base_color", (240, 180, 120))
+        ptype = cat_type.get("pattern_type", "solid")
+        pcolor = cat_type.get("pattern_color", (100, 60, 40))
+        if ptype == "stripes":
+            pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
+            pattern_color = pcolor
+        elif ptype == "spots":
+            spot = (((x_idx - 32)**2 + (y_idx - 9)**2 < 36)) | (((x_idx - 18)**2 + (y_idx - 25)**2 < 42))
+            pattern_mask = is_body & spot
+            pattern_color = pcolor
+        elif ptype == "socks":
+            socks = (y_idx > 34)
+            pattern_mask = is_body & socks
+            pattern_color = pcolor
+        elif ptype == "mask":
+            face_mask = ((x_idx - 32)**2 + (y_idx - 13)**2 < 28)
+            pattern_mask = is_body & face_mask
+            pattern_color = pcolor
+        elif ptype == "calico":
+            spot_o = ((x_idx - 32)**2 + (y_idx - 9)**2 < 36)
+            spot_b = ((x_idx - 18)**2 + (y_idx - 25)**2 < 42)
+            pattern_mask = is_body & spot_o
+            pattern_color = pcolor
+            pattern_mask2 = is_body & spot_b & (~spot_o)
+            pattern_color2 = (255 - pcolor[0], 255 - pcolor[1], 255 - pcolor[2])
     elif cat_type == "mint":
-        base_color = (210, 248, 226)
+        base_color = (220, 252, 240)
         pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
-        pattern_color = (60, 192, 135)
+        pattern_color = (100, 215, 175)
     elif cat_type == "sky":
-        base_color = (190, 228, 255)
+        base_color = (225, 242, 255)
         pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
-        pattern_color = (35, 125, 225)
+        pattern_color = (120, 185, 245)
     elif cat_type == "lavender":
-        base_color = (232, 212, 255)
+        base_color = (242, 230, 255)
         pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
-        pattern_color = (145, 75, 230)
+        pattern_color = (175, 140, 235)
     elif cat_type == "golden":
-        base_color = (255, 218, 80)
-        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
-        pattern_color = (235, 125, 25)
+        base_color = (255, 225, 120)
+        pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx < 10))
+        pattern_color = (235, 175, 30)
     
     out_arr = arr.copy()
     

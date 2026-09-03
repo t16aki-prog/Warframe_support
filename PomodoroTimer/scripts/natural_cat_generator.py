@@ -193,6 +193,26 @@ def generate_natural_cat(rgba_img, cat_type):
         chest = (ny > 0.48) & (np.abs(nx - 0.46) < 0.24)
         apply_color(chest, 255, 250, 218)
         outline_r, outline_g, outline_b = 62, 38, 6
+    elif isinstance(cat_type, dict):
+        br, bg, bb = cat_type.get("base_color", (240, 180, 120))
+        apply_color(mask, br, bg, bb)
+        ptype = cat_type.get("pattern_type", "solid")
+        pr, pg, pb = cat_type.get("pattern_color", (100, 60, 40))
+        if ptype == "stripes":
+            pat = (np.sin(nx * 18 + ny * 8 + fur_grain * 3.0) > 0.2)
+            apply_color(pat, pr, pg, pb)
+        elif ptype == "spots":
+            pat = ((nx - 0.6)**2 + (ny - 0.4)**2 < 0.04) | ((nx - 0.3)**2 + (ny - 0.6)**2 < 0.05)
+            apply_color(pat, pr, pg, pb)
+        elif ptype == "socks":
+            pat = (ny > 0.7)
+            apply_color(pat, pr, pg, pb)
+        elif ptype == "mask":
+            pat = ((nx - 0.65)**2 + (ny - 0.3)**2 < 0.035)
+            apply_color(pat, pr, pg, pb)
+        outline_r = int(max(0, br - 80))
+        outline_g = int(max(0, bg - 80))
+        outline_b = int(max(0, bb - 80))
 
     # 陰影合成
     final_r = target_r * shade
@@ -344,4 +364,52 @@ def generate_cat_poses(base_images_or_awake, base_sleep_or_none, cat_type):
     poses["sleep_stretch_0"] = ss_0
     poses["sleep_stretch_1"] = ss_1
     
+    return poses
+
+
+def generate_and_save_custom_gacha_sprites(custom_id, palette_dict, base_dir=None, out_dirs=None):
+    """
+    完全ランダムなRGBパレットから40コマの全モーションスプライトを生成し、
+    ローカルおよびWebのスプライトフォルダに保存する
+    """
+    import os
+    if base_dir is None:
+        base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "base_sprites")
+        
+    def load_img(fname):
+        return Image.open(os.path.join(base_dir, fname)).convert("RGBA")
+        
+    base_pose_images = {
+        "awake": load_img("cat_awake.png"),
+        "sleep": load_img("cat_sleep.png"),
+        "walk_0": load_img("cat_walk_0.png"),
+        "walk_1": load_img("cat_walk_1.png"),
+        "sit": load_img("cat_sit.png"),
+        "dash": load_img("cat_dash.png"),
+        "dash_0": load_img("cat_dash_0.png"),
+        "dash_1": load_img("cat_dash_1.png"),
+        "groom": load_img("cat_groom.png"),
+        "stretch_0": load_img("cat_stretch_0.png"),
+        "stretch_1": load_img("cat_stretch_1.png"),
+        "play": load_img("cat_play.png"),
+        "pounce": load_img("cat_pounce.png"),
+        "sleep_belly": load_img("cat_sleep_belly.png"),
+        "sleep_stretch": load_img("cat_sleep_stretch.png")
+    }
+    
+    poses = generate_cat_poses(base_pose_images, None, palette_dict)
+    
+    if out_dirs is None:
+        proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        out_dirs = [
+            os.path.join(proj_dir, "sprites", custom_id),
+            os.path.join(proj_dir, "web", "public", "sprites", custom_id)
+        ]
+        
+    for out_d in out_dirs:
+        os.makedirs(out_d, exist_ok=True)
+        for pose_name, img in poses.items():
+            out_p = os.path.join(out_d, f"{pose_name}.png")
+            img.save(out_p, "PNG")
+            
     return poses

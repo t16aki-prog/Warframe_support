@@ -46,10 +46,24 @@ class GoogleSyncManager:
         """Google Cloudのクライアント情報ファイルが存在するか"""
         return os.path.exists(self.creds_file)
 
+    def import_credentials_file(self, source_path):
+        """ユーザーが選択した credentials.json を適切な配置場所へコピー"""
+        import shutil
+        try:
+            shutil.copy2(source_path, self.creds_file)
+            return True, "credentials.json のインポートに成功しました！"
+        except Exception as e:
+            return False, f"インポート失敗: {str(e)}"
+
+    def enable_easy_demo_sync(self):
+        """設定不要ですぐに使えるお試し同期モード"""
+        self.is_demo_sync = True
+        return True, "お試しGoogle連携モードを有効化しました！✨"
+
     def login(self):
         """OAuth 2.0 認証フローを実行（ブラウザが起動します）"""
         if not self.has_credentials_file():
-            return False, "credentials.json が見つかりません。\nGoogle Cloud Console からダウンロードして PomodoroTimer フォルダに配置してください。"
+            return False, "credentials.json が見つかりません。\n[📂 ファイルを指定して登録] ボタンからダウンロードしたファイルを選択してください。"
 
         try:
             flow = InstalledAppFlow.from_client_secrets_file(self.creds_file, SCOPES)

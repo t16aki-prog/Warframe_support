@@ -178,20 +178,43 @@ DEFAULT_DATA = {
         "total_pomodoros": 0,
         "unlocked_cats": ["black"],
         "unlocked_items": ["cushion"],
-        "cat_affection": {"black": 1}
+        "cat_affection": {"black": 1},
+        "custom_cats": [],
+        "item_positions": {
+            "cushion": [75, 205],
+            "toy_mouse": [165, 225],
+            "scratcher": [395, 175],
+            "treat_bowl": [240, 225],
+            "cat_tree": [390, 105]
+        }
     },
     "stats": {
         "daily_history": {},
         "total_minutes": 0,
         "streak_days": 1,
-        "last_active_date": ""
+        "interrupted_sessions": 0,
+        "last_active_date": "",
+        "session_state": {"in_progress": False, "mode": "work", "start_time": 0}
     },
     "achievements": [
         {"id": "first_pomo", "name": "はじめの一歩 🍅", "desc": "ポモドーロを1回完了する", "unlocked": False},
-        {"id": "cat_friend", "name": "猫たちの友 🐾", "desc": "カフェで猫を3匹以上迎える", "unlocked": False},
-        {"id": "master_cafe", "name": "猫屋敷の主 🏰", "desc": "家具やおもちゃを3個以上設置する", "unlocked": False},
-        {"id": "streak_5", "name": "集中マスター 🔥", "desc": "累計5回以上のポモドーロを達成する", "unlocked": False},
-        {"id": "cat_whisperer", "name": "猫の絆マスター ✨", "desc": "猫との触れ合いで親愛度を高める", "unlocked": False}
+        {"id": "pomo_5", "name": "集中ビギナー 🌱", "desc": "累計5回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_10", "name": "集中ランナー 🏃", "desc": "累計10回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_25", "name": "ポモドーロ職人 🍅", "desc": "累計25回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_50", "name": "集中マスター 🔥", "desc": "累計50回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_100", "name": "集中レジェンド 👑", "desc": "累計100回のポモドーロ達成", "unlocked": False},
+        {"id": "time_1h", "name": "1時間の集中 ⏱️", "desc": "総集中時間1時間(60分)を突破", "unlocked": False},
+        {"id": "time_5h", "name": "5時間の深淵 ⏳", "desc": "総集中時間5時間を突破", "unlocked": False},
+        {"id": "time_10h", "name": "10時間の鍛錬 🌟", "desc": "総集中時間10時間を突破", "unlocked": False},
+        {"id": "cat_3", "name": "猫たちの友 🐾", "desc": "カフェで猫を3匹以上迎える", "unlocked": False},
+        {"id": "cat_5", "name": "賑やかカフェ 🐱", "desc": "カフェで猫を5匹以上迎える", "unlocked": False},
+        {"id": "cat_10", "name": "猫パラダイス 🏰", "desc": "カフェで猫を10匹以上迎える", "unlocked": False},
+        {"id": "cat_collector", "name": "全猫コンプリート ✨", "desc": "全15種の猫を迎える", "unlocked": False},
+        {"id": "cat_gacha", "name": "運命の出逢い 🎲", "desc": "ミステリー猫ガチャで特別な猫を迎える", "unlocked": False},
+        {"id": "master_cafe", "name": "インテリアマスター 🛋️", "desc": "家具やおもちゃを3個以上設置する", "unlocked": False},
+        {"id": "streak_3", "name": "三日坊主脱出 📅", "desc": "3日間連続でポモドーロ達成", "unlocked": False},
+        {"id": "streak_7", "name": "習慣の達人 🔥", "desc": "7日間連続でポモドーロ達成", "unlocked": False},
+        {"id": "cat_whisperer", "name": "猫の絆マスター 💖", "desc": "猫との触れ合いで親愛度を高める", "unlocked": False}
     ]
 }
 
@@ -423,26 +446,127 @@ class DataManager:
         if "achievements" not in self.data:
             return
             
-        pomo_total = self.data["cafe"]["total_pomodoros"]
-        unlocked_cats_count = len(self.data["cafe"]["unlocked_cats"])
-        unlocked_items_count = len(self.data["cafe"]["unlocked_items"])
+        pomo_total = self.data["cafe"].get("total_pomodoros", 0)
+        unlocked_cats_count = len(self.data["cafe"].get("unlocked_cats", []))
+        unlocked_items_count = len(self.data["cafe"].get("unlocked_items", []))
+        total_mins = self.data.get("stats", {}).get("total_minutes", 0)
+        streak = self.data.get("stats", {}).get("streak_days", 1)
         total_aff = sum(self.data["cafe"].get("cat_affection", {}).values())
+        has_custom_cat = len(self.data["cafe"].get("custom_cats", [])) > 0
         
         for ach in self.data["achievements"]:
-            if ach["id"] == "first_pomo" and pomo_total >= 1:
+            a_id = ach["id"]
+            if a_id == "first_pomo" and pomo_total >= 1:
                 ach["unlocked"] = True
-            elif ach["id"] == "cat_friend" and unlocked_cats_count >= 3:
+            elif a_id == "pomo_5" and pomo_total >= 5:
                 ach["unlocked"] = True
-            elif ach["id"] == "master_cafe" and unlocked_items_count >= 3:
+            elif a_id == "pomo_10" and pomo_total >= 10:
                 ach["unlocked"] = True
-            elif ach["id"] == "streak_5" and pomo_total >= 5:
+            elif a_id == "pomo_25" and pomo_total >= 25:
                 ach["unlocked"] = True
-            elif ach["id"] == "cat_whisperer" and total_aff >= 6:
+            elif a_id == "pomo_50" and pomo_total >= 50:
                 ach["unlocked"] = True
+            elif a_id == "pomo_100" and pomo_total >= 100:
+                ach["unlocked"] = True
+            elif a_id == "time_1h" and total_mins >= 60:
+                ach["unlocked"] = True
+            elif a_id == "time_5h" and total_mins >= 300:
+                ach["unlocked"] = True
+            elif a_id == "time_10h" and total_mins >= 600:
+                ach["unlocked"] = True
+            elif a_id == "cat_3" and unlocked_cats_count >= 3:
+                ach["unlocked"] = True
+            elif a_id == "cat_5" and unlocked_cats_count >= 5:
+                ach["unlocked"] = True
+            elif a_id == "cat_10" and unlocked_cats_count >= 10:
+                ach["unlocked"] = True
+            elif a_id == "cat_collector" and unlocked_cats_count >= len(AVAILABLE_CATS):
+                ach["unlocked"] = True
+            elif a_id == "cat_gacha" and has_custom_cat:
+                ach["unlocked"] = True
+            elif a_id == "master_cafe" and unlocked_items_count >= 3:
+                ach["unlocked"] = True
+            elif a_id == "streak_3" and streak >= 3:
+                ach["unlocked"] = True
+            elif a_id == "streak_7" and streak >= 7:
+                ach["unlocked"] = True
+            elif a_id == "cat_whisperer" and total_aff >= 6:
+                ach["unlocked"] = True
+
+    # --- ポモドーロセッション＆中断（未達成）検知 ---
+    def start_session(self, mode="work"):
+        """タイマー開始時のセッション記録"""
+        stats = self.data.setdefault("stats", {})
+        stats["session_state"] = {
+            "in_progress": True,
+            "mode": mode,
+            "start_time": time.time()
+        }
+        self.save_data()
+
+    def finish_session(self):
+        """ポモドーロ正常完了時のセッション終了"""
+        stats = self.data.setdefault("stats", {})
+        stats["session_state"] = {"in_progress": False, "mode": "work", "start_time": 0}
+        self.save_data()
+
+    def cancel_session(self, was_user_reset=True):
+        """ユーザーによるリセットまたは中断"""
+        stats = self.data.setdefault("stats", {})
+        if stats.get("session_state", {}).get("in_progress", False):
+            if stats.get("session_state", {}).get("mode") == "work":
+                stats["interrupted_sessions"] = stats.get("interrupted_sessions", 0) + 1
+        stats["session_state"] = {"in_progress": False, "mode": "work", "start_time": 0}
+        self.save_data()
+
+    def check_and_resolve_interrupted_session(self):
+        """アプリ起動時のクラッシュ／強制終了検知（未完了のまま終了したセッションを未達成として記録）"""
+        stats = self.data.setdefault("stats", {})
+        state = stats.get("session_state", {})
+        if state.get("in_progress", False) and state.get("mode") == "work":
+            stats["interrupted_sessions"] = stats.get("interrupted_sessions", 0) + 1
+            print(f"[DataManager] 前回のポモドーロが強制終了されたため、未達成として記録しました (累計中断: {stats['interrupted_sessions']}回)")
+            stats["session_state"] = {"in_progress": False, "mode": "work", "start_time": 0}
+            self.save_data()
+            return True
+        return False
+
+    # --- 家具アイテム配置座標の保存・取得 ---
+    def get_item_positions(self):
+        default_pos = {
+            "cushion": [75, 205],
+            "toy_mouse": [165, 225],
+            "scratcher": [395, 175],
+            "treat_bowl": [240, 225],
+            "cat_tree": [390, 105]
+        }
+        return self.data["cafe"].setdefault("item_positions", default_pos)
+
+    def set_item_position(self, item_id, x, y):
+        positions = self.get_item_positions()
+        positions[item_id] = [int(x), int(y)]
+        self.save_data()
+
+    # --- ガチャ / カスタム猫の登録・取得 ---
+    def add_custom_cat(self, cat_info):
+        """ガチャで生成された完全ランダム猫を登録"""
+        custom_cats = self.data["cafe"].setdefault("custom_cats", [])
+        custom_cats.append(cat_info)
+        c_id = cat_info["id"]
+        if c_id not in self.data["cafe"]["unlocked_cats"]:
+            self.data["cafe"]["unlocked_cats"].append(c_id)
+        self.data["cafe"].setdefault("cat_affection", {})[c_id] = 1
+        self.check_achievements()
+        self.save_data()
+
+    def get_all_available_cats(self):
+        """基本猫15種 + ガチャで生まれたカスタム猫"""
+        customs = self.data["cafe"].get("custom_cats", [])
+        return AVAILABLE_CATS + customs
 
     def get_stats_data(self):
         if "stats" not in self.data:
-            self.data["stats"] = {"daily_history": {}, "total_minutes": 0, "streak_days": 1, "last_active_date": ""}
+            self.data["stats"] = {"daily_history": {}, "total_minutes": 0, "streak_days": 1, "interrupted_sessions": 0, "last_active_date": "", "session_state": {"in_progress": False}}
         return self.data["stats"]
 
     def get_achievements(self):
@@ -451,7 +575,8 @@ class DataManager:
         return self.data["achievements"]
 
     def unlock_cat(self, cat_id):
-        cat = next((c for c in AVAILABLE_CATS if c["id"] == cat_id), None)
+        all_cats = self.get_all_available_cats()
+        cat = next((c for c in all_cats if c["id"] == cat_id), None)
         if not cat:
             return False, "猫が見つかりません"
         if cat_id in self.data["cafe"]["unlocked_cats"]:
@@ -483,7 +608,8 @@ class DataManager:
 
     def set_starter_cat(self, cat_id):
         """最初の相棒猫（コスト0）を設定・変更"""
-        cat = next((c for c in AVAILABLE_CATS if c["id"] == cat_id), None)
+        all_cats = self.get_all_available_cats()
+        cat = next((c for c in all_cats if c["id"] == cat_id), None)
         if not cat:
             return False, "猫が見つかりません"
             
