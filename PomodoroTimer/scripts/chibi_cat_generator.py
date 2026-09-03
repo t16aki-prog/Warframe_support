@@ -16,14 +16,27 @@ def generate_chibi_cat(base_img, cat_type):
     alpha = arr[:, :, 3]
     
     # マスク（透明でない部分）
-    mask = alpha > 128
+    mask = alpha > 30
     if not np.any(mask):
         return base_img
 
-    # ボディ判定（元の画像でRGBが全体的に明るい、つまり白色の部分）
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-    # AI画像は白猫で、輪郭が黒（またはグレー）、目は黒やピンク
-    is_body = mask & (r > 150) & (g > 150) & (b > 150)
+    orig_b = 0.299 * r + 0.587 * g + 0.114 * b
+    mean_b = orig_b[mask].mean()
+    
+    # ベース画像の明暗判定 (cat_play, cat_groom などの暗いベース画像にも対応)
+    is_dark_base = mean_b < 100
+    
+    if is_dark_base:
+        # 暗いベース画像: 最も暗い部分(b < 15)を輪郭、それ以外をボディと判定
+        is_outline = mask & (orig_b < 15)
+        is_body = mask & ~is_outline
+        brightness = np.ones_like(orig_b, dtype=np.float32)
+    else:
+        # 明るいベース画像: 暗い部分(b < 80)を輪郭、明るい部分をボディと判定
+        is_outline = mask & (orig_b < 80)
+        is_body = mask & ~is_outline
+        brightness = np.clip(orig_b / 255.0, 0.45, 1.0)
     
     # ベースカラーと模様の設定
     base_color = (255, 255, 255)
@@ -38,6 +51,8 @@ def generate_chibi_cat(base_img, cat_type):
     
     if cat_type == "black":
         base_color = (35, 34, 42)
+    elif cat_type == "white":
+        base_color = (252, 252, 254)
     elif cat_type == "gray":
         base_color = (130, 134, 142)
         pattern_color = (95, 98, 105)
@@ -64,7 +79,7 @@ def generate_chibi_cat(base_img, cat_type):
     elif cat_type == "tuxedo":
         base_color = (32, 35, 45)
         # タキシード: 胸元・お腹・足元の白
-        white_tux = ((x_idx - 28)**2 + (y_idx - 26)**2 < 35) | (y_idx > 33) & (x_idx > 22) & (x_idx < 35)
+        white_tux = ((x_idx - 28)**2 + (y_idx - 26)**2 < 35) | ((y_idx > 33) & (x_idx > 22) & (x_idx < 35))
         pattern_mask = is_body & white_tux
         pattern_color = (255, 255, 255)
     elif cat_type == "cream":
@@ -99,12 +114,6 @@ def generate_chibi_cat(base_img, cat_type):
         base_color = (255, 218, 80)
         pattern_mask = is_body & ((x_idx % 4 == 0) | (y_idx % 5 == 0))
         pattern_color = (235, 125, 25)
-    elif cat_type == "white":
-        base_color = (255, 255, 255)
-    
-    # 陰影を計算 (元の画像の明暗を利用)
-    brightness = r.astype(np.float32) / 255.0
-    # ボディ部分は1.0、線は0.0になる
     
     out_arr = arr.copy()
     
