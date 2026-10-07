@@ -19,8 +19,8 @@ class TestFeatureExpansion(unittest.TestCase):
         if os.path.exists(fpath):
             try:
                 os.remove(fpath)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error in {os.path.basename(filepath)}: {e}")
 
     def test_session_interruption_tracking(self):
         """統計: 中断セッションの検知と記録"""

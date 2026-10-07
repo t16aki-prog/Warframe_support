@@ -12,8 +12,8 @@ def bind_mousewheel_to_all(widget, canvas):
     def _bind_recursive(w):
         try:
             w.bind("<MouseWheel>", _on_mousewheel, add="+")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error in {os.path.basename(filepath)}: {e}")
         for child in w.winfo_children():
             _bind_recursive(child)
             

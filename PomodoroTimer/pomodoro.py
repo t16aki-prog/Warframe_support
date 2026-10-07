@@ -103,8 +103,8 @@ def bind_mousewheel_to_all(widget, canvas):
     def _bind_recursive(w):
         try:
             w.bind("<MouseWheel>", _on_mousewheel, add="+")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error in {os.path.basename(filepath)}: {e}")
         for child in w.winfo_children():
             _bind_recursive(child)
             
@@ -198,8 +198,8 @@ class PomodoroApp:
         style = ttk.Style(self.root)
         try:
             style.theme_use('clam')
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error in {os.path.basename(filepath)}: {e}")
             
         t = self.theme
         
@@ -460,8 +460,8 @@ class PomodoroApp:
         for t_id, tab_frame in self.tabs.items():
             try:
                 tab_frame.configure(bg=self.theme["bg"])
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error in {os.path.basename(filepath)}: {e}")
                 
         # タブバーのボタン色
         for t_id, btn in self.tab_buttons.items():
@@ -587,13 +587,13 @@ class PomodoroApp:
         self.timer.is_running = False
         try:
             self.sound_mgr.stop_bgm()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error in {os.path.basename(filepath)}: {e}")
         try:
             self.root.quit()
             self.root.destroy()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error in {os.path.basename(filepath)}: {e}")
 
     def on_minimize(self, event):
         if event.widget == self.root and self.root.state() == "iconic":
@@ -762,8 +762,8 @@ class PomodoroApp:
                                 self.cat_canvas.itemconfig(cat["id"], image=tex[f"{sp_type}_0"])
                             elif "sleep_0" in tex:
                                 self.cat_canvas.itemconfig(cat["id"], image=tex["sleep_0"])
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            print(f"Error in {os.path.basename(filepath)}: {e}")
                     else:
                         # 睡眠状態から活動状態への復帰保証
                         if cat.get("state") == "sleep":
@@ -814,8 +814,8 @@ class PomodoroApp:
                                 self.cat_canvas.coords(cat["id"], cat["x"], cat["y"] - y_off)
                                 if frame_key in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                             # 肉球足跡エフェクト
                             if self.anim_tick % 36 == 0 and len(self.floating_effects) < 20:
@@ -830,8 +830,8 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                                 elif f"sit_r" in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex["sit_r"])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                         elif state == "groom":
                             cfg = self.data_mgr.get_anim_config(state)
@@ -842,8 +842,8 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                                 elif f"sit_{facing}" in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                         elif state == "stretch":
                             cfg = self.data_mgr.get_anim_config(state)
@@ -854,8 +854,8 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                                 elif f"sit_{facing}" in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                         elif state == "play":
                             cfg = self.data_mgr.get_anim_config(state)
@@ -866,8 +866,8 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                                 elif f"sit_{facing}" in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                         elif state == "pounce":
                             cfg = self.data_mgr.get_anim_config(state)
@@ -878,8 +878,8 @@ class PomodoroApp:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[frame_key])
                                 elif f"sit_{facing}" in tex:
                                     self.cat_canvas.itemconfig(cat["id"], image=tex[f"sit_{facing}"])
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                print(f"Error in {os.path.basename(filepath)}: {e}")
                                 
                 # 手前の猫（画面下側・Y座標が大きい）が奥の猫（画面上側・Y座標が小さい）の上に重なるようにZソート
                 try:
@@ -887,8 +887,8 @@ class PomodoroApp:
                         self.cat_canvas.tag_raise(c["id"])
                     # エフェクトを猫の手前に表示
                     self.cat_canvas.tag_raise("effect")
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Error in {os.path.basename(filepath)}: {e}")
                             
                 if self.cats:
                     cat = self.cats[0]
@@ -912,8 +912,8 @@ class PomodoroApp:
                     if tex and frame_key in tex:
                         try:
                             self.widget_cat.config(image=tex[frame_key])
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            print(f"Error in {os.path.basename(filepath)}: {e}")
                     
                 # 環境パーティクル
                 if self.anim_tick % 48 == 0 and len(self.floating_effects) < 18:
@@ -934,8 +934,8 @@ class PomodoroApp:
                         if effect["life"] <= 0:
                             self.cat_canvas.delete(effect["id"])
                             self.floating_effects.remove(effect)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Error in {os.path.basename(filepath)}: {e}")
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception as e:
@@ -945,12 +945,19 @@ class PomodoroApp:
             if getattr(self, 'is_alive', True):
                 try:
                     self.root.after(16, self.animate_loop)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Error in {os.path.basename(filepath)}: {e}")
 
 
 if __name__ == "__main__":
     import sys
+    print("\n" + "=" * 52)
+    print(" 🐾 猫カフェ・ポモドーロ (Pomodoro Timer) 起動中 🐾")
+    print("=" * 52)
+    print("  🖥️  デスクトップ版 : 起動完了")
+    print("  🌐 Web版 URL      : http://localhost:3000")
+    print("  💡 Web版起動コマンド: cd PomodoroTimer/web && npm run dev")
+    print("=" * 52 + "\n", flush=True)
     root = tk.Tk()
     app = PomodoroApp(root)
     try:

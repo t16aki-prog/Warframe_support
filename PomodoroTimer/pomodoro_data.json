@@ -30,7 +30,7 @@
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": null,
-      "time_spent": 2
+      "time_spent": 30
     },
     {
       "id": 87430,
@@ -65,7 +65,7 @@
   ],
   "active_task_id": 10942,
   "cafe": {
-    "treats": 281,
+    "treats": 279,
     "total_pomodoros": 47,
     "unlocked_cats": [
       "black",
@@ -88,7 +88,30 @@
     ],
     "cat_affection": {
       "black": 1,
-      "siamese": 2
+      "siamese": 4
+    },
+    "custom_cats": [],
+    "item_positions": {
+      "cushion": [
+        53,
+        218
+      ],
+      "toy_mouse": [
+        130,
+        245
+      ],
+      "scratcher": [
+        133,
+        123
+      ],
+      "treat_bowl": [
+        240,
+        225
+      ],
+      "cat_tree": [
+        416,
+        130
+      ]
     }
   },
   "stats": {
@@ -98,7 +121,13 @@
     },
     "total_minutes": 300,
     "streak_days": 1,
-    "last_active_date": "2026-08-30"
+    "interrupted_sessions": 6,
+    "last_active_date": "2026-08-30",
+    "session_state": {
+      "in_progress": false,
+      "mode": "work",
+      "start_time": 0
+    }
   },
   "achievements": [
     {

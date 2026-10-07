@@ -208,8 +208,8 @@ class ShopTab:
                 try:
                     p_img = Image.open(p_file).convert("RGBA").resize((96, 96), Image.Resampling.NEAREST)
                     pose_photos.append(ImageTk.PhotoImage(p_img))
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Error in {os.path.basename(filepath)}: {e}")
         
         # フォールバック: テクスチャ辞書
         if not pose_photos:
@@ -329,8 +329,8 @@ class ShopTab:
                 photo = ImageTk.PhotoImage(p_img)
                 pv_canvas.create_image(60, 60, image=photo)
                 modal.result_photo = photo
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error in {os.path.basename(filepath)}: {e}")
             
         tk.Label(modal, text=cat_info["desc"], font=FONT_TEXT, bg=self.app.theme["bg"], fg=self.app.theme["sub_text"]).pack(pady=4)
         tk.Label(modal, text="カフェに新しい猫が合流しました！🐾", font=FONT_BOLD, bg=self.app.theme["bg"], fg=self.app.theme["work"]).pack(pady=4)

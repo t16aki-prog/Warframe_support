@@ -112,8 +112,8 @@ class NetworkMonitorApp:
             # GUIの更新をメインスレッドに安全に渡す (Update GUI safely)
             try:
                 self.root.after(0, self.update_label, display_text, color)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error in {os.path.basename(filepath)}: {e}")
 
     def update_label(self, text, color):
         self.label.config(text=text, fg=color)
