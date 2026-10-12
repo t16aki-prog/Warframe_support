@@ -70,6 +70,23 @@ export const staticBuilds = {
         mods: ["Primed Continuity", "Narrow Minded", "Umbral Intensify", "Blind Rage", "Primed Flow", "Streamline", "Adaptation", "Vitality"],
         playstyle: "Cloud Walkerの機動力を活かした潜入・確保・救出等の高速周回ビルド。Celestial Twinと共に武器で戦うことを前提とした汎用構成です。"
       }
+    },
+    Narin: {
+      itemName: "Narin",
+      augments: [
+        {
+          name: "Glacial Surge (グレイシャル・サージ)",
+          effect: "Neoteの突進軌跡上に氷柱が連続発生し、通過する敵に冷気異常を最大付与して氷ゲージを2倍獲得する。",
+          syndicate: "セファロン・スーダ / ニュー・ロカ"
+        }
+      ],
+      popularBuild: {
+        aura: "Brief Respite",
+        exilus: "Primed Sure Footed",
+        arcanes: ["Arcane Ice Storm", "Arcane Energize"],
+        mods: ["Archon Flow", "Archon Continuity", "Blind Rage", "Transient Fortitude", "Stretch", "Overextended", "Rolling Guard", "Streamline"],
+        playstyle: "「氷河の縛り」特化エンドコンテンツ構成。冷気異常を周囲に散布し、2番(Naraemagi)でシールド全回復と超過オーバーガードを常時キープ。氷ゲージ100%時の4番(Nurinarim)でLv999敵の装甲・シールドを100%全剥離し、大爆発で連鎖殲滅します。"
+      }
     }
   },
   genericFrame: {

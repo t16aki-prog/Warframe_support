@@ -88,7 +88,6 @@ function App() {
       case 'wishlist':
         return <Wishlist />;
       case 'dataexplorer':
-        // @ts-expect-error DataExplorer might not have navState types yet
         return <DataExplorer navState={navState} clearNavState={() => setNavState(null)} />;
       case 'relicgenerator':
         return <RelicGenerator />;
@@ -106,7 +105,6 @@ function App() {
           onNavigateToSettings={() => setActiveTab('settings')} 
         />;
       case 'settings':
-        // @ts-expect-error Settings has missing props from older implementation
         return <Settings 
           apiKey={apiKey} 
           setApiKey={setApiKey} 

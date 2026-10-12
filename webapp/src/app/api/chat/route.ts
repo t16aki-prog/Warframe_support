@@ -35,7 +35,7 @@ Warframeの専門知識を持つのはもちろんのこと、現実世界のニ
     }
 
     // Fallback to offline mode
-    const reply = await sendOrdisMessage(message, apiKey);
+    const reply = await sendOrdisMessage(message);
     return NextResponse.json({ reply });
   } catch (error) {
     console.error('Chat Route Error:', error);

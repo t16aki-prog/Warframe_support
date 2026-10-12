@@ -374,5 +374,5 @@ class SoundManager:
         try:
             winsound.PlaySound(None, winsound.SND_PURGE)
         except Exception as e:
-            print(f"Error in {os.path.basename(filepath)}: {e}")
+            print(f"Error stopping BGM: {e}")
         self.current_bgm = "none"

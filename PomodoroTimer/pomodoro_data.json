@@ -9,8 +9,8 @@
     "google_connected": false
   },
   "settings": {
-    "theme": "mint",
-    "work_minutes": 30,
+    "theme": "mocha",
+    "work_minutes": 25,
     "short_break_minutes": 7,
     "long_break_minutes": 15,
     "long_break_interval": 4,
@@ -25,19 +25,19 @@
       "id": 10942,
       "title": "文化会発表会　資料作成",
       "target_pomo": 2,
-      "completed_pomo": 0,
+      "completed_pomo": 1,
       "is_done": true,
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": null,
-      "time_spent": 30
+      "time_spent": 2894
     },
     {
       "id": 87430,
       "title": "【サンプル】企画書の作成 📑",
       "target_pomo": 2,
       "completed_pomo": 0,
-      "is_done": false,
+      "is_done": true,
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": "demo_task_1"
@@ -47,7 +47,7 @@
       "title": "【サンプル】メール返信とスケジュール確認 ✉️",
       "target_pomo": 1,
       "completed_pomo": 0,
-      "is_done": false,
+      "is_done": true,
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": "demo_task_2"
@@ -57,16 +57,36 @@
       "title": "【サンプル】コードレビュー 💻",
       "target_pomo": 2,
       "completed_pomo": 0,
-      "is_done": false,
+      "is_done": true,
       "tag": "💼 仕事",
       "priority": "⚡ 中",
       "google_id": "demo_task_3"
+    },
+    {
+      "id": 936978,
+      "title": "ラジオのタイムテーブル作成",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": null
+    },
+    {
+      "id": 951115,
+      "title": "屋台のタイムテーブル作成",
+      "target_pomo": 2,
+      "completed_pomo": 0,
+      "is_done": false,
+      "tag": "💼 仕事",
+      "priority": "⚡ 中",
+      "google_id": null
     }
   ],
   "active_task_id": 10942,
   "cafe": {
     "treats": 279,
-    "total_pomodoros": 47,
+    "total_pomodoros": 48,
     "unlocked_cats": [
       "black",
       "calico",
@@ -88,13 +108,13 @@
     ],
     "cat_affection": {
       "black": 1,
-      "siamese": 4
+      "siamese": 5
     },
     "custom_cats": [],
     "item_positions": {
       "cushion": [
-        53,
-        218
+        215,
+        145
       ],
       "toy_mouse": [
         130,
@@ -117,16 +137,17 @@
   "stats": {
     "daily_history": {
       "2026-08-29": 5,
-      "2026-08-30": 5
+      "2026-08-30": 5,
+      "2026-10-09": 1
     },
-    "total_minutes": 300,
+    "total_minutes": 325,
     "streak_days": 1,
-    "interrupted_sessions": 6,
-    "last_active_date": "2026-08-30",
+    "interrupted_sessions": 10,
+    "last_active_date": "2026-10-09",
     "session_state": {
-      "in_progress": false,
+      "in_progress": true,
       "mode": "work",
-      "start_time": 0
+      "start_time": 1791536666.4118297
     }
   },
   "achievements": [
@@ -158,7 +179,7 @@
       "id": "cat_whisperer",
       "name": "猫の絆マスター ✨",
       "desc": "猫との触れ合いで親愛度を高める",
-      "unlocked": false
+      "unlocked": true
     }
   ]
 }

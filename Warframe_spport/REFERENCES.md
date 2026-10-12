@@ -78,4 +78,21 @@
     *   ユーザー同士が通信できる「ローカルチャット機能」を実現するための、WebSocketによる双方向リアルタイム通信のアーキテクチャ設計に利用しています。
 
 ---
+
+## 5. Warframe Update 44「ナリンの氷刃」＆「氷河の縛り (The Icebind)」関連仕様
+
+### Update 44 公式仕様・攻略コミュニティデータ
+*   **引用・利用箇所**: 
+    *   `src/components/Icebind.tsx`
+    *   `staticBuilds.js`
+    *   `aliases.js`
+    *   `src/utils/itemDictionary.ts`
+    *   `ordisAi.js`
+*   **利用内容**:
+    *   **6人分隊限定コンテンツ「氷河の縛り (The Icebind)」**: 地球ユヴァン峰のクライオベル起動条件、6人分隊限定・Warframe重複完全禁止・敵Lv999+・自力蘇生不可・サイド目標即失敗ギミック、および週替わりモディファイアの仕様。
+    *   **第66フレーム「Narin (ナリン)」**: 冷気属性、レイピア適性、固有リソース「氷ゲージ (Ice Gauge)」、パッシブ「Sangodae」、および4アビリティ（Neote, Naraemagi, Hakchum, Nurinarim）の性能と推奨ビルド。
+    *   **分隊編成シミュレーター ＆ 重複チェッカー**: リアルタイム重複検知アルゴリズム、分隊シナジー（装甲剥ぎ/蘇生/CC/エネルギー/DPS）診断、ゲーム内リクルート/Discord募集文自動生成。
+
+---
 *※ 本アプリはファンメイドツールであり、Warframeの著作権や登録商標はDigital Extremes Ltd.に帰属します。*
+

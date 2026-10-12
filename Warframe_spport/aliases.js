@@ -59,6 +59,8 @@ const aliasMap = {
   "Qorvex": ["コーヴェックス", "コーベックス", "qorvex"],
   "Dante": ["ダンテ", "dante"],
   "Jade": ["ジェイド", "jade"],
+  "Cyte-09": ["サイト09", "cyte", "cyte-09"],
+  "Narin": ["ナリン", "なりん", "narin"],
 
   // --- Common Weapons (Examples) ---
   "Braton": ["ブラトン", "braton"],

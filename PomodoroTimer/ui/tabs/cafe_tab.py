@@ -307,7 +307,8 @@ class CafeTab:
                 self.app.cat_canvas.create_text(x, y, text=emoji_map.get(item_id, "🛋️"), font=("Segoe UI Emoji", 22), tags=("item", f"item_{item_id}"))
 
     def refresh_cafe_elements(self):
-        self.app.treat_label.config(text=f"🐟 {self.app.data_mgr.get_cafe_data()['treats']}個", fg=self.app.theme["accent"])
+        if hasattr(self.app, 'header_view'):
+            self.app.header_view.update_treat_display()
         prof = self.app.data_mgr.get_profile()
         done_pomo = self.app.data_mgr.get_cafe_data()['total_pomodoros']
         

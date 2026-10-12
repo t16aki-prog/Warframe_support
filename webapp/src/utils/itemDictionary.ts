@@ -20,6 +20,9 @@ export const itemDictionary: DictionaryItem[] = [
   { ja: 'ガウス プライム (Gauss Prime)', en: 'Gauss Prime Set', urlName: 'gauss_prime_set', category: 'warframe' },
   { ja: 'アッシュ プライム (Ash Prime)', en: 'Ash Prime Set', urlName: 'ash_prime_set', category: 'warframe' },
   { ja: 'プロテア プライム (Protea Prime)', en: 'Protea Prime Set', urlName: 'protea_prime_set', category: 'warframe' },
+  { ja: 'ナリン (Narin)', en: 'Narin', urlName: 'narin', category: 'warframe' },
+  { ja: 'リベン スプライサー (Riven Splicer)', en: 'Riven Splicer', urlName: 'riven_splicer', category: 'other' },
+  { ja: 'エントロピック・クヴァ (Entropic Kuva)', en: 'Entropic Kuva', urlName: 'entropic_kuva', category: 'other' },
   
   // Weapons (Prime)
   { ja: 'インカーノン ブラントン (Gorgon/Lex etc)', en: 'Lex Prime Set', urlName: 'lex_prime_set', category: 'weapon' },

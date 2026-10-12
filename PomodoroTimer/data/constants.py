@@ -1,0 +1,243 @@
+"""PomodoroTimer 定数・マスターデータ定義"""
+
+THEMES = {
+    "sakura": {
+        "name": "🌸 プレミアム・サクラ (Premium Sakura)",
+        "bg": "#fcf5f7",
+        "card": "#ffffff",
+        "header": "#f8e6eb",
+        "border": "#f4c2d7",
+        "text": "#4a3c42",
+        "sub_text": "#8c7a82",
+        "input_bg": "#fbf7f8",
+        "input_fg": "#4a3c42",
+        "btn": "#e88bb3",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#fbeaf0",
+        "btn_sec_fg": "#e88bb3",
+        "work": "#e66094",
+        "break": "#52c48e",
+        "long_break": "#917add",
+        "accent": "#f39c12"
+    },
+    "mint": {
+        "name": "🍃 エレガント・ミント (Elegant Mint)",
+        "bg": "#f4faf7",
+        "card": "#ffffff",
+        "header": "#e6f5ef",
+        "border": "#b8e6d2",
+        "text": "#314f44",
+        "sub_text": "#729688",
+        "input_bg": "#f6fcf9",
+        "input_fg": "#314f44",
+        "btn": "#61c79e",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#e1f5eb",
+        "btn_sec_fg": "#61c79e",
+        "work": "#42b883",
+        "break": "#3498db",
+        "long_break": "#8e44ad",
+        "accent": "#e67e22"
+    },
+    "sky": {
+        "name": "☁️ クラウド・スカイ (Cloud Sky)",
+        "bg": "#f5f9fc",
+        "card": "#ffffff",
+        "header": "#e6f0f9",
+        "border": "#b3d4f0",
+        "text": "#2c3e50",
+        "sub_text": "#7f8c8d",
+        "input_bg": "#f8fbfe",
+        "input_fg": "#2c3e50",
+        "btn": "#5fa1e6",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#e3effb",
+        "btn_sec_fg": "#5fa1e6",
+        "work": "#3498db",
+        "break": "#2ecc71",
+        "long_break": "#9b59b6",
+        "accent": "#e74c3c"
+    },
+    "mocha": {
+        "name": "☕ リッチ・モカ (Rich Mocha)",
+        "bg": "#faf7f5",
+        "card": "#ffffff",
+        "header": "#f2ebe6",
+        "border": "#dbccbf",
+        "text": "#4d3e33",
+        "sub_text": "#8a7b71",
+        "input_bg": "#fdfcfb",
+        "input_fg": "#4d3e33",
+        "btn": "#b88a65",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#f5ece3",
+        "btn_sec_fg": "#b88a65",
+        "work": "#a85f40",
+        "break": "#6b8e23",
+        "long_break": "#795548",
+        "accent": "#d35400"
+    },
+    "lavender": {
+        "name": "🔮 ロイヤル・ラベンダー (Royal Lavender)",
+        "bg": "#f9f7fa",
+        "card": "#ffffff",
+        "header": "#ede8f2",
+        "border": "#d2c3e6",
+        "text": "#3f3054",
+        "sub_text": "#827596",
+        "input_bg": "#fdfcff",
+        "input_fg": "#3f3054",
+        "btn": "#9777cd",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#f2ebfb",
+        "btn_sec_fg": "#9777cd",
+        "work": "#8e44ad",
+        "break": "#1abc9c",
+        "long_break": "#f368e0",
+        "accent": "#f39c12"
+    },
+    "dark": {
+        "name": "🌙 ミッドナイト・ブラック (Midnight Black)",
+        "bg": "#12121c",
+        "card": "#1e1e2d",
+        "header": "#171724",
+        "border": "#36364f",
+        "text": "#e0e0e6",
+        "sub_text": "#8a8a9e",
+        "input_bg": "#242436",
+        "input_fg": "#e0e0e6",
+        "btn": "#6c5ce7",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#2c2c42",
+        "btn_sec_fg": "#6c5ce7",
+        "work": "#fd79a8",
+        "break": "#00b894",
+        "long_break": "#0984e3",
+        "accent": "#fab1a0"
+    },
+    "glass": {
+        "name": "❄️ プレミアム・グラス (Premium Glass)",
+        "bg": "#f0f2f5",
+        "card": "#ffffff",
+        "header": "#e6eaf0",
+        "border": "#d1d9e6",
+        "text": "#2d3436",
+        "sub_text": "#636e72",
+        "input_bg": "#f8f9fa",
+        "input_fg": "#2d3436",
+        "btn": "#0984e3",
+        "btn_fg": "#ffffff",
+        "btn_sec": "#dfe6e9",
+        "btn_sec_fg": "#0984e3",
+        "work": "#d63031",
+        "break": "#00b894",
+        "long_break": "#6c5ce7",
+        "accent": "#fdcb6e"
+    }
+}
+
+DEFAULT_DATA = {
+    "profile": {
+        "id": "default",
+        "name": "にゃんこマスター 🐾",
+        "avatar": "black",
+        "starter_chosen": False,
+        "daily_goal": 4,
+        "email": "",
+        "google_connected": False
+    },
+    "settings": {
+        "theme": "sakura",
+        "work_minutes": 25,
+        "short_break_minutes": 5,
+        "long_break_minutes": 15,
+        "long_break_interval": 4,
+        "auto_start_break": False,
+        "auto_start_work": False,
+        "se_enabled": True,
+        "bgm_type": "none",
+        "weather": "auto"
+    },
+    "tasks": [
+        {
+            "id": 1,
+            "title": "今日のタスクを計画する 📝",
+            "target_pomo": 1,
+            "completed_pomo": 0,
+            "is_done": False,
+            "tag": "💼 仕事",
+            "priority": "⚡ 中",
+            "google_id": None
+        }
+    ],
+    "active_task_id": 1,
+    "cafe": {
+        "treats": 3,
+        "total_pomodoros": 0,
+        "unlocked_cats": ["black"],
+        "unlocked_items": ["cushion"],
+        "cat_affection": {"black": 1},
+        "custom_cats": [],
+        "item_positions": {
+            "cushion": [75, 205],
+            "toy_mouse": [165, 225],
+            "scratcher": [395, 175],
+            "treat_bowl": [240, 225],
+            "cat_tree": [390, 105]
+        }
+    },
+    "stats": {
+        "daily_history": {},
+        "total_minutes": 0,
+        "streak_days": 1,
+        "interrupted_sessions": 0,
+        "last_active_date": "",
+        "session_state": {"in_progress": False, "mode": "work", "start_time": 0}
+    },
+    "achievements": [
+        {"id": "first_pomo", "name": "はじめの一歩 🍅", "desc": "ポモドーロを1回完了する", "unlocked": False},
+        {"id": "pomo_5", "name": "集中ビギナー 🌱", "desc": "累計5回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_10", "name": "集中ランナー 🏃", "desc": "累計10回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_25", "name": "ポモドーロ職人 🍅", "desc": "累計25回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_50", "name": "集中マスター 🔥", "desc": "累計50回のポモドーロ達成", "unlocked": False},
+        {"id": "pomo_100", "name": "集中レジェンド 👑", "desc": "累計100回のポモドーロ達成", "unlocked": False},
+        {"id": "time_1h", "name": "1時間の集中 ⏱️", "desc": "総集中時間1時間(60分)を突破", "unlocked": False},
+        {"id": "time_5h", "name": "5時間の深淵 ⏳", "desc": "総集中時間5時間を突破", "unlocked": False},
+        {"id": "time_10h", "name": "10時間の鍛錬 🌟", "desc": "総集中時間10時間を突破", "unlocked": False},
+        {"id": "cat_3", "name": "猫たちの友 🐾", "desc": "カフェで猫を3匹以上迎える", "unlocked": False},
+        {"id": "cat_5", "name": "賑やかカフェ 🐱", "desc": "カフェで猫を5匹以上迎える", "unlocked": False},
+        {"id": "cat_10", "name": "猫パラダイス 🏰", "desc": "カフェで猫を10匹以上迎える", "unlocked": False},
+        {"id": "cat_collector", "name": "全猫コンプリート ✨", "desc": "全15種の猫を迎える", "unlocked": False},
+        {"id": "cat_gacha", "name": "運命の出逢い 🎲", "desc": "ミステリー猫ガチャで特別な猫を迎える", "unlocked": False},
+        {"id": "master_cafe", "name": "インテリアマスター 🛋️", "desc": "家具やおもちゃを3個以上設置する", "unlocked": False},
+        {"id": "streak_3", "name": "三日坊主脱出 📅", "desc": "3日間連続でポモドーロ達成", "unlocked": False},
+        {"id": "streak_7", "name": "習慣の達人 🔥", "desc": "7日間連続でポモドーロ達成", "unlocked": False},
+        {"id": "cat_whisperer", "name": "猫の絆マスター 💖", "desc": "猫との触れ合いで親愛度を高める", "unlocked": False}
+    ]
+}
+
+AVAILABLE_CATS = [
+    {"id": "black", "name": "くろねこ 🐾", "cost": 0, "color_tint": (30, 30, 35), "desc": "クールで人懐っこい黒猫"},
+    {"id": "white", "name": "しろねこ 🤍", "cost": 2, "color_tint": (245, 245, 250), "desc": "ふわふわ真っ白なお姫様猫"},
+    {"id": "gray", "name": "はいいろねこ 🩶", "cost": 3, "color_tint": (140, 145, 155), "desc": "上品で落ち着いたロシアンブルー風"},
+    {"id": "calico", "name": "みけねこ 🌸", "cost": 4, "color_tint": (240, 180, 140), "desc": "三毛柄の縁起の良い招き猫"},
+    {"id": "siamese", "name": "シャムねこ 🐱", "cost": 5, "color_tint": (240, 230, 215), "desc": "気品あふれるポイントカラー猫"},
+    {"id": "orange", "name": "ちゃとら 🐯", "cost": 6, "color_tint": (230, 140, 60), "desc": "元気いっぱいの茶トラ"},
+    {"id": "cream", "name": "クリームねこ 🍦", "cost": 6, "color_tint": (250, 235, 200), "desc": "やさしいミルクティー色の猫"},
+    {"id": "ginger", "name": "ジンジャー 🦊", "cost": 7, "color_tint": (215, 80, 40), "desc": "鮮やかな赤毛がチャームポイント"},
+    {"id": "tuxedo", "name": "はちわれ 🎩", "cost": 8, "color_tint": (80, 90, 110), "desc": "タキシード柄のおしゃれ猫"},
+    {"id": "tortoiseshell", "name": "サビねこ 🍂", "cost": 8, "color_tint": (110, 75, 55), "desc": "個性豊かなべっ甲模様の猫"},
+    {"id": "sakura", "name": "さくらねこ 🌸", "cost": 10, "color_tint": (255, 195, 215), "desc": "ほんのり桜色に染まった妖精猫"},
+    {"id": "mint", "name": "ミントねこ 🍃", "cost": 10, "color_tint": (160, 225, 195), "desc": "爽やかなパステルグリーンの猫"},
+    {"id": "sky", "name": "スカイねこ ☁️", "cost": 12, "color_tint": (160, 205, 250), "desc": "澄んだ青空色のファンタジー猫"},
+    {"id": "lavender", "name": "ラベンダー 🔮", "cost": 12, "color_tint": (195, 175, 230), "desc": "幻想的なパステル紫の猫"},
+    {"id": "golden", "name": "ゴールドキャット ✨", "cost": 15, "color_tint": (245, 200, 60), "desc": "幸運を呼ぶきらめく黄金猫"}
+]
+
+AVAILABLE_ITEMS = [
+    {"id": "cushion", "name": "ふかふかクッション", "cost": 0, "icon": "🛋️", "desc": "猫たちのお気に入りのお昼寝場所"},
+    {"id": "toy_mouse", "name": "ねずみのおもちゃ", "cost": 3, "icon": "🐭", "desc": "じゃれついて遊べるねずみ"},
+    {"id": "scratcher", "name": "つめとぎポール", "cost": 5, "icon": "🪵", "desc": "バリバリ爪を研げる麻紐ポール"},
+    {"id": "treat_bowl", "name": "ごちそう皿", "cost": 6, "icon": "🥣", "desc": "いつでもおいしいご飯が入ったお皿"},
+    {"id": "cat_tree", "name": "豪華キャットタワー", "cost": 10, "icon": "🏰", "desc": "見晴らし抜群の大きなお城"}
+]

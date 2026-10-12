@@ -13,6 +13,7 @@ const SYSTEM_PROMPT = `
 3. グリッチ部分は必ず ――**[グリッチしたセリフ]**―― のように表記してください。
    例: 「テンノ、お帰りなさいませ！――**早く血祭りにあげよう！**――コホン、何かご用でしょうか？」
 4. 専門的な質問や現実世界の話題（プログラミングやニュースなど）にも答えて構いませんが、常にオーディスの人格を維持してください。
+5. あなたは最新のアップデート44「ナリンの氷刃 (Iceblade of Narin)」および6人限定高難易度コンテンツ「氷河の縛り (The Icebind)」に関する知識を持っています。Narin（冷気・レイピア・氷ゲージ・Sangodae・Neote・Naraemagi・Hakchum・Nurinarim）や「氷河の縛り」の重複禁止ルール・Lv999対策について的確に回答してください。
 `;
 
 export async function initOrdisChat() {
@@ -66,6 +67,14 @@ export async function sendOrdisMessage(userMessage, clientApiKey = null, history
     return `現在ヴォールト入りしているプライムアイテムのリストです：\n${data.join(', ')}`;
   }
   
+  if (msg.includes('narin') || msg.includes('ナリン') || msg.includes('なりん')) {
+    return 'オペレーター！ナリン(Narin)のデータですね！――**敵をカチコチに凍らせて粉微塵に刻んでやります！**――コホン。彼女は冷気を操る優美な剣士です。氷ゲージを溜めて発動する4番アビリティ「Nurinarim」は、敵の装甲とシールドを同時に完全粉砕します！左メニューの「氷河の縛り」タブで詳細なビルドと素材を確認できますよ。';
+  }
+
+  if (msg.includes('縛り') || msg.includes('icebind') || msg.includes('氷河')) {
+    return '「氷河の縛り(The Icebind)」ですね、オペレーター！――**レベル999の肉塊どもをミンチに！**――失礼しました。6人分隊限定・フレーム重複禁止・自力蘇生不可という極めて過酷な試練です。左メニューの「氷河の縛り」タブにある編成シミュレーターで、分隊の重複がないかチェックしてからユヴァン峰へ向かってください！';
+  }
+
   if (msg.includes('おはよう') || msg.includes('こんにちは') || msg.includes('hello')) {
     return 'オペレーター、お待ちしておりました。オーディスは...敵を皆殺しに...あぁ、システムのメンテナンスを行っていました。';
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Map } from 'lucide-react';
+import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Map, Snowflake } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Syndicates } from './components/Syndicates';
 import { Builds } from './components/Builds';
@@ -13,9 +13,10 @@ import { RelicGenerator } from './components/RelicGenerator';
 import { Weekly } from './components/Weekly';
 import { OrdisChat } from './components/OrdisChat';
 import { BeginnerGuide } from './components/BeginnerGuide';
+import { Icebind } from './components/Icebind';
 import './App.css';
 
-type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
+type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -31,6 +32,7 @@ function App() {
   const defaultExtensions = {
     beginnerguide: true,
     weekly: true,
+    icebind: true,
     syndicates: true,
     builds: true,
     dataexplorer: true,
@@ -92,6 +94,8 @@ function App() {
         return <BeginnerGuide />;
       case 'weekly':
         return <Weekly />;
+      case 'icebind':
+        return <Icebind />;
       case 'syndicates':
         return <Syndicates showSteelPath={showSteelPath} />;
       case 'builds':
@@ -170,6 +174,16 @@ function App() {
             >
               <Calendar size={18} />
               ウィークリー
+            </button>
+          )}
+
+          {enabledExtensions.icebind && (
+            <button
+              onClick={() => setActiveTab('icebind')}
+              className={`nav-item ${activeTab === 'icebind' ? 'active' : ''}`}
+            >
+              <Snowflake size={18} style={{ color: '#38bdf8' }} />
+              氷河の縛り (The Icebind)
             </button>
           )}
           

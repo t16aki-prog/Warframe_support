@@ -201,3 +201,6 @@ class StatsTab:
             tk.Label(left_box, text=ach['desc'], font=FONT_TEXT, bg=card_bg, fg=self.app.theme["sub_text"]).pack(anchor="w")
             
             tk.Label(row, text=status_text, font=FONT_BOLD, bg=card_bg, fg=status_color).pack(side="right", padx=6)
+
+        bind_mousewheel_to_all(self.stats_scroll_frame, self.stats_canvas)
+
