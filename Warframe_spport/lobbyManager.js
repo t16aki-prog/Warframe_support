@@ -40,17 +40,22 @@ class LobbyManager {
       joinedAt: Date.now()
     };
 
+    const isNarin = data.type === 'narin';
+    const maxLimit = isNarin ? 6 : 4;
+    const requestedMax = Number(data.maxMembers) || (isNarin ? 6 : 4);
+    const maxMembers = Math.min(Math.max(requestedMax, 2), maxLimit);
+
     const newLobby = {
       id,
-      type: data.type === 'narin' ? 'narin' : 'standard',
-      title: data.title || (data.type === 'narin' ? '【Narin縛り】分隊募集' : 'マルチプレイ募集'),
-      missionCategory: data.missionCategory || '亀裂/レリック',
-      targetMission: data.targetMission || '',
+      type: isNarin ? 'narin' : 'standard',
+      title: data.title || (isNarin ? '【氷河の縛り】6人分隊募集 (重複禁止)' : 'マルチプレイ募集'),
+      missionCategory: isNarin ? '氷河の縛り (The Icebind)' : (data.missionCategory || '亀裂/レリック'),
+      targetMission: data.targetMission || (isNarin ? '全ステージ完全制覇' : ''),
       // Narin縛り固有フィールド
       narinRulePreset: data.narinRulePreset || 'none',
       narinRuleDescription: data.narinRuleDescription || '',
       
-      maxMembers: Math.min(Math.max(Number(data.maxMembers) || 4, 2), 4),
+      maxMembers,
       members: [hostMember],
       status: 'recruiting', // recruiting | full | departed | closed
       description: data.description || '',

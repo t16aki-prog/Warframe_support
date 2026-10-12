@@ -78,7 +78,7 @@ export const Multiplayer: React.FC = () => {
             </span>
           </div>
           <p style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '14px' }}>
-            同じアプリを利用中のテンノ同士でリアルタイムに分隊を結成。通常マルチ募集から高難度<strong>「Narin縛り」</strong>まで即座にマッチングできます。
+            同じアプリを利用中のテンノ同士でリアルタイムに分隊を結成。通常マルチ募集から専用エンドコンテンツ<strong>「氷河の縛り (The Icebind)」</strong>まで即座にマッチングできます。
           </p>
         </div>
 

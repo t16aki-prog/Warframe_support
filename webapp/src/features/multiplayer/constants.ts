@@ -12,6 +12,16 @@ export const MISSION_CATEGORIES = [
   'その他マルチ'
 ] as const;
 
+// ❄️ ゲームモード「氷河の縛り (The Icebind)」専用ステージ目標
+export const ICEBIND_STAGES = [
+  '全ステージ完全踏破 (ステージ1〜3 完全制覇)',
+  'ステージ1: 氷結回廊 (ニューロプティクス狙い)',
+  'ステージ2: 凍土の核 (シャーシ狙い)',
+  'ステージ3: 絶対零度決戦 (システム狙い・週替わり報酬)',
+  'Lv999+ エンドレス極限耐久 (クバ/エッセンス周回)',
+  '週替わりモディファイア初クリア挑戦'
+] as const;
+
 export interface NarinPreset {
   id: string;
   name: string;
@@ -22,38 +32,31 @@ export interface NarinPreset {
 
 export const NARIN_RULE_PRESETS: NarinPreset[] = [
   {
-    id: 'narin_frost_unite',
-    name: '❄️ 氷刃舞踏会 (Narin4人冷気統一)',
-    badge: '最難関',
-    description: '分隊全員がNarinを使用し、Lv999+冷気オーバーガードの極限耐久に挑む編成。',
-    recommendedRules: '・フレーム: 全員Narin必須\n・武器: 冷気属性必須 (レイピア推奨)\n・目標: エンドレス耐久30分以上 or 深淵アルキメデア'
+    id: 'icebind_standard',
+    name: '❄️ 氷河の縛り 公式ルール (6人編成・重複禁止)',
+    badge: '公式仕様',
+    description: 'ユヴァン峰クライオベル起動。6人限定・Warframe重複完全禁止・Lv999+・自力蘇生不可のエンドコンテンツ。',
+    recommendedRules: '・定員: 6人フルスクワッド\n・ルール: Warframe重複完全禁止（同フレーム出撃不可）\n・推奨: Vazarin装備者（即時蘇生）2名以上、装甲剥ぎ役1名以上'
   },
   {
-    id: 'narin_cold_only',
-    name: '🧊 冷気属性・絶対零度縛り',
-    badge: '属性縛り',
-    description: '冷気アビリティまたは冷気特化武器のみを使用可能とする寒冷縛りミッション。',
-    recommendedRules: '・フレーム: 冷気親和フレーム (Narin, Frost, Hildryn等)\n・武器: 冷気属性MOD必須\n・禁止: 火炎/毒/腐食などの非冷気複合属性'
+    id: 'icebind_narin_lead',
+    name: '🗡️ Narin主軸・冷気オーバーガード攻略',
+    badge: '推奨メタ',
+    description: 'NarinをメインDPS/弾薬供給に据え、冷気オーバーガードとアビリティ連鎖で制圧する編成。',
+    recommendedRules: '・ホストまたはDPS枠: Narin (冷気属性/レイピア推奨)\n・サポート: Dante(OG付与), Styanax(装甲剥ぎ/エネ), Frost(CC)\n・ルール: 重複禁止・自力蘇生不可'
   },
   {
-    id: 'narin_melee_rapier',
-    name: '🗡️ 氷刃レイピア＆近接限定',
-    badge: '武器縛り',
-    description: '射撃武器の弾薬を封印し、レイピアおよび近接コンボとステップのみで突破する。',
-    recommendedRules: '・プライマリ/セカンダリの発砲禁止\n・近接攻撃＆アビリティのみ使用可\n・Narinの「ネオテ」突進を主軸に戦闘'
+    id: 'icebind_modifier_rush',
+    name: '⚠️ 週替わり過酷モディファイア対策',
+    badge: '高難度',
+    description: '極低温フィールドやナリファイア霧、虚無の飢えなどの悪条件を対策フレームで突破する。',
+    recommendedRules: '・モディファイア対策特化\n・回復ギア等の使用制限あり\n・ルール: 6人重複禁止'
   },
   {
-    id: 'narin_iron_heart',
-    name: '🛡️ 超過オーバーガード耐久 (回復ギア禁止)',
-    badge: 'サバイバル',
-    description: 'ヘルスギアやシールドギアの設置を禁止し、Narinのナレマギ等のアビリティ自給自足のみで生還する。',
-    recommendedRules: '・ギアホイールのエネルギー/シールド/ヘルスリストア全般使用禁止\n・オーラ/パッシブ/アビリティによる自給自足'
-  },
-  {
-    id: 'narin_custom',
-    name: '✨ カスタム縛りルール',
+    id: 'icebind_custom',
+    name: '✨ カスタム縛り条件',
     badge: '自由設定',
-    description: 'ホストが独自の縛り条件や特殊ルールを自由に設定して募集する。',
+    description: '氷河の縛りゲームモード内で、ホスト独自の縛りルールを設定して募集する。',
     recommendedRules: ''
   }
 ];

@@ -68,8 +68,16 @@ export const LobbyRoomView: React.FC<Props> = ({
     .map(m => `/invite ${m.inGameName}`)
     .join(' ');
   const recruitChatText = isNarin
-    ? `H [Narin縛り] ${lobby.targetMission || lobby.missionCategory} (${lobby.members.length}/${lobby.maxMembers})`
+    ? `H [氷河の縛り] ${lobby.targetMission || '全ステージ'} 重複禁止 (${lobby.members.length}/${lobby.maxMembers})`
     : `H [${lobby.targetMission || lobby.missionCategory}] (${lobby.members.length}/${lobby.maxMembers})`;
+
+  // Warframe重複検知（氷河の縛り専用ルール）
+  const frameCounts = lobby.members.reduce((acc, m) => {
+    const name = m.warframe?.trim().toLowerCase();
+    if (name) acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const hasDuplicateFrame = isNarin && Object.values(frameCounts).some(count => count > 1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -91,7 +99,7 @@ export const LobbyRoomView: React.FC<Props> = ({
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
               <span className={`badge ${isNarin ? 'frost' : 'blue'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 {isNarin ? <Snowflake size={14} /> : <Users size={14} />}
-                {isNarin ? '❄️ Narin縛りマルチロビー' : '通常マルチロビー'}
+                {isNarin ? '❄️ 氷河の縛り (The Icebind) 専用ロビー' : '通常マルチロビー'}
               </span>
               <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>
                 {lobby.missionCategory}
@@ -240,11 +248,32 @@ export const LobbyRoomView: React.FC<Props> = ({
             )}
           </div>
 
+          {/* Duplicate Frame Alert for Icebind */}
+          {hasDuplicateFrame && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#fca5a5',
+                fontSize: '12px',
+                fontWeight: 600,
+                marginBottom: '12px',
+                lineHeight: '1.5'
+              }}
+            >
+              ⚠️ <strong>【出撃不可】Warframeの重複が検出されました！</strong><br />
+              「氷河の縛り」では同フレームの出撃が禁止されています。別フレームに変更してください。
+            </div>
+          )}
+
           {/* Member Slot Cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {Array.from({ length: lobby.maxMembers }).map((_, index) => {
               const member = lobby.members[index];
               const isSlotMe = member?.socketId === currentSocketId;
+              const isDup = isNarin && Boolean(member?.warframe && frameCounts[member.warframe.trim().toLowerCase()] > 1);
 
               if (member) {
                 return (
@@ -253,9 +282,17 @@ export const LobbyRoomView: React.FC<Props> = ({
                     style={{
                       padding: '12px 16px',
                       borderRadius: '10px',
-                      background: isSlotMe ? 'rgba(0, 210, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                      background: isDup
+                        ? 'rgba(239, 68, 68, 0.1)'
+                        : isSlotMe
+                        ? 'rgba(0, 210, 255, 0.08)'
+                        : 'rgba(255, 255, 255, 0.03)',
                       border: '1px solid',
-                      borderColor: isSlotMe ? 'rgba(0, 210, 255, 0.3)' : 'rgba(255, 255, 255, 0.08)',
+                      borderColor: isDup
+                        ? 'rgba(239, 68, 68, 0.5)'
+                        : isSlotMe
+                        ? 'rgba(0, 210, 255, 0.3)'
+                        : 'rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center'
@@ -267,8 +304,12 @@ export const LobbyRoomView: React.FC<Props> = ({
                           width: '36px',
                           height: '36px',
                           borderRadius: '50%',
-                          background: member.isHost ? 'rgba(255, 183, 3, 0.2)' : 'rgba(56, 189, 248, 0.15)',
-                          color: member.isHost ? '#fbbf24' : '#38bdf8',
+                          background: isDup
+                            ? 'rgba(239, 68, 68, 0.2)'
+                            : member.isHost
+                            ? 'rgba(255, 183, 3, 0.2)'
+                            : 'rgba(56, 189, 248, 0.15)',
+                          color: isDup ? '#f87171' : member.isHost ? '#fbbf24' : '#38bdf8',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -288,12 +329,17 @@ export const LobbyRoomView: React.FC<Props> = ({
                               HOST
                             </span>
                           )}
+                          {isDup && (
+                            <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', fontWeight: 700 }}>
+                              重複中！
+                            </span>
+                          )}
                           {isSlotMe && (
                             <span style={{ fontSize: '10px', color: '#38bdf8' }}>(あなた)</span>
                           )}
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary, #94a3b8)', marginTop: '2px' }}>
-                          フレーム: <strong style={{ color: '#bae6fd' }}>{member.warframe || 'Excalibur'}</strong>
+                          フレーム: <strong style={{ color: isDup ? '#f87171' : '#bae6fd' }}>{member.warframe || 'Excalibur'}</strong>
                         </div>
                       </div>
                     </div>

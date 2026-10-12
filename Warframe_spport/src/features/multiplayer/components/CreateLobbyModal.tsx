@@ -1,7 +1,7 @@
 // Warframe_spport/src/features/multiplayer/components/CreateLobbyModal.tsx
 import React, { useState } from 'react';
 import { X, Users, Snowflake, Sparkles } from 'lucide-react';
-import { MISSION_CATEGORIES, NARIN_RULE_PRESETS, POPULAR_WARFRAMES } from '../constants';
+import { MISSION_CATEGORIES, ICEBIND_STAGES, NARIN_RULE_PRESETS, POPULAR_WARFRAMES } from '../constants';
 import type { CreateLobbyFormInput, LobbyType } from '../types';
 
 interface Props {
@@ -23,11 +23,15 @@ export const CreateLobbyModal: React.FC<Props> = ({
 }) => {
   const [lobbyType, setLobbyType] = useState<LobbyType>(initialType);
   const [title, setTitle] = useState('');
-  const [missionCategory, setMissionCategory] = useState<string>(MISSION_CATEGORIES[0]);
-  const [targetMission, setTargetMission] = useState('');
+  const [missionCategory, setMissionCategory] = useState<string>(
+    initialType === 'narin' ? '氷河の縛り (The Icebind)' : MISSION_CATEGORIES[0]
+  );
+  const [targetMission, setTargetMission] = useState<string>(
+    initialType === 'narin' ? ICEBIND_STAGES[0] : ''
+  );
   const [narinPresetId, setNarinPresetId] = useState<string>(NARIN_RULE_PRESETS[0].id);
   const [narinRuleDescription, setNarinRuleDescription] = useState<string>(NARIN_RULE_PRESETS[0].recommendedRules);
-  const [maxMembers, setMaxMembers] = useState<number>(4);
+  const [maxMembers, setMaxMembers] = useState<number>(initialType === 'narin' ? 6 : 4);
   const [inGameName, setInGameName] = useState<string>(defaultIgn);
   const [warframe, setWarframe] = useState<string>(initialType === 'narin' ? 'Narin' : defaultWarframe);
   const [description, setDescription] = useState('');
@@ -39,36 +43,44 @@ export const CreateLobbyModal: React.FC<Props> = ({
     const found = NARIN_RULE_PRESETS.find(p => p.id === presetId);
     if (found) {
       setNarinRuleDescription(found.recommendedRules);
-      if (presetId === 'narin_frost_unite') {
-        setWarframe('Narin');
-      }
     }
   };
 
   const handleTypeChange = (type: LobbyType) => {
     setLobbyType(type);
     if (type === 'narin') {
+      setMissionCategory('氷河の縛り (The Icebind)');
+      setTargetMission(ICEBIND_STAGES[0]);
+      setMaxMembers(6);
       setWarframe('Narin');
-      if (!title) setTitle('【Narin縛り】氷刃舞踏会 Lv999耐久');
+      setTitle('【氷河の縛り】6人重複禁止・全ステージ完全制覇');
     } else {
-      if (!title || title.includes('Narin')) setTitle('');
+      setMissionCategory(MISSION_CATEGORIES[0]);
+      setTargetMission('');
+      setMaxMembers(4);
+      setWarframe(defaultWarframe || 'Excalibur');
+      setTitle('');
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalTitle = title.trim() || (lobbyType === 'narin' ? '【Narin縛り】分隊募集' : `${missionCategory} 募集`);
+    const finalTitle = title.trim() || (
+      lobbyType === 'narin'
+        ? `【氷河の縛り】${targetMission} (6人重複禁止)`
+        : `${missionCategory} 募集`
+    );
 
     onSubmit({
       type: lobbyType,
       title: finalTitle,
-      missionCategory,
+      missionCategory: lobbyType === 'narin' ? '氷河の縛り (The Icebind)' : missionCategory,
       targetMission: targetMission.trim(),
       narinRulePreset: narinPresetId,
       narinRuleDescription: lobbyType === 'narin' ? narinRuleDescription.trim() : '',
       maxMembers,
       inGameName: inGameName.trim() || 'Tenno',
-      warframe: warframe.trim() || 'Excalibur',
+      warframe: warframe.trim() || (lobbyType === 'narin' ? 'Narin' : 'Excalibur'),
       description: description.trim()
     });
 
@@ -233,6 +245,27 @@ export const CreateLobbyModal: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Narin Dedicated Mode Alert Banner */}
+          {lobbyType === 'narin' && (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                fontSize: '12px',
+                color: '#bae6fd',
+                lineHeight: '1.6'
+              }}
+            >
+              <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Snowflake size={14} />
+                ゲームモード「氷河の縛り (The Icebind)」専用募集
+              </div>
+              地球ユヴァン峰クライオベル起動・<strong>最大6人編成限定</strong>・<strong>Warframe重複完全禁止</strong>・敵Lv999+・自力蘇生不可。
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
@@ -242,7 +275,7 @@ export const CreateLobbyModal: React.FC<Props> = ({
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder={lobbyType === 'narin' ? '例: 【Narin縛り】氷刃舞踏会4人冷気統一' : '例: Axi V8 レリック持ち寄り 3周'}
+              placeholder={lobbyType === 'narin' ? '例: 【氷河の縛り】全ステージ完全制覇 6人重複禁止' : '例: Axi V8 レリック持ち寄り 3周'}
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -258,46 +291,84 @@ export const CreateLobbyModal: React.FC<Props> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                ミッション種別
+                ゲームモード / 種別
               </label>
-              <select
-                value={missionCategory}
-                onChange={e => setMissionCategory(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#fff'
-                }}
-              >
-                {MISSION_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              {lobbyType === 'narin' ? (
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#38bdf8',
+                    fontWeight: 700,
+                    fontSize: '13px'
+                  }}
+                >
+                  ❄️ 氷河の縛り (The Icebind)
+                </div>
+              ) : (
+                <select
+                  value={missionCategory}
+                  onChange={e => setMissionCategory(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff'
+                  }}
+                >
+                  {MISSION_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                目標・対象 (任意)
+                {lobbyType === 'narin' ? '攻略ステージ目標' : '目標・対象 (任意)'}
               </label>
-              <input
-                type="text"
-                value={targetMission}
-                onChange={e => setTargetMission(e.target.value)}
-                placeholder="例: Axi V8, ルア結合耐久, アルコン等"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#fff'
-                }}
-              />
+              {lobbyType === 'narin' ? (
+                <select
+                  value={targetMission}
+                  onChange={e => setTargetMission(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#bae6fd',
+                    fontSize: '13px'
+                  }}
+                >
+                  {ICEBIND_STAGES.map(stage => (
+                    <option key={stage} value={stage}>
+                      {stage}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={targetMission}
+                  onChange={e => setTargetMission(e.target.value)}
+                  placeholder="例: Axi V8, ルア結合耐久, アルコン等"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff'
+                  }}
+                />
+              )}
             </div>
           </div>
 
@@ -319,9 +390,21 @@ export const CreateLobbyModal: React.FC<Props> = ({
                   color: '#fff'
                 }}
               >
-                <option value={2}>2名 (デュオ)</option>
-                <option value={3}>3名 (トリオ)</option>
-                <option value={4}>4名 (フルスクワッド)</option>
+                {lobbyType === 'narin' ? (
+                  <>
+                    <option value={6}>6名 (フルスクワッド - 公式仕様)</option>
+                    <option value={5}>5名</option>
+                    <option value={4}>4名</option>
+                    <option value={3}>3名</option>
+                    <option value={2}>2名</option>
+                  </>
+                ) : (
+                  <>
+                    <option value={4}>4名 (フルスクワッド)</option>
+                    <option value={3}>3名 (トリオ)</option>
+                    <option value={2}>2名 (デュオ)</option>
+                  </>
+                )}
               </select>
             </div>
 
