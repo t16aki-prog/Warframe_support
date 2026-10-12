@@ -21,7 +21,7 @@ export const SYNDICATE_LIST: SyndicateItem[] = [
 export const EXTENSION_LIST: ExtensionItem[] = [
   { id: 'beginnerguide', label: '初心者ガイド' },
   { id: 'weekly', label: 'ウィークリー情報' },
-  { id: 'icebind', label: '氷河の縛り (The Icebind)' },
+  { id: 'icebind', label: '最新コンテンツ (氷河の縛り)' },
   { id: 'syndicates', label: '中立シンジケート' },
   { id: 'builds', label: 'フレームビルド' },
   { id: 'dataexplorer', label: 'データベース検索' },

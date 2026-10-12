@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Map, Snowflake } from 'lucide-react';
+import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Map, Sparkles } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Syndicates } from './components/Syndicates';
 import { Builds } from './components/Builds';
@@ -185,8 +185,8 @@ function App() {
               onClick={() => setActiveTab('icebind')}
               className={`nav-item ${activeTab === 'icebind' ? 'active' : ''}`}
             >
-              <Snowflake size={18} style={{ color: '#38bdf8' }} />
-              氷河の縛り (The Icebind)
+              <Sparkles size={18} style={{ color: '#38bdf8' }} />
+              最新コンテンツ (氷河の縛り)
             </button>
           )}
           

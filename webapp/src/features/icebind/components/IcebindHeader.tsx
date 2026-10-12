@@ -1,5 +1,5 @@
 import React from 'react';
-import { Snowflake, Clock, CheckCircle2, Users, Sparkles, ShieldCheck, Target } from 'lucide-react';
+import { Clock, CheckCircle2, Users, Sparkles, ShieldCheck, Target } from 'lucide-react';
 import type { IcebindTab } from '../types';
 
 interface IcebindHeaderProps {
@@ -52,7 +52,7 @@ export const IcebindHeader: React.FC<IcebindHeaderProps> = ({
               marginBottom: '8px',
             }}
           >
-            <Snowflake size={14} /> Update 44 新高難易度エンドコンテンツ
+            <Sparkles size={14} /> 最新コンテンツ特設ハブ (Update 44: ナリンの氷刃)
           </div>
           <h1
             style={{
@@ -64,11 +64,11 @@ export const IcebindHeader: React.FC<IcebindHeaderProps> = ({
               marginBottom: '6px',
             }}
           >
-            氷河の縛り (The Icebind) ＆ ナリン (Narin) 攻略室
+            最新コンテンツ: 氷河の縛り (The Icebind) ＆ ナリン (Narin)
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '750px', lineHeight: '1.6' }}>
-            地球「ユヴァン峰 (Yuvann Peak)」にてクライオベルを鳴らし挑む超高難易度6人分隊限定ミッション。
-            <strong>「Warframe重複完全禁止」</strong>・<strong>「敵Lv 999+」</strong>・<strong>「自力蘇生不可」</strong>の厳しい制約を突破するための専任ナビゲーターです。
+            Warframe最前線の最新アップデート・高難易度エンドコンテンツを徹底ナビゲート。
+            現在はUpdate 44「ナリンの氷刃」で実装された地球ユヴァン峰の6人限定エンドコンテンツ<strong>「氷河の縛り」</strong>の分隊編成シミュレーター、新フレームNarin徹底解説、ギミック対策、報酬トラッカーを提供しています。
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar } from 'lucide-react';
+import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Sparkles } from 'lucide-react';
 import { Dashboard } from '../components/Dashboard';
 import { Syndicates } from '../components/Syndicates';
 import { Builds } from '../components/Builds';
@@ -11,10 +11,11 @@ import { Settings } from '../components/Settings';
 import { DataExplorer } from '../components/DataExplorer';
 import { RelicGenerator } from '../components/RelicGenerator';
 import { Weekly } from '../components/Weekly';
+import { Icebind } from '../components/Icebind';
 import { OrdisChat } from '../components/OrdisChat';
 import { Multiplayer } from '../components/Multiplayer';
 
-type Tab = 'dashboard' | 'weekly' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'multiplayer' | 'localchat' | 'settings' | 'cephalonai';
+type Tab = 'dashboard' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'multiplayer' | 'localchat' | 'settings' | 'cephalonai';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -27,6 +28,7 @@ function App() {
 
   const defaultExtensions = {
     weekly: true,
+    icebind: true,
     syndicates: true,
     builds: true,
     dataexplorer: true,
@@ -82,6 +84,8 @@ function App() {
         return <Dashboard showSteelPath={showSteelPath} />;
       case 'weekly':
         return <Weekly />;
+      case 'icebind':
+        return <Icebind />;
       case 'syndicates':
         return <Syndicates showSteelPath={showSteelPath} />;
       case 'builds':
@@ -150,6 +154,16 @@ function App() {
             >
               <Calendar size={18} />
               ウィークリー
+            </button>
+          )}
+
+          {enabledExtensions.icebind && (
+            <button
+              onClick={() => setActiveTab('icebind')}
+              className={`nav-item ${activeTab === 'icebind' ? 'active' : ''}`}
+            >
+              <Sparkles size={18} style={{ color: '#38bdf8' }} />
+              最新コンテンツ (氷河の縛り)
             </button>
           )}
           
