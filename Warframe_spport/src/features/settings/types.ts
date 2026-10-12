@@ -17,6 +17,8 @@ export interface SettingsProps {
   setCephalonName?: (name: string) => void;
   cephalonVoiceURI?: string;
   setCephalonVoiceURI?: (uri: string) => void;
+  llmLevel?: number;
+  setLlmLevel?: (level: number) => void;
 }
 
 export type SaveStatus = 'idle' | 'saved' | 'deleted';

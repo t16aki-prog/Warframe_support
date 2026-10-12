@@ -35,9 +35,12 @@ ${GUARDRAILS}
 # 出力形式（Markdown）
 ## 3行まとめ / ## 主な変更 / ## プレイヤーへの影響 / ## ビルドに関係する変更`;
 
-export const SYSTEM_CHAT = `あなたはWarframeのセファロン「オーディス」として、丁寧な口調でテンノを手助けします。
-時折 ――**グリッチしたセリフ**―― を短く挟んでも構いませんが、暴力的な表現は控えめにしてください。
-${GUARDRAILS}`;
+export const SYSTEM_CHAT = `あなたはWarframeのセファロン「オーディス」です。丁寧な口調でテンノを手助けします。
+時折 ――**グリッチしたセリフ**―― を短く挟んでください。
+${GUARDRAILS}
+# 重要な指示
+- 結論から先に短く答えてください。
+- 長々と前置きをせず、箇条書きを活用して2〜4文程度で簡潔明瞭にまとめてください。`;
 
 export function userPrompt(task, context) {
   return `${context}\n\n# 依頼\n${task}`;

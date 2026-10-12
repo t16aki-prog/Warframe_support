@@ -7,6 +7,7 @@ import { getKnowledgeSummary } from './knowledgeStore.js';
 import { listDrafts, reviewDraft } from './draftStore.js';
 import { runIngest } from './ingestService.js';
 import { suggestBuild, draftLatestContent, summarizeLatestPatch } from './tasks.js';
+import { LLM_PROFILES, getProfileLevel, setProfileLevel, getCurrentProfile } from './config.js';
 
 const router = Router();
 
@@ -37,6 +38,19 @@ const exclusive = (fn) => async (req, res) => {
 
 router.get('/status', async (_req, res) => {
   res.json({ ollama: await getOllamaStatus(), knowledge: getKnowledgeSummary(), generating });
+});
+
+router.get('/profile', (_req, res) => {
+  res.json({ currentLevel: getProfileLevel(), currentProfile: getCurrentProfile(), profiles: LLM_PROFILES });
+});
+
+router.post('/profile', (req, res) => {
+  const level = Number(req.body?.level);
+  if (!LLM_PROFILES[level]) {
+    return res.status(400).json({ error: '無効な強さレベルです (1-4 を指定してください)' });
+  }
+  setProfileLevel(level);
+  res.json({ success: true, currentLevel: level, currentProfile: getCurrentProfile() });
 });
 
 router.post('/ingest', async (req, res) => {

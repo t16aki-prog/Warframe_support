@@ -28,6 +28,10 @@ export const useSettingsForm = (props: SettingsProps) => {
   const [localClipboardCopyMode, setLocalClipboardCopyMode] = useState(clipboardCopyMode || 'all');
   const [localShowSteelPath, setLocalShowSteelPath] = useState(showSteelPath ?? true);
   const [localExtensions, setLocalExtensions] = useState<Record<string, boolean>>(enabledExtensions || {});
+  const [localLlmLevel, setLocalLlmLevel] = useState<number>(() => {
+    const saved = localStorage.getItem('ordis_llm_level');
+    return saved ? Number(saved) : (props.llmLevel || 1);
+  });
 
   const [localSyndicateRanks, setLocalSyndicateRanks] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('syndicateRanks');
@@ -93,6 +97,17 @@ export const useSettingsForm = (props: SettingsProps) => {
       localStorage.setItem('enabledExtensions', JSON.stringify(localExtensions));
     }
 
+    // Save LLM Profile Level
+    localStorage.setItem('ordis_llm_level', String(localLlmLevel));
+    if (props.setLlmLevel) {
+      props.setLlmLevel(localLlmLevel);
+    }
+    fetch('/api/llm/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level: localLlmLevel })
+    }).catch(err => console.warn('Failed to update LLM profile on server:', err));
+
     localStorage.setItem('syndicateRanks', JSON.stringify(localSyndicateRanks));
     localStorage.setItem('ordis_locale', locale);
     localStorage.setItem('ordis_timezone', timeZone);
@@ -134,6 +149,8 @@ export const useSettingsForm = (props: SettingsProps) => {
     setLocalShowSteelPath,
     localExtensions,
     handleExtensionToggle,
+    localLlmLevel,
+    setLocalLlmLevel,
     localSyndicateRanks,
     handleSyndicateRankChange,
     locale,

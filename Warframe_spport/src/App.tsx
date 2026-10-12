@@ -37,6 +37,10 @@ function App() {
   const [voicevoxUrl, setVoicevoxUrl] = useState<string>('http://localhost:50021');
   const [voicevoxSpeaker, setVoicevoxSpeaker] = useState<number>(2);
   const [clipboardCopyMode, setClipboardCopyMode] = useState<string>('all');
+  const [llmLevel, setLlmLevel] = useState<number>(() => {
+    const saved = localStorage.getItem('ordis_llm_level');
+    return saved ? Number(saved) : 1;
+  });
 
   const defaultExtensions = {
     beginnerguide: true,
@@ -85,6 +89,17 @@ function App() {
 
     const savedClipboardMode = localStorage.getItem('ordis_clipboard_copy_mode');
     if (savedClipboardMode) setClipboardCopyMode(savedClipboardMode);
+
+    // Sync active LLM profile level from backend
+    fetch('/api/llm/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.level) {
+          setLlmLevel(data.level);
+          localStorage.setItem('ordis_llm_level', String(data.level));
+        }
+      })
+      .catch(() => {});
 
     const handleNavigate = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -148,6 +163,8 @@ function App() {
           setVoicevoxSpeaker={setVoicevoxSpeaker}
           clipboardCopyMode={clipboardCopyMode}
           setClipboardCopyMode={setClipboardCopyMode}
+          llmLevel={llmLevel}
+          setLlmLevel={setLlmLevel}
         />;
       default:
         return <Dashboard showSteelPath={showSteelPath} />;

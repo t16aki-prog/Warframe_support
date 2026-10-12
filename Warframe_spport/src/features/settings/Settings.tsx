@@ -2,6 +2,7 @@ import React from 'react';
 import type { SettingsProps } from './types';
 import { useSettingsForm } from './hooks/useSettingsForm';
 import { SystemModeSection } from './components/SystemModeSection';
+import { LlmStrengthSection } from './components/LlmStrengthSection';
 import { VoiceSettingsSection } from './components/VoiceSettingsSection';
 import { LocaleSettingsSection } from './components/LocaleSettingsSection';
 import { SyndicateRanksSection } from './components/SyndicateRanksSection';
@@ -26,6 +27,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
     setLocalShowSteelPath,
     localExtensions,
     handleExtensionToggle,
+    localLlmLevel,
+    setLocalLlmLevel,
     localSyndicateRanks,
     handleSyndicateRankChange,
     locale,
@@ -57,6 +60,11 @@ export const Settings: React.FC<SettingsProps> = (props) => {
             handleDeleteKey={handleDeleteKey}
             showSteelPath={localShowSteelPath}
             setShowSteelPath={setLocalShowSteelPath}
+          />
+
+          <LlmStrengthSection
+            currentLevel={localLlmLevel}
+            onLevelChange={setLocalLlmLevel}
           />
 
           <VoiceSettingsSection
