@@ -1,0 +1,13 @@
+{
+  "name": "oasobi-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Oasobi monorepo workspace runner",
+  "scripts": {
+    "dev": "npm --prefix Warframe_spport run dev",
+    "dev:warframe": "npm --prefix Warframe_spport run dev",
+    "dev:webapp": "npm --prefix webapp run dev",
+    "build:warframe": "npm --prefix Warframe_spport run build",
+    "build:webapp": "npm --prefix webapp run build"
+  }
+}

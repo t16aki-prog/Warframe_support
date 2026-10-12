@@ -50,7 +50,7 @@ class LobbyManager {
       type: isNarin ? 'narin' : 'standard',
       title: data.title || (isNarin ? '【氷河の縛り】6人分隊募集 (重複禁止)' : 'マルチプレイ募集'),
       missionCategory: isNarin ? '氷河の縛り (The Icebind)' : (data.missionCategory || '亀裂/レリック'),
-      targetMission: data.targetMission || (isNarin ? '全ステージ完全制覇' : ''),
+      targetMission: data.targetMission || (isNarin ? 'メイン目標のみ' : ''),
       // Narin縛り固有フィールド
       narinRulePreset: data.narinRulePreset || 'none',
       narinRuleDescription: data.narinRuleDescription || '',

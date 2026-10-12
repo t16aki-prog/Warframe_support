@@ -45,7 +45,7 @@ export const CreateLobbyModal: React.FC<Props> = ({
       setTargetMission(ICEBIND_STAGES[0]);
       setMaxMembers(6);
       setWarframe('Narin');
-      setTitle('【氷河の縛り】6人重複禁止・全ステージ完全制覇');
+      setTitle(`【氷河の縛り】${ICEBIND_STAGES[0]}`);
     } else {
       setMissionCategory(MISSION_CATEGORIES[0]);
       setTargetMission('');
@@ -286,7 +286,7 @@ export const CreateLobbyModal: React.FC<Props> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
-                {lobbyType === 'narin' ? '攻略ステージ目標' : '目標・対象 (任意)'}
+                {lobbyType === 'narin' ? '目標選択 (メイン目標のみ / 全目標)' : '目標・対象 (任意)'}
               </label>
               {lobbyType === 'narin' ? (
                 <select
