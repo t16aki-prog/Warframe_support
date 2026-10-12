@@ -50,7 +50,7 @@ export const LobbyCard: React.FC<Props> = ({ lobby, onJoin, isMyLobby }) => {
               }}
             >
               {isNarin ? <Snowflake size={12} /> : <Users size={12} />}
-              {isNarin ? 'Narin縛りマルチ' : '通常マルチ'}
+              {isNarin ? '❄️ 氷河の縛り' : '通常マルチ'}
             </span>
             <span
               style={{

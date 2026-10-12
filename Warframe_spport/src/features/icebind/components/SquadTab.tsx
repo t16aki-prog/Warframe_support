@@ -75,7 +75,7 @@ export const SquadTab: React.FC<SquadTabProps> = ({
             }}
           >
             <Sparkles size={14} />
-            アプリ内でNarinマルチ募集
+            アプリ内で氷河の縛り募集
           </button>
           <button
             onClick={copyRecruitmentText}

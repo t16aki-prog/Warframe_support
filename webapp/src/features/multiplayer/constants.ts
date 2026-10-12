@@ -30,34 +30,21 @@ export interface NarinPreset {
   recommendedRules: string;
 }
 
+export const ICEBIND_OFFICIAL_RULE = {
+  id: 'icebind_official',
+  name: '❄️ 氷河の縛り 公式ルール (6人編成・重複禁止)',
+  badge: '公式仕様',
+  description: '地球ユヴァン峰クライオベル起動。6人限定・Warframe重複完全禁止・Lv999+・自力蘇生不可のエンドコンテンツ。',
+  rules: '・定員: 最大6人フルスクワッド\n・ルール: Warframe重複完全禁止（同一フレームの重複出撃不可）\n・仕様: 敵Lv999+・自力蘇生不可・サイド目標即失敗\n・推奨: Vazarin装備者（即時蘇生）2名以上、装甲剥ぎ役1名以上'
+};
+
 export const NARIN_RULE_PRESETS: NarinPreset[] = [
   {
-    id: 'icebind_standard',
-    name: '❄️ 氷河の縛り 公式ルール (6人編成・重複禁止)',
-    badge: '公式仕様',
-    description: 'ユヴァン峰クライオベル起動。6人限定・Warframe重複完全禁止・Lv999+・自力蘇生不可のエンドコンテンツ。',
-    recommendedRules: '・定員: 6人フルスクワッド\n・ルール: Warframe重複完全禁止（同フレーム出撃不可）\n・推奨: Vazarin装備者（即時蘇生）2名以上、装甲剥ぎ役1名以上'
-  },
-  {
-    id: 'icebind_narin_lead',
-    name: '🗡️ Narin主軸・冷気オーバーガード攻略',
-    badge: '推奨メタ',
-    description: 'NarinをメインDPS/弾薬供給に据え、冷気オーバーガードとアビリティ連鎖で制圧する編成。',
-    recommendedRules: '・ホストまたはDPS枠: Narin (冷気属性/レイピア推奨)\n・サポート: Dante(OG付与), Styanax(装甲剥ぎ/エネ), Frost(CC)\n・ルール: 重複禁止・自力蘇生不可'
-  },
-  {
-    id: 'icebind_modifier_rush',
-    name: '⚠️ 週替わり過酷モディファイア対策',
-    badge: '高難度',
-    description: '極低温フィールドやナリファイア霧、虚無の飢えなどの悪条件を対策フレームで突破する。',
-    recommendedRules: '・モディファイア対策特化\n・回復ギア等の使用制限あり\n・ルール: 6人重複禁止'
-  },
-  {
-    id: 'icebind_custom',
-    name: '✨ カスタム縛り条件',
-    badge: '自由設定',
-    description: '氷河の縛りゲームモード内で、ホスト独自の縛りルールを設定して募集する。',
-    recommendedRules: ''
+    id: ICEBIND_OFFICIAL_RULE.id,
+    name: ICEBIND_OFFICIAL_RULE.name,
+    badge: ICEBIND_OFFICIAL_RULE.badge,
+    description: ICEBIND_OFFICIAL_RULE.description,
+    recommendedRules: ICEBIND_OFFICIAL_RULE.rules
   }
 ];
 

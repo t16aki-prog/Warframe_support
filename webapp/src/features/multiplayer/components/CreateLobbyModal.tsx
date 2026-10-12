@@ -1,7 +1,7 @@
 // Warframe_spport/src/features/multiplayer/components/CreateLobbyModal.tsx
 import React, { useState } from 'react';
 import { X, Users, Snowflake, Sparkles } from 'lucide-react';
-import { MISSION_CATEGORIES, ICEBIND_STAGES, NARIN_RULE_PRESETS, POPULAR_WARFRAMES } from '../constants';
+import { MISSION_CATEGORIES, ICEBIND_STAGES, ICEBIND_OFFICIAL_RULE, POPULAR_WARFRAMES } from '../constants';
 import type { CreateLobbyFormInput, LobbyType } from '../types';
 
 interface Props {
@@ -29,22 +29,14 @@ export const CreateLobbyModal: React.FC<Props> = ({
   const [targetMission, setTargetMission] = useState<string>(
     initialType === 'narin' ? ICEBIND_STAGES[0] : ''
   );
-  const [narinPresetId, setNarinPresetId] = useState<string>(NARIN_RULE_PRESETS[0].id);
-  const [narinRuleDescription, setNarinRuleDescription] = useState<string>(NARIN_RULE_PRESETS[0].recommendedRules);
+  const narinPresetId = ICEBIND_OFFICIAL_RULE.id;
+  const narinRuleDescription = ICEBIND_OFFICIAL_RULE.rules;
   const [maxMembers, setMaxMembers] = useState<number>(initialType === 'narin' ? 6 : 4);
   const [inGameName, setInGameName] = useState<string>(defaultIgn);
   const [warframe, setWarframe] = useState<string>(initialType === 'narin' ? 'Narin' : defaultWarframe);
   const [description, setDescription] = useState('');
 
   if (!isOpen) return null;
-
-  const handlePresetChange = (presetId: string) => {
-    setNarinPresetId(presetId);
-    const found = NARIN_RULE_PRESETS.find(p => p.id === presetId);
-    if (found) {
-      setNarinRuleDescription(found.recommendedRules);
-    }
-  };
 
   const handleTypeChange = (type: LobbyType) => {
     setLobbyType(type);
@@ -185,84 +177,47 @@ export const CreateLobbyModal: React.FC<Props> = ({
             }}
           >
             <Snowflake size={18} />
-            ❄️ Narin縛りマルチ募集
+            ❄️ 氷河の縛り (The Icebind)
           </button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Narin Presets Selection */}
+          {/* 氷河の縛り 公式ルール固定カード */}
           {lobbyType === 'narin' && (
             <div
               style={{
-                background: 'rgba(56, 189, 248, 0.06)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
+                background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
                 borderRadius: '12px',
                 padding: '16px'
               }}
             >
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                ❄️ Narin縛りプリセット
-              </label>
-              <select
-                value={narinPresetId}
-                onChange={e => handlePresetChange(e.target.value)}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Snowflake size={16} />
+                  {ICEBIND_OFFICIAL_RULE.name}
+                </span>
+                <span className="badge frost" style={{ fontSize: '10px', padding: '2px 8px', fontWeight: 700 }}>
+                  {ICEBIND_OFFICIAL_RULE.badge} (固定)
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>
+                {ICEBIND_OFFICIAL_RULE.description}
+              </div>
+              <div
                 style={{
-                  width: '100%',
-                  padding: '10px',
+                  fontSize: '12px',
+                  color: '#bae6fd',
+                  lineHeight: '1.6',
+                  background: 'rgba(0,0,0,0.35)',
+                  padding: '10px 12px',
                   borderRadius: '8px',
-                  background: 'rgba(15, 23, 42, 0.8)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  color: '#f8fafc',
-                  marginBottom: '10px'
+                  whiteSpace: 'pre-line',
+                  border: '1px solid rgba(56, 189, 248, 0.2)'
                 }}
               >
-                {NARIN_RULE_PRESETS.map(preset => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.name} [{preset.badge}]
-                  </option>
-                ))}
-              </select>
-
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginBottom: '4px' }}>
-                縛りルール詳細・達成条件
-              </label>
-              <textarea
-                rows={3}
-                value={narinRuleDescription}
-                onChange={e => setNarinRuleDescription(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  background: 'rgba(15, 23, 42, 0.8)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: '#bae6fd',
-                  fontSize: '13px',
-                  lineHeight: '1.5'
-                }}
-                placeholder="縛りルールを入力してください..."
-              />
-            </div>
-          )}
-
-          {/* Narin Dedicated Mode Alert Banner */}
-          {lobbyType === 'narin' && (
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: '8px',
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                fontSize: '12px',
-                color: '#bae6fd',
-                lineHeight: '1.6'
-              }}
-            >
-              <div style={{ fontWeight: 800, color: '#38bdf8', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Snowflake size={14} />
-                ゲームモード「氷河の縛り (The Icebind)」専用募集
+                {ICEBIND_OFFICIAL_RULE.rules}
               </div>
-              地球ユヴァン峰クライオベル起動・<strong>最大6人編成限定</strong>・<strong>Warframe重複完全禁止</strong>・敵Lv999+・自力蘇生不可。
             </div>
           )}
 

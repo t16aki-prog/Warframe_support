@@ -87,7 +87,7 @@ export const LobbyFilterTabs: React.FC<Props> = ({
         }}
       >
         <Snowflake size={16} />
-        ❄️ Narinの縛り (氷河の縛り) ({narinCount})
+        ❄️ 氷河の縛り (The Icebind) ({narinCount})
       </button>
     </div>
   );
