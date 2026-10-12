@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Sparkles } from 'lucide-react';
+import { Compass, MessageSquare, Search, Shield, Settings as SettingsIcon, Cpu, Users, Crosshair, Database, Star, CheckSquare, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dashboard } from '../components/Dashboard';
 import { Syndicates } from '../components/Syndicates';
 import { Builds } from '../components/Builds';
@@ -19,9 +19,17 @@ type Tab = 'dashboard' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'trade
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [isNavOpen, setIsNavOpen] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [showSteelPath, setShowSteelPath] = useState<boolean>(true);
   const [navState, setNavState] = useState<any>(null);
+
+  const handleTabSelect = (tab: Tab) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
+      setIsNavOpen(false);
+    }
+  };
   
   const [cephalonName, setCephalonName] = useState<string>('オーディス');
   const [cephalonVoiceURI, setCephalonVoiceURI] = useState<string>('');
@@ -133,14 +141,32 @@ function App() {
     <div className="app-container">
       {/* Sidebar Navigation */}
       <aside className="sidebar">
-        <div className="logo-section">
-          <Cpu className="logo-icon" size={24} />
-          <span className="logo-text">TENNO NAVI</span>
+        <div 
+          className="logo-section"
+          onClick={() => setIsNavOpen(prev => !prev)}
+          role="button"
+          tabIndex={0}
+          title="クリック/タップでタブメニューを開閉"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsNavOpen(prev => !prev);
+            }
+          }}
+        >
+          <div className="logo-brand">
+            <Cpu className="logo-icon" size={24} />
+            <span className="logo-text">TENNO NAVI</span>
+          </div>
+          <div className="logo-toggle-badge">
+            <span>{isNavOpen ? '閉じる' : 'メニュー'}</span>
+            {isNavOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
         </div>
 
-        <nav className="nav-links">
+        <nav className={`nav-links ${!isNavOpen ? 'nav-closed' : ''}`}>
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => handleTabSelect('dashboard')}
             className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           >
             <Compass size={18} />
@@ -149,7 +175,7 @@ function App() {
           
           {enabledExtensions.weekly && (
             <button
-              onClick={() => setActiveTab('weekly')}
+              onClick={() => handleTabSelect('weekly')}
               className={`nav-item ${activeTab === 'weekly' ? 'active' : ''}`}
             >
               <Calendar size={18} />
@@ -159,7 +185,7 @@ function App() {
 
           {enabledExtensions.icebind && (
             <button
-              onClick={() => setActiveTab('icebind')}
+              onClick={() => handleTabSelect('icebind')}
               className={`nav-item ${activeTab === 'icebind' ? 'active' : ''}`}
             >
               <Sparkles size={18} style={{ color: '#38bdf8' }} />
@@ -169,7 +195,7 @@ function App() {
           
           {enabledExtensions.syndicates && (
             <button
-              onClick={() => setActiveTab('syndicates')}
+              onClick={() => handleTabSelect('syndicates')}
               className={`nav-item ${activeTab === 'syndicates' ? 'active' : ''}`}
             >
               <Crosshair size={18} />
@@ -179,7 +205,7 @@ function App() {
           
           {enabledExtensions.builds && (
             <button
-              onClick={() => setActiveTab('builds')}
+              onClick={() => handleTabSelect('builds')}
               className={`nav-item ${activeTab === 'builds' ? 'active' : ''}`}
             >
               <Shield size={18} />
@@ -189,7 +215,7 @@ function App() {
 
           {enabledExtensions.dataexplorer && (
             <button
-              onClick={() => setActiveTab('dataexplorer')}
+              onClick={() => handleTabSelect('dataexplorer')}
               className={`nav-item ${activeTab === 'dataexplorer' ? 'active' : ''}`}
             >
               <Database size={18} />
@@ -199,7 +225,7 @@ function App() {
 
           {enabledExtensions.wishlist && (
             <button
-              onClick={() => setActiveTab('wishlist')}
+              onClick={() => handleTabSelect('wishlist')}
               className={`nav-item ${activeTab === 'wishlist' ? 'active' : ''}`}
             >
               <Star size={18} />
@@ -209,7 +235,7 @@ function App() {
 
           {enabledExtensions.relicgenerator && (
             <button
-              onClick={() => setActiveTab('relicgenerator')}
+              onClick={() => handleTabSelect('relicgenerator')}
               className={`nav-item ${activeTab === 'relicgenerator' ? 'active' : ''}`}
             >
               <CheckSquare size={18} />
@@ -219,7 +245,7 @@ function App() {
 
           {enabledExtensions.tradehelper && (
             <button
-              onClick={() => setActiveTab('tradehelper')}
+              onClick={() => handleTabSelect('tradehelper')}
               className={`nav-item ${activeTab === 'tradehelper' ? 'active' : ''}`}
             >
               <Search size={18} />
@@ -229,7 +255,7 @@ function App() {
 
           {enabledExtensions.rulesguide && (
             <button
-              onClick={() => setActiveTab('rulesguide')}
+              onClick={() => handleTabSelect('rulesguide')}
               className={`nav-item ${activeTab === 'rulesguide' ? 'active' : ''}`}
             >
               <Shield size={18} />
@@ -239,7 +265,7 @@ function App() {
 
           {(enabledExtensions.multiplayer ?? enabledExtensions.localchat) && (
             <button
-              onClick={() => setActiveTab('multiplayer')}
+              onClick={() => handleTabSelect('multiplayer')}
               className={`nav-item ${activeTab === 'multiplayer' || activeTab === 'localchat' ? 'active' : ''}`}
             >
               <Users size={18} />
@@ -249,7 +275,7 @@ function App() {
 
           {enabledExtensions.cephalonai && (
             <button
-              onClick={() => setActiveTab('cephalonai')}
+              onClick={() => handleTabSelect('cephalonai')}
               className={`nav-item ${activeTab === 'cephalonai' ? 'active' : ''}`}
             >
               <MessageSquare size={18} />
@@ -258,7 +284,7 @@ function App() {
           )}
           
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => handleTabSelect('settings')}
             className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
           >
             <SettingsIcon size={18} />
