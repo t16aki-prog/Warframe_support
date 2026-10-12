@@ -7,13 +7,13 @@ import { sendOrdisMessage, generateWarframeBuild } from './ordisAi.js';
 import { resolveAlias, getSuggestions } from './aliases.js';
 import { staticBuilds } from './staticBuilds.js';
 import { staticResources } from './staticResources.js';
+import { lobbyManager } from './lobbyManager.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(cors());
 
 const httpServer = createServer(app);
 
@@ -27,14 +27,16 @@ const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
+  // 接続時に現在のロビー一覧を送信
+  socket.emit('lobbies_list', lobbyManager.getLobbies());
+
+  // 1. チャットメッセージ
   socket.on('chat_message', async (data) => {
-    // 1. Broadcast the user's message immediately
     io.emit('chat_message', {
       ...data,
       id: Date.now() + Math.random().toString(36).substr(2, 9)
     });
 
-    // 2. Send to Ordis AI and broadcast Ordis' response
     if (data.username !== 'Ordis') {
       try {
         const ordisReply = await sendOrdisMessage(data.message);
@@ -50,9 +52,116 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 2. ロビー作成
+  socket.on('lobby:create', (data, callback) => {
+    try {
+      const lobby = lobbyManager.createLobby(socket.id, data);
+      socket.join(`lobby:${lobby.id}`);
+      io.emit('lobbies_list', lobbyManager.getLobbies());
+      if (typeof callback === 'function') callback({ success: true, lobby });
+    } catch (err) {
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // 3. ロビー一覧要求
+  socket.on('lobby:list', () => {
+    socket.emit('lobbies_list', lobbyManager.getLobbies());
+  });
+
+  // 4. ロビー参加
+  socket.on('lobby:join', ({ lobbyId, memberData }, callback) => {
+    try {
+      const lobby = lobbyManager.joinLobby(socket.id, lobbyId, memberData);
+      socket.join(`lobby:${lobbyId}`);
+      io.to(`lobby:${lobbyId}`).emit('lobby:updated', lobby);
+      io.emit('lobbies_list', lobbyManager.getLobbies());
+      if (typeof callback === 'function') callback({ success: true, lobby });
+    } catch (err) {
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // 5. ロビー退出
+  socket.on('lobby:leave', ({ lobbyId }, callback) => {
+    try {
+      const result = lobbyManager.leaveLobby(socket.id, lobbyId);
+      socket.leave(`lobby:${lobbyId}`);
+      if (result) {
+        if (!result.deleted) {
+          io.to(`lobby:${lobbyId}`).emit('lobby:updated', result.lobby);
+        } else {
+          io.to(`lobby:${lobbyId}`).emit('lobby:closed', { lobbyId });
+        }
+      }
+      io.emit('lobbies_list', lobbyManager.getLobbies());
+      if (typeof callback === 'function') callback({ success: true });
+    } catch (err) {
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // 6. メンバー状態の更新（準備完了、フレーム等）
+  socket.on('lobby:update_member', ({ lobbyId, updates }) => {
+    const lobby = lobbyManager.updateMember(socket.id, lobbyId, updates);
+    if (lobby) {
+      io.to(`lobby:${lobbyId}`).emit('lobby:updated', lobby);
+      io.emit('lobbies_list', lobbyManager.getLobbies());
+    }
+  });
+
+  // 7. ロビーステータスの更新（ホストによる出撃・締切・解散）
+  socket.on('lobby:update_status', ({ lobbyId, status }, callback) => {
+    try {
+      const lobby = lobbyManager.updateLobbyStatus(socket.id, lobbyId, status);
+      if (lobby) {
+        if (status === 'closed') {
+          io.to(`lobby:${lobbyId}`).emit('lobby:closed', { lobbyId });
+        } else {
+          io.to(`lobby:${lobbyId}`).emit('lobby:updated', lobby);
+        }
+        io.emit('lobbies_list', lobbyManager.getLobbies());
+        if (typeof callback === 'function') callback({ success: true, lobby });
+      }
+    } catch (err) {
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+    }
+  });
+
+  // 8. ロビー内チャット
+  socket.on('lobby:send_message', ({ lobbyId, username, message }) => {
+    const result = lobbyManager.addMessage(lobbyId, { username, message });
+    if (result) {
+      io.to(`lobby:${lobbyId}`).emit('lobby:new_message', { lobbyId, message: result.message });
+    }
+  });
+
+  // 9. 切断時
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
+    const affected = lobbyManager.handleDisconnect(socket.id);
+    if (affected.length > 0) {
+      for (const item of affected) {
+        if (item.deleted) {
+          io.to(`lobby:${item.lobbyId}`).emit('lobby:closed', { lobbyId: item.lobbyId });
+        } else {
+          io.to(`lobby:${item.lobbyId}`).emit('lobby:updated', item.lobby);
+        }
+      }
+      io.emit('lobbies_list', lobbyManager.getLobbies());
+    }
   });
+});
+
+// ロビー一覧・詳細 REST API
+app.get('/api/lobbies', (req, res) => {
+  res.json({ lobbies: lobbyManager.getLobbies() });
+});
+
+app.get('/api/lobbies/:id', (req, res) => {
+  const lobby = lobbyManager.getLobby(req.params.id);
+  if (!lobby) return res.status(404).json({ error: 'Lobby not found' });
+  res.json({ lobby });
 });
 
 // --- API Endpoints ---

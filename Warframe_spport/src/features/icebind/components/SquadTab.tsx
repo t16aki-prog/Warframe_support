@@ -60,7 +60,23 @@ export const SquadTab: React.FC<SquadTabProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('navigateTab', { detail: { tab: 'multiplayer' } }))}
+            className="primary-btn"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              padding: '8px 14px',
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              fontWeight: 700
+            }}
+          >
+            <Sparkles size={14} />
+            アプリ内でNarinマルチ募集
+          </button>
           <button
             onClick={copyRecruitmentText}
             className="btn-primary"
@@ -74,7 +90,7 @@ export const SquadTab: React.FC<SquadTabProps> = ({
             }}
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? '募集文をコピーしました！' : '募集テキストをコピー'}
+            {copied ? '募集文をコピーしました！' : 'ゲーム内用テキストをコピー'}
           </button>
         </div>
       </div>

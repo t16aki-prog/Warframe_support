@@ -29,7 +29,7 @@ export const EXTENSION_LIST: ExtensionItem[] = [
   { id: 'relicgenerator', label: 'レリック表生成' },
   { id: 'tradehelper', label: 'トレードコピペ' },
   { id: 'rulesguide', label: '安全規約＆マナー' },
-  { id: 'localchat', label: 'ローカルチャット' },
+  { id: 'multiplayer', label: 'マルチプレイ (募集/マッチング)' },
   { id: 'cephalonai', label: 'セファロンAI' }
 ];
 

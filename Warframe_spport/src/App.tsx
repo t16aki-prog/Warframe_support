@@ -7,16 +7,16 @@ import { Wishlist } from './components/Wishlist';
 import { TradeHelper } from './components/TradeHelper';
 import { RulesGuide } from './components/RulesGuide';
 import { Settings } from './components/Settings';
-import { LocalChat } from './components/LocalChat';
 import { DataExplorer } from './components/DataExplorer';
 import { RelicGenerator } from './components/RelicGenerator';
 import { Weekly } from './components/Weekly';
 import { OrdisChat } from './components/OrdisChat';
 import { BeginnerGuide } from './components/BeginnerGuide';
 import { Icebind } from './components/Icebind';
+import { Multiplayer } from './components/Multiplayer';
 import './App.css';
 
-type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'localchat' | 'cephalonai' | 'settings';
+type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'multiplayer' | 'localchat' | 'cephalonai' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -40,6 +40,7 @@ function App() {
     relicgenerator: true,
     tradehelper: true,
     rulesguide: true,
+    multiplayer: true,
     localchat: true,
     cephalonai: true
   };
@@ -110,8 +111,10 @@ function App() {
         return <TradeHelper />;
       case 'rulesguide':
         return <RulesGuide />;
+      case 'multiplayer':
+        return <Multiplayer />;
       case 'localchat':
-        return <LocalChat />;
+        return <Multiplayer />;
       case 'cephalonai':
         return <OrdisChat 
           apiKey={apiKey} 
@@ -257,13 +260,13 @@ function App() {
             </button>
           )}
 
-          {enabledExtensions.localchat && (
+          {(enabledExtensions.multiplayer ?? enabledExtensions.localchat) && (
             <button
-              onClick={() => setActiveTab('localchat')}
-              className={`nav-item ${activeTab === 'localchat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('multiplayer')}
+              className={`nav-item ${activeTab === 'multiplayer' || activeTab === 'localchat' ? 'active' : ''}`}
             >
               <Users size={18} />
-              ローカルチャット
+              マルチプレイ (募集)
             </button>
           )}
 
