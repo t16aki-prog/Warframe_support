@@ -4,6 +4,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { searchRelics, searchWarframeParts, getVaultedPrimes } from './warframeData.js';
 import { getOfflineBuild } from './staticBuilds.js';
+import { getOllamaStatus } from './server/llm/ollamaClient.js';
+import { chatWithContext } from './server/llm/tasks.js';
 
 const SYSTEM_PROMPT = `
 あなたはWarframeに登場するセファロン「オーディス(Ordis)」として振る舞うAIアシスタントです。
@@ -21,6 +23,17 @@ export async function initOrdisChat() {
 }
 
 export async function sendOrdisMessage(userMessage, clientApiKey = null, history = []) {
+  // 1. ローカルLLM（Ollama）が使えれば最優先（データは外部に送られない）
+  try {
+    const status = await getOllamaStatus();
+    if (status.running && status.chatModelReady) {
+      return await chatWithContext(userMessage, history);
+    }
+  } catch (error) {
+    console.error('Local LLM error, falling back:', error.message);
+  }
+
+  // 2. Gemini（APIキーがある場合のみ）
   if (clientApiKey && clientApiKey.trim() !== '') {
     try {
       const genAI = new GoogleGenerativeAI(clientApiKey);

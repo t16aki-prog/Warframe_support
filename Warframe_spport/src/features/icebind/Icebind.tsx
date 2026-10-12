@@ -8,6 +8,8 @@ import { SquadTab } from './components/SquadTab';
 import { NarinTab } from './components/NarinTab';
 import { StrategyTab } from './components/StrategyTab';
 import { LootTrackerTab } from './components/LootTrackerTab';
+import { ArchiveTab } from './components/ArchiveTab';
+import { useContentArchives } from './hooks/useContentArchives';
 
 export const Icebind: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<IcebindTab>('squad');
@@ -34,6 +36,12 @@ export const Icebind: React.FC = () => {
     updateEssence,
     updateSplicer,
   } = useLootTracker();
+
+  const {
+    archives,
+    selectedArchive,
+    setSelectedId,
+  } = useContentArchives();
 
   return (
     <div style={{ maxWidth: '1240px', margin: '0 auto', paddingBottom: '60px' }}>
@@ -70,6 +78,14 @@ export const Icebind: React.FC = () => {
           updateKuva={updateKuva}
           updateEssence={updateEssence}
           updateSplicer={updateSplicer}
+        />
+      )}
+
+      {activeSubTab === 'archive' && (
+        <ArchiveTab
+          archives={archives}
+          selectedArchive={selectedArchive}
+          onSelect={setSelectedId}
         />
       )}
     </div>

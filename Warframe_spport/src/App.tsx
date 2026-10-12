@@ -14,9 +14,10 @@ import { OrdisChat } from './components/OrdisChat';
 import { BeginnerGuide } from './components/BeginnerGuide';
 import { Icebind } from './components/Icebind';
 import { Multiplayer } from './components/Multiplayer';
+import { LocalLlmHub } from './components/LocalLlmHub';
 import './App.css';
 
-type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'multiplayer' | 'localchat' | 'cephalonai' | 'settings';
+type Tab = 'dashboard' | 'beginnerguide' | 'weekly' | 'icebind' | 'syndicates' | 'builds' | 'tradehelper' | 'dataexplorer' | 'relicgenerator' | 'wishlist' | 'rulesguide' | 'multiplayer' | 'localchat' | 'cephalonai' | 'localllm' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -50,7 +51,8 @@ function App() {
     rulesguide: true,
     multiplayer: true,
     localchat: true,
-    cephalonai: true
+    cephalonai: true,
+    localllm: true
   };
 
   const [enabledExtensions, setEnabledExtensions] = useState<Record<string, boolean>>(() => {
@@ -128,6 +130,8 @@ function App() {
           apiKey={apiKey} 
           onNavigateToSettings={() => setActiveTab('settings')} 
         />;
+      case 'localllm':
+        return <LocalLlmHub />;
       case 'settings':
         return <Settings 
           apiKey={apiKey} 
@@ -303,6 +307,16 @@ function App() {
             >
               <MessageSquare size={18} />
               セファロンAI
+            </button>
+          )}
+
+          {enabledExtensions.localllm && (
+            <button
+              onClick={() => handleTabSelect('localllm')}
+              className={`nav-item ${activeTab === 'localllm' ? 'active' : ''}`}
+            >
+              <Cpu size={18} style={{ color: '#00f0ff' }} />
+              ローカルLLM
             </button>
           )}
 

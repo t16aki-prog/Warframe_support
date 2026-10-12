@@ -22,6 +22,7 @@ export const IcebindHeader: React.FC<IcebindHeaderProps> = ({
     { id: 'narin' as const, label: '新フレーム「Narin」徹底解説', icon: <Sparkles size={16} /> },
     { id: 'strategy' as const, label: 'Lv999ギミック ＆ モディファイア対策', icon: <ShieldCheck size={16} /> },
     { id: 'tracker' as const, label: '報酬・ナリン素材トラッカー', icon: <Target size={16} /> },
+    { id: 'archive' as const, label: '過去コンテンツ・アーカイブ', icon: <Clock size={16} /> },
   ];
 
   return (

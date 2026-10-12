@@ -8,6 +8,8 @@ import { resolveAlias, getSuggestions } from './aliases.js';
 import { staticBuilds } from './staticBuilds.js';
 import { staticResources } from './staticResources.js';
 import { lobbyManager } from './lobbyManager.js';
+import llmRouter from './server/llm/routes.js';
+import { startIngestScheduler } from './server/llm/ingestService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -164,6 +166,9 @@ app.get('/api/lobbies/:id', (req, res) => {
   res.json({ lobby });
 });
 
+// --- Local LLM (Ollama + RAG) ---
+app.use('/api/llm', llmRouter);
+
 // --- API Endpoints ---
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
@@ -255,4 +260,5 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
   console.log(`Chat server is running on http://0.0.0.0:${PORT}`);
   // Initialize the Warframe Data Cache
   await initDataCache();
+  startIngestScheduler();
 });

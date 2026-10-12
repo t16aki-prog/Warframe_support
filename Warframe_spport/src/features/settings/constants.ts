@@ -30,7 +30,8 @@ export const EXTENSION_LIST: ExtensionItem[] = [
   { id: 'tradehelper', label: 'トレードコピペ' },
   { id: 'rulesguide', label: '安全規約＆マナー' },
   { id: 'multiplayer', label: 'マルチプレイ (募集/マッチング)' },
-  { id: 'cephalonai', label: 'セファロンAI' }
+  { id: 'cephalonai', label: 'セファロンAI' },
+  { id: 'localllm', label: 'ローカルLLM (オーディス・ローカル)' }
 ];
 
 export const LANGUAGE_OPTIONS = [

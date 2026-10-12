@@ -1,6 +1,19 @@
 export type RoleType = 'DPS' | 'Armor Strip' | 'Survival' | 'CC' | 'Energy' | 'Flex';
 
-export type IcebindTab = 'squad' | 'narin' | 'strategy' | 'tracker';
+export type IcebindTab = 'squad' | 'narin' | 'strategy' | 'tracker' | 'archive';
+
+export interface ContentArchive {
+  id: string;
+  updateNumber: string;
+  title: string;
+  subtitle: string;
+  releaseDate: string;
+  category: 'Update' | 'Event' | 'Hotfix';
+  summary: string;
+  keyFeatures: string[];
+  guideHighlights: string[];
+  officialForumUrl?: string;
+}
 
 export interface SquadMember {
   id: number;
