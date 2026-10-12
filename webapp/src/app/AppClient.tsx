@@ -292,6 +292,12 @@ function App() {
           </button>
         </nav>
 
+        <div
+          className={`nav-backdrop ${isNavOpen ? 'open' : ''}`}
+          onClick={() => setIsNavOpen(false)}
+          aria-hidden="true"
+        />
+
         <div className="sidebar-footer">
           <p>© 2026 TENNO NAVI</p>
           <p style={{ fontSize: '10px', marginTop: '4px' }}>
