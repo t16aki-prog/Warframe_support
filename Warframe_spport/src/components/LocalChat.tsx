@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Send, User } from 'lucide-react';
+import { getBackendServerUrl } from '../utils/serverUrl';
 
 interface ChatMessage {
   id: string;
@@ -26,9 +27,8 @@ export function LocalChat() {
       setUsername(savedUsername);
     }
 
-    // Connect to local Socket.IO server
-    // We use window.location.hostname to connect to the server running on the same IP
-    const serverUrl = `http://${window.location.hostname}:3001`;
+    // Connect to backend Socket.IO server
+    const serverUrl = getBackendServerUrl();
     socketRef.current = io(serverUrl);
 
     socketRef.current.on('connect', () => {

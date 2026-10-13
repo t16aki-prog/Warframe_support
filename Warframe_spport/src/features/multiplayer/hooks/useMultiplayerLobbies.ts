@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { Lobby, LobbyMessage, ActiveFilterTab, CreateLobbyFormInput, LobbyStatus } from '../types';
+import { getBackendServerUrl } from '../../../utils/serverUrl';
 
 export function useMultiplayerLobbies() {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
@@ -30,7 +31,7 @@ export function useMultiplayerLobbies() {
 
   // Socket.IO 接続
   useEffect(() => {
-    const serverUrl = `http://${window.location.hostname}:3001`;
+    const serverUrl = getBackendServerUrl();
     const socket = io(serverUrl);
     socketRef.current = socket;
 

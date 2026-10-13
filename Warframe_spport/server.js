@@ -14,14 +14,66 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 const app = express();
-app.use(cors());
+
+// Configurable CORS origins (defaults to '*' in dev if not set)
+const rawOrigins = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = rawOrigins
+  ? rawOrigins.split(',').map((o) => o.trim())
+  : ['*'];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  methods: ['GET', 'POST'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// In-memory rate limiting to protect public deployment against DoS/bursts
+const requestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 120; // 120 req / min per IP
+
+app.use((req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const record = requestCounts.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
+
+  if (now > record.resetTime) {
+    record.count = 1;
+    record.resetTime = now + RATE_LIMIT_WINDOW;
+  } else {
+    record.count++;
+  }
+
+  requestCounts.set(ip, record);
+
+  if (record.count > MAX_REQUESTS_PER_WINDOW) {
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+  next();
+});
+
+// Periodic cleanup of rate limit map (every 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of requestCounts.entries()) {
+    if (now > record.resetTime) requestCounts.delete(ip);
+  }
+}, 10 * 60 * 1000);
 
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
     methods: ['GET', 'POST']
   }
 });
@@ -34,14 +86,20 @@ io.on('connection', (socket) => {
 
   // 1. チャットメッセージ
   socket.on('chat_message', async (data) => {
+    if (!data?.message || typeof data.message !== 'string') return;
+    const sanitizedMsg = String(data.message).slice(0, 500);
+    const sanitizedUser = String(data.username || 'Tenno').slice(0, 32);
+
     io.emit('chat_message', {
       ...data,
+      username: sanitizedUser,
+      message: sanitizedMsg,
       id: Date.now() + Math.random().toString(36).substr(2, 9)
     });
 
-    if (data.username !== 'Ordis') {
+    if (sanitizedUser !== 'Ordis') {
       try {
-        const ordisReply = await sendOrdisMessage(data.message);
+        const ordisReply = await sendOrdisMessage(sanitizedMsg);
         io.emit('chat_message', {
           username: 'Ordis',
           message: ordisReply,
