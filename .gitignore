@@ -24,3 +24,8 @@ ENV/
 .DS_Store
 Thumbs.db
 *.log
+
+# Environment variables
+.env
+.env.*
+!.env.example

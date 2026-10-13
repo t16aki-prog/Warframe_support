@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 dataCache.json
 data/llm/
+
+# Environment variables
+.env
+.env.*
+!.env.example
