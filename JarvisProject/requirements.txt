@@ -1,7 +1,0 @@
-SpeechRecognition
-pyaudio
-edge-tts
-google-genai
-duckduckgo-search
-pygame
-python-dotenv
