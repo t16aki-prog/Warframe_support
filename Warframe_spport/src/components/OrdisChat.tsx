@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, Settings as SettingsIcon, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
-import { askOrdis, type ChatMessage } from '../utils/gemini';
+import { Send, Terminal, Settings as SettingsIcon, Mic, MicOff, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { askOrdis, type ChatMessage, type ActionChip } from '../utils/gemini';
 
 interface OrdisChatProps {
   apiKey: string;
@@ -46,6 +46,22 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // AudioContext事前アンロック（iOS/Safari自動再生ブロック対策）
+  const unlockAudioContext = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    } catch (e) {
+      // ignore
+    }
+  };
+
   // Play a beautiful beep sound using Web Audio API
   const playBeep = () => {
     try {
@@ -68,6 +84,16 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
     } catch (e) {
       console.error('Audio context error:', e);
     }
+  };
+
+  // TTS読み上げ用の記号ストリップ
+  const cleanSpeechText = (rawText: string) => {
+    return rawText
+      .replace(/――\*\*/g, '')
+      .replace(/\*\*――/g, '')
+      .replace(/[―*]/g, '')
+      .replace(/#{1,6}\s+/g, '')
+      .trim();
   };
 
   // Cephalon Ordis Text-to-Speech Helper with Glitch Pitch Shift
@@ -95,13 +121,13 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
 
         if (part.startsWith('――**') && part.endsWith('**――')) {
           // Glitch / Aggressive mode: Deep pitch, fast rate
-          const cleanText = part.replace(/――\*\*(.*?)\*\*――/, '$1');
+          const cleanText = cleanSpeechText(part);
           utterance.text = cleanText;
           utterance.pitch = 0.55; 
           utterance.rate = 1.35;  
         } else {
           // Normal mode: High polite robotic pitch, normal rate
-          const cleanText = part.replace(/――/g, '、'); // replace em dash with pause
+          const cleanText = cleanSpeechText(part.replace(/――/g, '、'));
           utterance.text = cleanText;
           utterance.pitch = 1.35; 
           utterance.rate = 1.05;  
@@ -225,14 +251,22 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
 
   // Submit query to Gemini or Mock and play reply voice
   const submitMessage = async (text: string) => {
+    unlockAudioContext();
     setIsLoading(true);
     setMessages((prev) => [...prev, { role: 'user', content: text }]);
 
     try {
       const apiHistory = messages.slice(1);
-      const ordisReply = await askOrdis('', apiHistory, text);
-      setMessages((prev) => [...prev, { role: 'model', content: ordisReply }]);
-      speakOrdis(ordisReply);
+      const ordisResponse = await askOrdis('', apiHistory, text);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'model',
+          content: ordisResponse.reply,
+          actionChips: ordisResponse.actionChips
+        }
+      ]);
+      speakOrdis(ordisResponse.reply);
     } catch (err) {
       console.error(err);
       const errMsg = '音声伝達システムにエラーが発生しました。もう一度お試しください、テンノ。';
@@ -241,6 +275,15 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChipClick = (chip: ActionChip) => {
+    window.dispatchEvent(new CustomEvent('tennonavi:navigate', {
+      detail: chip.payload
+    }));
+    window.dispatchEvent(new CustomEvent('navigateTab', {
+      detail: chip.payload
+    }));
   };
 
   return (
@@ -373,7 +416,41 @@ export const OrdisChat: React.FC<OrdisChatProps> = ({ apiKey, onNavigateToSettin
             {messages.map((msg, index) => (
               <div key={index} className={`chat-msg ${msg.role === 'user' ? 'user' : 'ordis'}`}>
                 <div className="msg-sender">{msg.role === 'user' ? 'Tenno' : 'Ordis'}</div>
-                <div className="msg-bubble">{msg.content}</div>
+                <div className="msg-bubble">
+                  <div>{msg.content}</div>
+                  {msg.actionChips && msg.actionChips.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                      {msg.actionChips.map((chip) => (
+                        <button
+                          key={chip.id}
+                          onClick={() => handleChipClick(chip)}
+                          style={{
+                            background: 'rgba(100, 255, 218, 0.15)',
+                            border: '1px solid rgba(100, 255, 218, 0.4)',
+                            color: '#64ffda',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.background = 'rgba(100, 255, 218, 0.25)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.background = 'rgba(100, 255, 218, 0.15)';
+                          }}
+                        >
+                          <ExternalLink size={11} />
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             {isLoading && (

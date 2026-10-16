@@ -99,10 +99,11 @@ io.on('connection', (socket) => {
 
     if (sanitizedUser !== 'Ordis') {
       try {
-        const ordisReply = await sendOrdisMessage(sanitizedMsg);
+        const ordisResult = await sendOrdisMessage(sanitizedMsg);
+        const ordisMsgText = (typeof ordisResult === 'object' && ordisResult !== null) ? ordisResult.reply : ordisResult;
         io.emit('chat_message', {
           username: 'Ordis',
-          message: ordisReply,
+          message: ordisMsgText,
           timestamp: new Date().toISOString(),
           id: Date.now() + Math.random().toString(36).substr(2, 9)
         });
@@ -162,11 +163,17 @@ io.on('connection', (socket) => {
   });
 
   // 6. メンバー状態の更新（準備完了、フレーム等）
-  socket.on('lobby:update_member', ({ lobbyId, updates }) => {
-    const lobby = lobbyManager.updateMember(socket.id, lobbyId, updates);
-    if (lobby) {
-      io.to(`lobby:${lobbyId}`).emit('lobby:updated', lobby);
-      io.emit('lobbies_list', lobbyManager.getLobbies());
+  socket.on('lobby:update_member', ({ lobbyId, updates }, callback) => {
+    try {
+      const lobby = lobbyManager.updateMember(socket.id, lobbyId, updates);
+      if (lobby) {
+        io.to(`lobby:${lobbyId}`).emit('lobby:updated', lobby);
+        io.emit('lobbies_list', lobbyManager.getLobbies());
+        if (typeof callback === 'function') callback({ success: true, lobby });
+      }
+    } catch (err) {
+      socket.emit('lobby:error', { message: err.message });
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
     }
   });
 
@@ -232,8 +239,12 @@ app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   const apiKey = req.headers['x-api-key'];
   try {
-    const reply = await sendOrdisMessage(message, apiKey, history);
-    res.json({ reply });
+    const result = await sendOrdisMessage(message, apiKey, history);
+    if (typeof result === 'object' && result !== null && result.reply) {
+      res.json(result);
+    } else {
+      res.json({ reply: String(result), grounded: false, actionChips: [] });
+    }
   } catch (error) {
     console.error('Chat error:', error);
     res.status(500).json({ error: 'Ordis failed to respond.' });

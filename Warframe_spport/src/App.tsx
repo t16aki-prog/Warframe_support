@@ -109,7 +109,11 @@ function App() {
       }
     };
     window.addEventListener('navigateTab', handleNavigate);
-    return () => window.removeEventListener('navigateTab', handleNavigate);
+    window.addEventListener('tennonavi:navigate', handleNavigate);
+    return () => {
+      window.removeEventListener('navigateTab', handleNavigate);
+      window.removeEventListener('tennonavi:navigate', handleNavigate);
+    };
   }, []);
 
   const renderContent = () => {

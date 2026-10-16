@@ -96,13 +96,25 @@ class LobbyManager {
       throw new Error('このロビーは満員です。');
     }
 
+    const targetWarframe = memberData.warframe || 'Excalibur';
+
+    // 氷河の縛り専用ルール: Warframe重複をサーバー側で完全禁止
+    if (lobby.type === 'narin') {
+      const isDup = lobby.members.some(
+        m => m.socketId !== socketId && m.warframe?.trim().toLowerCase() === targetWarframe.trim().toLowerCase()
+      );
+      if (isDup) {
+        throw new Error(`【氷河の縛り】すでに「${targetWarframe}」を使用しているメンバーがいます。別のWarframeを選択してください。`);
+      }
+    }
+
     // 既に参加しているかチェック
     const existingIndex = lobby.members.findIndex(m => m.socketId === socketId);
     if (existingIndex !== -1) {
       // 既に参加済みの場合は更新して返す
       lobby.members[existingIndex].username = memberData.username || lobby.members[existingIndex].username;
       lobby.members[existingIndex].inGameName = memberData.inGameName || lobby.members[existingIndex].inGameName;
-      lobby.members[existingIndex].warframe = memberData.warframe || lobby.members[existingIndex].warframe;
+      lobby.members[existingIndex].warframe = targetWarframe;
       return lobby;
     }
 
@@ -110,7 +122,7 @@ class LobbyManager {
       socketId,
       username: memberData.username || 'Tenno',
       inGameName: memberData.inGameName || memberData.username || 'Tenno',
-      warframe: memberData.warframe || 'Excalibur',
+      warframe: targetWarframe,
       isHost: false,
       ready: false,
       joinedAt: Date.now()
@@ -203,6 +215,14 @@ class LobbyManager {
       member.ready = updates.ready;
     }
     if (updates.warframe) {
+      if (lobby.type === 'narin') {
+        const isDup = lobby.members.some(
+          m => m.socketId !== socketId && m.warframe?.trim().toLowerCase() === updates.warframe.trim().toLowerCase()
+        );
+        if (isDup) {
+          throw new Error(`【氷河の縛り】すでに「${updates.warframe}」は分隊内で使用されています。`);
+        }
+      }
       member.warframe = updates.warframe;
     }
     if (updates.inGameName) {
