@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const config = await window.api.fetchConfig();
     populateSettingsForm(config);
+    await checkAuthStatus();
   } catch (err) {
     console.error('Failed to load initial data:', err);
   }
@@ -80,7 +81,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Settings Modal Handlers
   const modal = document.getElementById('settings-modal');
-  document.getElementById('btn-settings-toggle').addEventListener('click', () => modal.classList.remove('hidden'));
+  document.getElementById('btn-settings-toggle').addEventListener('click', async () => {
+    modal.classList.remove('hidden');
+    await checkAuthStatus();
+  });
   document.getElementById('btn-settings-close').addEventListener('click', () => modal.classList.add('hidden'));
   document.getElementById('btn-settings-cancel').addEventListener('click', () => modal.classList.add('hidden'));
   document.getElementById('alert-close').addEventListener('click', () => {
@@ -97,11 +101,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  async function checkAuthStatus() {
+    try {
+      const status = await window.api.fetchAuthStatus();
+      const dot = document.getElementById('auth-dot');
+      const text = document.getElementById('auth-status-text');
+      const btnAuth = document.getElementById('btn-auth-gdrive');
+
+      dot.className = 'status-dot';
+      if (status.is_authenticated) {
+        dot.classList.add('dot-green');
+        text.textContent = 'Google認証済み (連携中)';
+        btnAuth.textContent = '再認証';
+      } else if (status.has_credentials) {
+        dot.classList.add('dot-yellow');
+        text.textContent = 'credentials.json 配置済み（ログイン待ち）';
+        btnAuth.disabled = false;
+      } else {
+        dot.classList.add('dot-red');
+        text.textContent = 'credentials.json 未配置';
+      }
+    } catch (e) {
+      console.warn('Auth status check failed:', e);
+    }
+  }
+
+  // Credentials file import
+  const fileInput = document.getElementById('credentials-file-input');
+  document.getElementById('btn-import-creds').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const res = await window.api.uploadCredentials(file);
+      if (res.success) {
+        window.ui.appendLog({ timestamp: new Date().toLocaleTimeString(), level: 'SUCCESS', message: 'credentials.json を正常にインポートしました。' });
+        await checkAuthStatus();
+        alert('credentials.json の登録が完了しました！続けて「Googleログイン認証」ボタンを押してください。');
+      } else {
+        alert('アップロード失敗: ' + (res.error || '不明なエラー'));
+      }
+    }
+  });
+
   document.getElementById('btn-auth-gdrive').addEventListener('click', async () => {
     window.ui.appendLog({ timestamp: new Date().toLocaleTimeString(), level: 'INFO', message: 'Google Drive認証を開始します...' });
     const res = await window.api.authGDrive();
     if (res.success) {
       alert('Google Drive認証が成功しました！');
+      await checkAuthStatus();
     } else {
       alert('認証エラー: ' + (res.error || '不明なエラー'));
     }

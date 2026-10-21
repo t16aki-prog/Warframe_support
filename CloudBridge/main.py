@@ -124,6 +124,30 @@ def stop_pipeline():
     pipeline.stop("ユーザーによる手動即時停止")
     return jsonify({"success": True})
 
+@app.route("/api/auth/status", methods=["GET"])
+def get_auth_status():
+    from CloudBridge.constants import CREDENTIALS_FILE, TOKEN_FILE
+    has_creds = CREDENTIALS_FILE.exists()
+    has_token = gdrive_svc.is_authenticated()
+    return jsonify({
+        "has_credentials": has_creds,
+        "is_authenticated": has_token
+    })
+
+@app.route("/api/upload-credentials", methods=["POST"])
+def upload_credentials():
+    from CloudBridge.constants import CREDENTIALS_FILE
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "ファイルが選択されていません。"})
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "ファイル名が空です。"})
+    try:
+        file.save(str(CREDENTIALS_FILE))
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route("/api/auth/gdrive", methods=["POST"])
 def auth_gdrive():
     try:

@@ -35,5 +35,13 @@ class TestCloudBridgeAPI(unittest.TestCase):
         data = res.get_json()
         self.assertIn("path", data)
 
+    def test_auth_status(self):
+        """API returns authentication status."""
+        res = self.client.get("/api/auth/status")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("has_credentials", data)
+        self.assertIn("is_authenticated", data)
+
 if __name__ == "__main__":
     unittest.main()

@@ -562,6 +562,42 @@ body.dark-theme {
   border-radius: var(--radius-sm);
 }
 
+.auth-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.credentials-guide {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: rgba(0, 240, 255, 0.03);
+  border: 1px dashed rgba(0, 240, 255, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.credentials-guide summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  outline: none;
+}
+
+.credentials-guide ol {
+  margin: 8px 0 0 1.2rem;
+  line-height: 1.6;
+}
+
+.credentials-guide a {
+  color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+.dot-green { background: var(--accent-green) !important; box-shadow: 0 0 8px var(--accent-green); }
+.dot-yellow { background: var(--accent-yellow) !important; }
+.dot-red { background: var(--accent-red) !important; }
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;

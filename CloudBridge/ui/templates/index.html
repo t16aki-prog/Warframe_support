@@ -226,12 +226,29 @@
           <label>Google Drive 認証 (OAuth 2.0)</label>
           <div class="auth-status-box">
             <div id="auth-status-indicator" class="auth-status">
-              <span class="status-dot dot-warn"></span>
-              <span id="auth-status-text">未認証または未確認</span>
+              <span id="auth-dot" class="status-dot dot-warn"></span>
+              <span id="auth-status-text">未確認</span>
             </div>
-            <button type="button" id="btn-auth-gdrive" class="btn btn-secondary">Googleログイン認証</button>
+            <div class="auth-action-buttons">
+              <input type="file" id="credentials-file-input" accept=".json" style="display: none;">
+              <button type="button" id="btn-import-creds" class="btn btn-secondary" title="Google Cloud Consoleからダウンロードしたclient_secrets.jsonを登録">
+                credentials.json インポート
+              </button>
+              <button type="button" id="btn-auth-gdrive" class="btn btn-primary">
+                Googleログイン認証
+              </button>
+            </div>
           </div>
-          <small class="form-hint">初回実行時にブラウザでGoogleアカウントの許可を行います。</small>
+          <details class="credentials-guide">
+            <summary>credentials.json の取得方法（Google Cloud Console）</summary>
+            <ol>
+              <li><a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> でプロジェクトを作成</li>
+              <li>「APIとサービス」➔「ライブラリ」から <strong>Google Drive API</strong> を有効化</li>
+              <li>「認証情報」➔「認証情報を作成」➔「OAuth クライアント ID」を選択</li>
+              <li>アプリケーションの種類を「デスクトップ アプリ」として作成</li>
+              <li>作成されたクライアントの「JSON をダウンロード」をクリックし、上の「credentials.json インポート」ボタンで選択</li>
+            </ol>
+          </details>
         </div>
 
         <div class="form-group checkbox-group">

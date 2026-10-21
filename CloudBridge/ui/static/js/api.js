@@ -57,6 +57,21 @@ class CloudBridgeAPI {
     return await res.json();
   }
 
+  async fetchAuthStatus() {
+    const res = await fetch('/api/auth/status');
+    return await res.json();
+  }
+
+  async uploadCredentials(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload-credentials', {
+      method: 'POST',
+      body: formData
+    });
+    return await res.json();
+  }
+
   async authGDrive() {
     const res = await fetch('/api/auth/gdrive', { method: 'POST' });
     return await res.json();
