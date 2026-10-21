@@ -1,6 +1,6 @@
 # 開発プロジェクト総合仕様書インデックス
 
-本リポジトリおよびワークスペース（`E:\Oasobi`）内で開発・管理されている全7つのアプリケーションの仕様書一覧です。
+本リポジトリおよびワークスペース（`E:\Oasobi`）内で開発・管理されている全8つのアプリケーションの仕様書一覧です。
 各アプリケーションの設計は、共通設計規約 [AGENTS.md](file:///e:/Oasobi/AGENTS.md) の「単一責任の原則」「UIとロジックの完全分離」「型定義の独立」「機能分散化 (Feature-sliced)」に準拠しています。
 
 ---
@@ -16,6 +16,7 @@
 | **NetMonitor** | `NetworkMonitor/` | Python, Tkinter, psutil | 枠なし・半透明・最前面常駐型の軽量ネットワークモニター。リアルタイム送受信速度、最大速度記録、低速赤色警告。 | [仕様書を読む](file:///e:/Oasobi/NetworkMonitor/SPECIFICATION.md) |
 | **J.A.R.V.I.S.** | `JarvisProject/` | Python, Gemini 1.5, Edge-TTS, DuckDuckGo | 音声対話型AIアシスタント。完全ハンズフリー、Keitaニューラル音声合成、DuckDuckGoリアルタイム検索連携。 | [仕様書を読む](file:///e:/Oasobi/JarvisProject/SPECIFICATION.md) |
 | **War Card Game** | `War_cardGame/` | TypeScript, React / Vite (設計策定) | トランプ対戦ゲーム「戦争（War）」。3Dカード反転、WAR発生演出、山札総取り、HP制カジュアルモード。 | [仕様書を読む](file:///e:/Oasobi/War_cardGame/SPECIFICATION.md) |
+| **CloudBridge** | `CloudBridge/` | Python, Flask, Socket.IO, Google Drive API v3 | OneDriveからGoogle Driveへの容量セーフ中継移行ツール。ローカルバッファ上限ガード、多段階整合性検証、フェイルセーフ即時停止。 | [仕様書を読む](file:///e:/Oasobi/CloudBridge/SPECIFICATION.md) |
 
 ---
 

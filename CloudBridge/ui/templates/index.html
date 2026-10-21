@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudBridge - OneDrive to Google Drive Safe Relayer</title>
+  <meta name="description" content="Local storage-safe relayer from OneDrive to Google Drive with strict integrity verification and fail-safe stop.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+          <path d="M12 12v6m0 0 3-3m-3 3-3-3"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="app-title">CloudBridge</h1>
+        <p class="app-subtitle">OneDrive ➔ Google Drive Storage-Safe Relayer</p>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div id="pipeline-status-badge" class="status-badge badge-idle">
+        <span class="status-dot"></span>
+        <span id="pipeline-status-text">待機中 (IDLE)</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-scan" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        スキャン
+      </button>
+      <button id="btn-start" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        開始
+      </button>
+      <button id="btn-stop" class="btn btn-danger" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg>
+        緊急即時停止
+      </button>
+      <button id="btn-settings-toggle" class="btn btn-icon" title="設定を開く">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Error Alert Banner -->
+  <div id="alert-banner" class="alert-banner hidden">
+    <div class="alert-content">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span id="alert-text">異常停止しました</span>
+    </div>
+    <button id="alert-close" class="btn-close">&times;</button>
+  </div>
+
+  <!-- Main Container -->
+  <main class="dashboard-container">
+    <!-- Storage Gauges & Metric Cards -->
+    <section class="metrics-grid">
+      <!-- Buffer Gauge -->
+      <div class="metric-card glass-panel">
+        <div class="metric-header">
+          <span class="metric-title">ローカル一時バッファ</span>
+          <span id="buffer-pct" class="metric-badge">0%</span>
+        </div>
+        <div class="metric-value-row">
+          <span id="buffer-used-text" class="metric-main-value">0 MB</span>
+          <span class="metric-sub-value">/ 上限 <span id="buffer-max-text">5.0 GB</span></span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="buffer-progress-bar" class="progress-bar bar-cyan" style="width: 0%"></div>
+        </div>
+        <div class="metric-footer">
+          <span>安全ガード稼働中</span>
+          <span id="buffer-free-text">空き 5.0 GB</span>
+        </div>
+      </div>
+
+      <!-- Local Disk Space Guard -->
+      <div class="metric-card glass-panel">
+        <div class="metric-header">
+          <span class="metric-title">PCディスク空き容量</span>
+          <span class="metric-badge badge-safe">安全</span>
+        </div>
+        <div class="metric-value-row">
+          <span id="disk-free-text" class="metric-main-value">-- GB</span>
+          <span class="metric-sub-value">空き領域</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="disk-progress-bar" class="progress-bar bar-purple" style="width: 75%"></div>
+        </div>
+        <div class="metric-footer">
+          <span>最小空きガードライン</span>
+          <span id="disk-guard-text">5.0 GB以上を保持</span>
+        </div>
+      </div>
+
+      <!-- Overall Transfer Progress -->
+      <div class="metric-card glass-panel">
+        <div class="metric-header">
+          <span class="metric-title">全体転送進捗</span>
+          <span id="overall-pct" class="metric-badge">0%</span>
+        </div>
+        <div class="metric-value-row">
+          <span id="completed-files-text" class="metric-main-value">0 / 0</span>
+          <span class="metric-sub-value">ファイル完了</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="overall-progress-bar" class="progress-bar bar-green" style="width: 0%"></div>
+        </div>
+        <div class="metric-footer">
+          <span id="transfer-bytes-text">0 MB / 0 MB</span>
+          <span id="failed-files-text">エラー: 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Content Split: Queue vs Terminal -->
+    <div class="content-split">
+      <!-- Transfer Queue Section -->
+      <section class="queue-section glass-panel">
+        <div class="section-header">
+          <div class="section-title-group">
+            <h2>転送キュー一覧</h2>
+            <span id="queue-count-badge" class="counter-badge">0 件</span>
+          </div>
+          <div class="filter-group">
+            <button class="filter-tab active" data-filter="all">すべて</button>
+            <button class="filter-tab" data-filter="pending">待機/進行</button>
+            <button class="filter-tab" data-filter="completed">完了</button>
+            <button class="filter-tab" data-filter="failed">エラー</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="transfer-table">
+            <thead>
+              <tr>
+                <th>相対パス</th>
+                <th>サイズ</th>
+                <th>状態</th>
+                <th>Google Drive ID / ハッシュ</th>
+              </tr>
+            </thead>
+            <tbody id="transfer-table-body">
+              <tr>
+                <td colspan="4" class="empty-row">
+                  スキャンを実行してOneDrive内のファイルを取得してください
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Real-time Terminal Log Section -->
+      <section class="terminal-section glass-panel">
+        <div class="section-header">
+          <div class="section-title-group">
+            <h2>リアルタイム実行ログ</h2>
+            <span class="live-indicator">LIVE</span>
+          </div>
+          <div class="terminal-controls">
+            <button id="btn-toggle-scroll" class="btn-terminal active" title="自動スクロール切替">自動追従</button>
+            <button id="btn-clear-logs" class="btn-terminal" title="ログ消去">クリア</button>
+          </div>
+        </div>
+
+        <div id="terminal-body" class="terminal-body">
+          <div class="log-line log-info">
+            <span class="log-time">[SYSTEM]</span>
+            <span class="log-msg">CloudBridge サービスが起動しました。待機中です。</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-backdrop hidden">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h2>転送・容量設定</h2>
+        <button id="btn-settings-close" class="btn-close">&times;</button>
+      </div>
+
+      <form id="settings-form" class="modal-body">
+        <div class="form-group">
+          <label for="onedrive-dir-input">OneDrive 同期フォルダパス</label>
+          <div class="input-with-button">
+            <input type="text" id="onedrive-dir-input" class="form-input" placeholder="C:\Users\...\OneDrive">
+            <button type="button" id="btn-detect-onedrive" class="btn btn-secondary">自動検出</button>
+          </div>
+          <small class="form-hint">PC上のOneDrive同期フォルダを指定します。</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="max-buffer-input">バッファ容量上限 (GB)</label>
+            <input type="number" id="max-buffer-input" class="form-input" min="0.5" step="0.5" value="5.0">
+            <small class="form-hint">ローカル一時バッファの最大占有容量</small>
+          </div>
+
+          <div class="form-group">
+            <label for="min-disk-input">最小ディスク空き容量ガード (GB)</label>
+            <input type="number" id="min-disk-input" class="form-input" min="1.0" step="1.0" value="5.0">
+            <small class="form-hint">これ未満になりそうな場合は自動で一時停止</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="gdrive-folder-input">Google Drive 宛先フォルダ名</label>
+          <input type="text" id="gdrive-folder-input" class="form-input" value="CloudBridge_Backup">
+        </div>
+
+        <div class="form-group">
+          <label>Google Drive 認証 (OAuth 2.0)</label>
+          <div class="auth-status-box">
+            <div id="auth-status-indicator" class="auth-status">
+              <span class="status-dot dot-warn"></span>
+              <span id="auth-status-text">未認証または未確認</span>
+            </div>
+            <button type="button" id="btn-auth-gdrive" class="btn btn-secondary">Googleログイン認証</button>
+          </div>
+          <small class="form-hint">初回実行時にブラウザでGoogleアカウントの許可を行います。</small>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="dry-run-check">
+            <span>模擬実行モード (Dry Run: 実際のアップロードを行わず検証テスト)</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-settings-cancel" class="btn btn-secondary">キャンセル</button>
+          <button type="submit" class="btn btn-primary">設定を保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

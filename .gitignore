@@ -37,3 +37,11 @@ AssetTokun
 /NetworkMonitor/
 /PomodoroTimer/
 /War_cardGame/
+
+# CloudBridge Runtime Artifacts
+/CloudBridge/local_buffer/
+/CloudBridge/logs/
+/CloudBridge/*.db
+/CloudBridge/token.json
+/CloudBridge/credentials.json
+/CloudBridge/config.json
