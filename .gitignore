@@ -44,4 +44,6 @@ AssetTokun
 /CloudBridge/*.db
 /CloudBridge/token.json
 /CloudBridge/credentials.json
+/CloudBridge/client_secret*.json
+/CloudBridge/*secret*.json
 /CloudBridge/config.json

@@ -94,6 +94,16 @@ class UIManager {
     }
   }
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   renderQueueTable(items) {
     this.cachedItems = items || [];
     const tbody = document.getElementById('transfer-table-body');
@@ -109,16 +119,19 @@ class UIManager {
       return;
     }
 
-    tbody.innerHTML = filtered.map(item => `
-      <tr>
-        <td class="table-cell-path" title="${item.relative_path}">${item.relative_path}</td>
-        <td>${this.formatBytes(item.file_size)}</td>
-        <td><span class="badge-item-status status-${item.status}">${item.status}</span></td>
-        <td class="table-cell-path" style="font-size:0.75rem; color:#94a3b8;">
-          ${item.gdrive_file_id ? `ID: ${item.gdrive_file_id}` : (item.error_message ? `<span style="color:var(--accent-red)">${item.error_message}</span>` : '-')}
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = filtered.map(item => {
+      const safePath = this.escapeHtml(item.relative_path);
+      const safeStatus = this.escapeHtml(item.status);
+      const safeId = item.gdrive_file_id ? `ID: ${this.escapeHtml(item.gdrive_file_id)}` : (item.error_message ? `<span style="color:var(--accent-red)">${this.escapeHtml(item.error_message)}</span>` : '-');
+      return `
+        <tr>
+          <td class="table-cell-path" title="${safePath}">${safePath}</td>
+          <td>${this.formatBytes(item.file_size)}</td>
+          <td><span class="badge-item-status status-${safeStatus}">${safeStatus}</span></td>
+          <td class="table-cell-path" style="font-size:0.75rem; color:#94a3b8;">${safeId}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   appendLog(log) {
@@ -127,8 +140,8 @@ class UIManager {
     const levelClass = `log-${(log.level || 'info').toLowerCase()}`;
     line.className = `log-line ${levelClass}`;
     line.innerHTML = `
-      <span class="log-time">[${log.timestamp || '--:--:--'}]</span>
-      <span class="log-msg">${log.message}</span>
+      <span class="log-time">[${this.escapeHtml(log.timestamp || '--:--:--')}]</span>
+      <span class="log-msg">${this.escapeHtml(log.message)}</span>
     `;
     terminal.appendChild(line);
 

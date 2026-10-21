@@ -15,6 +15,16 @@ LOGS_DIR = BASE_DIR / "logs"
 CREDENTIALS_FILE = BASE_DIR / "credentials.json"
 TOKEN_FILE = BASE_DIR / "token.json"
 
+def get_credentials_file() -> Path:
+    """Return credentials.json if exists, or auto-detect client_secret_*.json."""
+    if CREDENTIALS_FILE.exists():
+        return CREDENTIALS_FILE
+    # Auto-detect downloaded client_secret json files
+    for candidate in sorted(BASE_DIR.glob("client_secret*.json")):
+        if candidate.is_file():
+            return candidate
+    return CREDENTIALS_FILE
+
 # Buffer & Capacity Defaults (in bytes)
 DEFAULT_MAX_BUFFER_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB
 DEFAULT_MIN_FREE_DISK_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB disk guard

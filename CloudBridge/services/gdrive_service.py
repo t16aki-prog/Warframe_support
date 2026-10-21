@@ -10,14 +10,14 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from ..constants import SCOPES, CREDENTIALS_FILE, TOKEN_FILE, CHUNK_UPLOAD_SIZE
+from ..constants import SCOPES, CREDENTIALS_FILE, TOKEN_FILE, CHUNK_UPLOAD_SIZE, get_credentials_file
 from ..models.transfer_item import TransferItem
 
 class GoogleDriveService:
     """Manages authentication, directory structures, and file uploads to Google Drive."""
 
     def __init__(self, credentials_path: Optional[Path] = None, token_path: Optional[Path] = None):
-        self.credentials_path = credentials_path or CREDENTIALS_FILE
+        self.credentials_path = credentials_path or get_credentials_file()
         self.token_path = token_path or TOKEN_FILE
         self.service = None
         self._folder_cache: Dict[str, str] = {}  # "parent_id/folder_name" -> folder_id

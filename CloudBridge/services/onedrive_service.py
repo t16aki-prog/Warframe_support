@@ -56,8 +56,13 @@ class OneDriveService:
         Copy/download file from OneDrive to staging buffer.
         Triggers Windows On-Demand hydration upon read.
         """
-        source = Path(item.source_path)
-        dest = buffer_dir / Path(item.relative_path)
+        source = Path(item.source_path).resolve()
+        dest = (buffer_dir / Path(item.relative_path)).resolve()
+        
+        # Security: Prevent path traversal out of buffer directory
+        if not dest.is_relative_to(buffer_dir.resolve()):
+            raise ValueError(f"Security: Relative path {item.relative_path} attempts to escape buffer directory.")
+
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         if not source.exists():

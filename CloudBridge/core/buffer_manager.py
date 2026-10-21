@@ -56,9 +56,14 @@ class BufferManager:
         target = Path(file_path).resolve()
         try:
             if target.exists() and target.is_file():
-                # Safety check: ensure file is inside the buffer directory
-                if not str(target).startswith(str(self.buffer_dir)):
+                resolved_buffer = self.buffer_dir.resolve()
+                # Security check: ensure file is strictly inside the buffer directory
+                if not target.is_relative_to(resolved_buffer) or target == resolved_buffer:
                     raise ValueError(f"Security: Refusing to delete file outside buffer: {target}")
+                
+                # Refuse to delete symlink to avoid deleting external target
+                if target.is_symlink():
+                    raise ValueError(f"Security: Refusing to delete symlink: {target}")
                 
                 # Windows temporary lock retry loop
                 for attempt in range(4):
@@ -80,6 +85,8 @@ class BufferManager:
                     else:
                         break
                 return True
+        except ValueError:
+            raise
         except Exception as e:
             raise RuntimeError(f"Failed to release local file {file_path}: {e}")
         return False

@@ -126,8 +126,8 @@ def stop_pipeline():
 
 @app.route("/api/auth/status", methods=["GET"])
 def get_auth_status():
-    from CloudBridge.constants import CREDENTIALS_FILE, TOKEN_FILE
-    has_creds = CREDENTIALS_FILE.exists()
+    from CloudBridge.constants import get_credentials_file
+    has_creds = get_credentials_file().exists()
     has_token = gdrive_svc.is_authenticated()
     return jsonify({
         "has_credentials": has_creds,
@@ -136,17 +136,25 @@ def get_auth_status():
 
 @app.route("/api/upload-credentials", methods=["POST"])
 def upload_credentials():
+    import json
     from CloudBridge.constants import CREDENTIALS_FILE
     if "file" not in request.files:
         return jsonify({"success": False, "error": "ファイルが選択されていません。"})
     file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"success": False, "error": "ファイル名が空です。"})
+    if not file.filename or not file.filename.endswith(".json"):
+        return jsonify({"success": False, "error": "JSONファイル（.json）のみ受け付けています。"})
     try:
-        file.save(str(CREDENTIALS_FILE))
+        content = file.read()
+        data = json.loads(content.decode("utf-8"))
+        if not isinstance(data, dict) or ("installed" not in data and "web" not in data):
+            return jsonify({"success": False, "error": "無効なOAuthクライアントファイルです。'installed' または 'web' 設定が含まれていません。"})
+        with open(CREDENTIALS_FILE, "wb") as f:
+            f.write(content)
+        # Re-resolve credentials path
+        gdrive_svc.credentials_path = CREDENTIALS_FILE
         return jsonify({"success": True})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": f"JSON解析エラー: {str(e)}"})
 
 @app.route("/api/auth/gdrive", methods=["POST"])
 def auth_gdrive():
